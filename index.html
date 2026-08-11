@@ -336,9 +336,9 @@
       var y8 = yScale.getPixelForValue(-8);
       var totalW = area.right - area.left;
       var shaftW = totalW * 0.09;
-      var headW = totalW * 0.13;
-      var color = 'rgba(143,181,203,0.5)';
-      var textColor = 'rgba(112,150,173,0.95)';
+      var headW = totalW * 0.156; // 0.13 * 1.2 = 20% breiter als bisher
+      var color = 'rgba(51,153,255,0.3)';   // #3399FF bei 70% Transparenz (30% Deckkraft)
+      var textColor = 'rgba(51,153,255,0.9)';
 
       svg.setAttribute('width', chart.width);
       svg.setAttribute('height', chart.height);
@@ -414,11 +414,7 @@
                 var label = this.getLabelForValue(value);
                 if (!label) return '';
                 var parts = label.split(':');
-                if (parts.length !== 2 || parts[1] !== '00') return '';
-                var hh = parseInt(parts[0], 10);
-                var totalPoints = this.chart.data.labels.length;
-                var stepHours = totalPoints > 80 ? 2 : 1; // > ~13h Daten -> nur jede 2. Stunde
-                return (hh % stepHours === 0) ? label : '';
+                return (parts.length === 2 && parts[1] === '00') ? label : '';
               }
             }
           },
