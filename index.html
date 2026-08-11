@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Föhndiagramm Tirol / Südtirol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.1.0/chartjs-plugin-annotation.min.js"></script>
+<style>
+  :root{
+    --ink:#1C2B3A;
+    --paper:#E9EDEC;
+    --panel:#FFFFFF;
+    --warm:#D68A3C;
+    --cool:#3E6E8E;
+    --alert:#C1443C;
+    --hairline:#C9CFCD;
+    --muted:#5B6B72;
+
+    --line-primary:#1C2B3A;
+    --line-secondary:#B9C2C0;
+    --threshold-soft:#3E6E8E;
+    --threshold-hard:#16324A;
+    --cell-soft:#CFE3F2;
+    --cell-hard:#2E6DA4;
+    --cell-current:#DCEFE0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    padding:32px 20px 64px;
+  }
+  .wrap{max-width:1320px;margin:0 auto;}
+
+  header{margin-bottom:28px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--cool);
+    margin-bottom:6px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--warm);
+    animation:pulse 2.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion:reduce){ .eyebrow .dot{animation:none;} }
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  h1{
+    font-size:clamp(28px,4vw,40px);
+    margin:0 0 6px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .sub{color:var(--muted); font-size:15px; max-width:70ch; line-height:1.5;}
+
+  .legend-note{
+    font-size:12.5px; color:var(--muted); margin-top:10px;
+    display:flex; flex-wrap:wrap; gap:16px; align-items:center;
+  }
+  .legend-note span{display:inline-flex; align-items:center; gap:6px;}
+  .swatch{width:14px;height:14px;border-radius:3px;display:inline-block;}
+  .swatch.line{width:20px;height:3px;border-radius:0;}
+
+  .section{
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:22px;
+    margin-top:24px;
+    opacity:0; transform:translateY(6px);
+    animation:rise .5s ease forwards;
+  }
+  .section:nth-of-type(2){animation-delay:.08s;}
+  @keyframes rise{to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:reduce){ .section{opacity:1;transform:none;animation:none;} }
+
+  .section h2{
+    font-size:19px; margin:0 0 14px; font-weight:600;
+  }
+  .section h2 .arrow{color:var(--muted); margin:0 4px; font-weight:400;}
+
+  .section-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    align-items:start;
+  }
+  @media (max-width:900px){ .section-grid{grid-template-columns:1fr;} }
+
+  .table-wrap{
+    max-height:480px;
+    overflow-y:auto;
+    border:1px solid var(--hairline);
+    border-radius:10px;
+  }
+  table{
+    border-collapse:collapse;
+    width:100%;
+    font-size:12px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  thead th{
+    position:sticky; top:0; z-index:1;
+    background:var(--panel);
+    border-bottom:1px solid var(--hairline);
+    padding:6px 7px;
+    text-align:left;
+    font-family:'IBM Plex Sans', sans-serif;
+  }
+  thead tr.group th{
+    font-weight:700; text-align:center;
+    background:#F1F3F2;
+    font-size:11.5px; letter-spacing:.03em; text-transform:uppercase;
+  }
+  tbody td{
+    padding:4px 7px;
+    border-bottom:1px solid #EEF1F0;
+    white-space:nowrap;
+  }
+  tbody tr:hover td{ background:#F5F7F6; }
+  tbody tr.hint-hard td{ background:var(--cell-hard); color:#fff; font-weight:600; }
+  tbody tr.hint-hard:hover td{ background:var(--cell-hard); }
+  tbody tr.hint-soft td{ background:var(--cell-soft); }
+  tbody tr.current td{ background:var(--cell-current); }
+  td.hint-text{ font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:11.5px; background:transparent !important; color:var(--threshold-hard) !important; }
+  tbody tr.hint-hard td.hint-text{ color:#fff !important; }
+
+  .chart-wrap{ position:relative; }
+  canvas.foehn-chart{ width:100% !important; height:460px !important; }
+
+  .foot{
+    display:flex; justify-content:space-between; gap:12px;
+    margin-top:14px; padding-top:12px;
+    border-top:1px solid var(--hairline);
+    font-size:12.5px; color:var(--muted);
+  }
+  .foot b{ color:var(--ink); font-weight:600; }
+
+  .page-foot{
+    text-align:center; color:var(--muted); font-size:12.5px;
+    margin-top:28px; font-family:'IBM Plex Mono', monospace;
+  }
+
+  .loading, .error{ text-align:center; padding:60px 20px; color:var(--muted); }
+  .error{ color:var(--alert); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="eyebrow"><span class="dot"></span>Live-Messstation · Update alle 10 Minuten</div>
+      <h1>Föhndiagramm</h1>
+      <p class="sub">Luftdruckgefälle über den Alpenhauptkamm — Bozen&nbsp;↔&nbsp;Innsbruck und Meran&nbsp;↔&nbsp;Imst. Ein negativer Δ-Wert (Süden niedriger als Norden) deutet auf Nordföhn hin. Die helle Linie im Diagramm zeigt jeweils die Druckdifferenz der anderen Passroute zum Vergleich.</p>
+      <div class="legend-note">
+        <span><span class="swatch" style="background:var(--cell-soft)"></span>Δ ≤ -2,5 hPa</span>
+        <span><span class="swatch" style="background:var(--cell-hard)"></span>Δ ≤ -3,0 hPa (Nordföhn)</span>
+        <span><span class="swatch" style="background:var(--cell-current)"></span>aktuellster Wert</span>
+        <span><span class="swatch line" style="background:var(--line-primary)"></span>eigene Route</span>
+        <span><span class="swatch line" style="background:var(--line-secondary)"></span>andere Route (Vergleich)</span>
+      </div>
+    </header>
+
+    <div id="content" class="loading">Lade aktuelle Messwerte …</div>
+
+    <div class="page-foot" id="pageFoot"></div>
+  </div>
+
+<script>
+  // Schwellenwerte - aus dem Original-Screenshot rekonstruiert, bei Bedarf anpassen.
+  var TABLE_SOFT = -2.5;
+  var TABLE_HARD = -3.0;
+  var CHART_LINE_SOFT = -3;
+  var CHART_LINE_HARD = -6;
+  var CHART_Y_MIN = -10, CHART_Y_MAX = 10;
+
+  var charts = {};
+  if (window.Chart && window['chartjs-plugin-annotation']) {
+    Chart.register(window['chartjs-plugin-annotation']);
+  }
+
+  function num(v){
+    var n = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.'));
+    return isNaN(n) ? null : n;
+  }
+  function fmt(v, digits){
+    var n = num(v);
+    if (n === null) return '—';
+    return (n > 0 ? '+' : '') + n.toFixed(digits === undefined ? 1 : digits).replace('.', ',');
+  }
+  function getVar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#999';
+  }
+
+  function buildTable(pair){
+    var rows = pair.rows || [];
+    var html = '<table><thead>' +
+      '<tr class="group"><th colspan="3">' + pair.leftLabel.toUpperCase() + '</th><th colspan="3">' + pair.rightLabel.toUpperCase() + '</th><th colspan="2"></th></tr>' +
+      '<tr><th>Datum</th><th>Uhrzeit</th><th>Luftdruck [hPa]</th>' +
+      '<th>Datum</th><th>Uhrzeit</th><th>Luftdruck [hPa]</th>' +
+      '<th>ΔhPa</th><th></th></tr>' +
+      '</thead><tbody>';
+
+    rows.forEach(function(r, i){
+      var d = num(r.delta);
+      var cls = '';
+      var hint = '';
+      if (d !== null && d <= TABLE_HARD) { cls = 'hint-hard'; hint = 'Nordföhn!'; }
+      else if (d !== null && d <= TABLE_SOFT) { cls = 'hint-soft'; }
+      if (i === rows.length - 1) cls = (cls ? cls + ' ' : '') + 'current';
+
+      html += '<tr class="' + cls + '">' +
+        '<td>' + (r.datumLeft || '—') + '</td><td>' + (r.zeitLeft || '—') + '</td><td>' + fmt(r.wertLeft) + '</td>' +
+        '<td>' + (r.datumRight || '—') + '</td><td>' + (r.zeitRight || '—') + '</td><td>' + fmt(r.wertRight) + '</td>' +
+        '<td>' + fmt(r.delta) + '</td><td class="hint-text">' + hint + '</td>' +
+        '</tr>';
+    });
+
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function buildChart(canvasId, primary, secondary, yAxisTitle){
+    var rows = primary.rows || [];
+    var secRows = (secondary && secondary.rows) || [];
+    var labels = rows.map(function(r){ return r.zeitLeft; });
+    var primaryData = rows.map(function(r){ return num(r.delta); });
+    var offset = secRows.length - rows.length;
+    var secondaryData = labels.map(function(_, i){
+      var idx = i + offset;
+      return (idx >= 0 && idx < secRows.length) ? num(secRows[idx].delta) : null;
+    });
+
+    var midLabel = labels.length ? labels[Math.max(0, labels.length - Math.round(labels.length * 0.4))] : null;
+
+    var annotations = {
+      lineSoft: { type: 'line', yMin: CHART_LINE_SOFT, yMax: CHART_LINE_SOFT, borderColor: getVar('--threshold-soft'), borderWidth: 2 },
+      lineHard: { type: 'line', yMin: CHART_LINE_HARD, yMax: CHART_LINE_HARD, borderColor: getVar('--threshold-hard'), borderWidth: 2.5 }
+    };
+    if (midLabel !== null) {
+      annotations.nordArrow = {
+        type: 'line',
+        xMin: midLabel, xMax: midLabel,
+        yMin: 0.5, yMax: CHART_LINE_HARD + 0.6,
+        borderColor: '#9DBFD3', borderWidth: 12,
+        arrowHeads: { end: { display: true, width: 16, length: 16, fill: true } }
+      };
+      annotations.nordLabel = {
+        type: 'label',
+        xValue: midLabel,
+        yValue: CHART_LINE_HARD - 1.3,
+        content: ['NORDFÖHN'],
+        color: '#7FA5BC',
+        font: { family: "'IBM Plex Sans', sans-serif", weight: '700', size: 14 },
+        backgroundColor: 'transparent'
+      };
+    }
+
+    var ctx = document.getElementById(canvasId).getContext('2d');
+    if (charts[canvasId]) charts[canvasId].destroy();
+    charts[canvasId] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          { data: secondaryData, borderColor: getVar('--line-secondary'), backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.1 },
+          { data: primaryData, borderColor: getVar('--line-primary'), backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.1 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { mode: 'index', intersect: false },
+          annotation: { annotations: annotations }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              autoSkip: false, maxRotation: 0,
+              font: { family: "'IBM Plex Mono', monospace", size: 10 }, color: '#5B6B72',
+              callback: function(value, index){
+                var label = this.getLabelForValue(value);
+                return (label && label.slice(-2) === '00') ? label : '';
+              }
+            }
+          },
+          y: {
+            min: CHART_Y_MIN, max: CHART_Y_MAX,
+            title: { display: true, text: yAxisTitle, font: { size: 11, family: "'IBM Plex Sans', sans-serif" }, color: '#5B6B72' },
+            grid: { color: '#EEF1F0' },
+            ticks: { stepSize: 2, font: { family: "'IBM Plex Mono', monospace", size: 10 }, color: '#5B6B72' }
+          }
+        }
+      }
+    });
+  }
+
+  function renderSection(primary, secondary, tableElId, chartElId, yAxisTitle){
+    if (!primary || !primary.rows || !primary.rows.length){
+      document.getElementById(tableElId).innerHTML = '<div class="error" style="padding:24px;">Noch keine Daten für diese Passroute.</div>';
+      return;
+    }
+    document.getElementById(tableElId).innerHTML = buildTable(primary);
+    buildChart(chartElId, primary, secondary, yAxisTitle);
+    var wrap = document.getElementById(tableElId);
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  function render(data){
+    var content = document.getElementById('content');
+    content.className = '';
+    var bi = data.bozenInnsbruck || { leftLabel: 'Bozen', rightLabel: 'Innsbruck' };
+    var im = data.imstMeran || { leftLabel: 'Meran', rightLabel: 'Imst' };
+
+    content.innerHTML =
+      '<div class="section">' +
+        '<h2>Föhndiagramm ' + bi.leftLabel + '<span class="arrow">–</span>' + bi.rightLabel + '</h2>' +
+        '<div class="section-grid">' +
+          '<div class="table-wrap" id="table-bi"></div>' +
+          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-bi"></canvas></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="section">' +
+        '<h2>Föhndiagramm ' + im.leftLabel + '<span class="arrow">–</span>' + im.rightLabel + '</h2>' +
+        '<div class="section-grid">' +
+          '<div class="table-wrap" id="table-im"></div>' +
+          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-im"></canvas></div>' +
+        '</div>' +
+      '</div>';
+
+    renderSection(data.bozenInnsbruck, data.imstMeran, 'table-bi', 'chart-bi', 'Druckdifferenz ' + bi.leftLabel + ' – ' + bi.rightLabel);
+    renderSection(data.imstMeran, data.bozenInnsbruck, 'table-im', 'chart-im', 'Druckdifferenz ' + im.leftLabel + ' – ' + im.rightLabel);
+
+    document.getElementById('pageFoot').textContent = data.generatedAt
+      ? ('Zuletzt aktualisiert: ' + data.generatedAt + ' · automatisch alle 10 Minuten')
+      : 'Noch kein Datenstand';
+  }
+
+  function showError(err){
+    var content = document.getElementById('content');
+    content.className = 'error';
+    content.textContent = 'Fehler beim Laden der Daten: ' + (err && err.message ? err.message : err);
+  }
+
+  function load(){
+    fetch('./data/history.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(render)
+      .catch(showError);
+  }
+
+  load();
+  setInterval(load, 3 * 60 * 1000);
+</script>
+</body>
+</html>
