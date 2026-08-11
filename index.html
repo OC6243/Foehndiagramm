@@ -38,7 +38,7 @@
   }
   .wrap{max-width:1320px;margin:0 auto;}
 
-  header{margin-bottom:28px;}
+  header{margin-bottom:22px;}
   .eyebrow{
     font-family:'IBM Plex Mono', monospace;
     font-size:12px;
@@ -58,11 +58,10 @@
 
   h1{
     font-size:clamp(28px,4vw,40px);
-    margin:0 0 6px;
+    margin:0 0 4px;
     font-weight:700;
     letter-spacing:-0.01em;
   }
-  .sub{color:var(--muted); font-size:15px; max-width:70ch; line-height:1.5;}
 
   .legend-note{
     font-size:12.5px; color:var(--muted); margin-top:10px;
@@ -76,7 +75,7 @@
     background:var(--panel);
     border:1px solid var(--hairline);
     border-radius:14px;
-    padding:22px;
+    padding:24px;
     margin-top:24px;
     opacity:0; transform:translateY(6px);
     animation:rise .5s ease forwards;
@@ -86,9 +85,16 @@
   @media (prefers-reduced-motion:reduce){ .section{opacity:1;transform:none;animation:none;} }
 
   .section h2{
-    font-size:19px; margin:0 0 14px; font-weight:600;
+    font-size:20px; margin:0 0 10px; font-weight:700;
   }
-  .section h2 .arrow{color:var(--muted); margin:0 4px; font-weight:400;}
+  .desc{
+    font-size:14px; line-height:1.65; color:#3A4750;
+    max-width:80ch; white-space:pre-line; margin:0 0 6px;
+  }
+  .desc-attr{
+    font-size:12px; color:var(--muted); font-style:italic; margin:0 0 18px;
+  }
+  .desc-attr a{ color:var(--cool); }
 
   .section-grid{
     display:grid;
@@ -147,9 +153,15 @@
   }
   .foot b{ color:var(--ink); font-weight:600; }
 
+  .sources{
+    margin-top:28px; padding-top:14px; border-top:1px solid var(--hairline);
+    font-size:12.5px; color:var(--muted); line-height:1.8;
+  }
+  .sources a{ color:var(--cool); }
+
   .page-foot{
     text-align:center; color:var(--muted); font-size:12.5px;
-    margin-top:28px; font-family:'IBM Plex Mono', monospace;
+    margin-top:14px; font-family:'IBM Plex Mono', monospace;
   }
 
   .loading, .error{ text-align:center; padding:60px 20px; color:var(--muted); }
@@ -161,28 +173,48 @@
     <header>
       <div class="eyebrow"><span class="dot"></span>Live-Messstation · Update alle 10 Minuten</div>
       <h1>Föhndiagramm</h1>
-      <p class="sub">Luftdruckgefälle über den Alpenhauptkamm — Bozen&nbsp;↔&nbsp;Innsbruck und Meran&nbsp;↔&nbsp;Imst. Ein negativer Δ-Wert (Süden niedriger als Norden) deutet auf Nordföhn hin. Die helle Linie im Diagramm zeigt jeweils die Druckdifferenz der anderen Passroute zum Vergleich.</p>
       <div class="legend-note">
-        <span><span class="swatch" style="background:var(--cell-soft)"></span>Δ ≤ -2,5 hPa</span>
-        <span><span class="swatch" style="background:var(--cell-hard)"></span>Δ ≤ -3,0 hPa (Nordföhn)</span>
+        <span><span class="swatch" style="background:var(--cell-soft)"></span>Δ ≤ -3 hPa</span>
+        <span><span class="swatch" style="background:var(--cell-hard)"></span>Δ ≤ -6 hPa (starker Nordföhn)</span>
         <span><span class="swatch" style="background:var(--cell-current)"></span>aktuellster Wert</span>
-        <span><span class="swatch line" style="background:var(--line-primary)"></span>eigene Route</span>
-        <span><span class="swatch line" style="background:var(--line-secondary)"></span>andere Route (Vergleich)</span>
       </div>
     </header>
 
     <div id="content" class="loading">Lade aktuelle Messwerte …</div>
 
+    <div class="sources">
+      Quelle Messdaten Wetterstationen Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a><br>
+      Quelle Messdaten Wetterstationen Tirol: GeoSphere Austria
+    </div>
     <div class="page-foot" id="pageFoot"></div>
   </div>
 
 <script>
-  // Schwellenwerte - aus dem Original-Screenshot rekonstruiert, bei Bedarf anpassen.
-  var TABLE_SOFT = -2.5;
-  var TABLE_HARD = -3.0;
+  // Schwellenwerte, jetzt abgeglichen mit dem offiziellen Beschreibungstext (3 / 6 hPa).
+  var TABLE_SOFT = -3;
+  var TABLE_HARD = -6;
   var CHART_LINE_SOFT = -3;
   var CHART_LINE_HARD = -6;
   var CHART_Y_MIN = -10, CHART_Y_MAX = 10;
+
+  var SHORT_CODES = { Bozen: 'BZ', Innsbruck: 'IBK', Meran: 'MER', Imst: 'IMST' };
+  function shortCode(name){ return SHORT_CODES[name] || name; }
+
+  var DESCRIPTIONS = {
+    bozenInnsbruck:
+      "Die Grafik zeigt die vorhergesagte Luftdruckdifferenz in Hektopascal [hPa] zwischen Bozen und Innsbruck. Die Druckdifferenz gibt an, welche Windverhältnisse in den Alpen zu erwarten sind.\n" +
+      "Bei negativen Werten, d.h. Bozen hat den tieferen Druck als Innsbruck, ist in Südtirol Nordföhn zu erwarten. Je größer die Druckdifferenz, desto stärker weht der Föhn und desto weiter greift er in die südlichen Täler durch.\n" +
+      "Erfahrungsgemäß muss die Druckdifferenz mindestens 3 hPa betragen, damit der Föhn die Täler nahe am Alpenhauptkamm (Obervinschgau, Wipptal) erfasst. Bei einer Differenz von über 6 hPa schafft es der Föhnwind in den meisten Fällen bis ins Unterland.\n" +
+      "Im umgekehrten Fall, also bei positiven Werten, ist mit Südföhn an der Alpennordseite zu rechnen. Gleichzeitig frischt des Öfteren starker Taleinwind/Südwind auf Südtiroler Seite auf.",
+    // Hinweis: Für dieses Stationspaar lag mir nur der Bozen-Innsbruck-Text vor.
+    // Hier 1:1 übernommen, nur die Stationsnamen getauscht - bitte prüfen/ersetzen,
+    // falls die Originalseite für Meran-Imst einen eigenen Text hat.
+    imstMeran:
+      "Die Grafik zeigt die vorhergesagte Luftdruckdifferenz in Hektopascal [hPa] zwischen Meran und Imst. Die Druckdifferenz gibt an, welche Windverhältnisse in den Alpen zu erwarten sind.\n" +
+      "Bei negativen Werten, d.h. Meran hat den tieferen Druck als Imst, ist in Südtirol Nordföhn zu erwarten. Je größer die Druckdifferenz, desto stärker weht der Föhn und desto weiter greift er in die südlichen Täler durch.\n" +
+      "Erfahrungsgemäß muss die Druckdifferenz mindestens 3 hPa betragen, damit der Föhn die Täler nahe am Alpenhauptkamm (Obervinschgau, Wipptal) erfasst. Bei einer Differenz von über 6 hPa schafft es der Föhnwind in den meisten Fällen bis ins Unterland.\n" +
+      "Im umgekehrten Fall, also bei positiven Werten, ist mit Südföhn an der Alpennordseite zu rechnen. Gleichzeitig frischt des Öfteren starker Taleinwind/Südwind auf Südtiroler Seite auf."
+  };
 
   var charts = {};
   if (window.Chart && window['chartjs-plugin-annotation']) {
@@ -230,7 +262,16 @@
     return html;
   }
 
-  function buildChart(canvasId, primary, secondary, yAxisTitle){
+  // Nutzt die tatsächliche Plot-Breite (chartArea) - zuverlässiger als
+  // Pixel-Berechnungen über die Kategorie-Skala.
+  function pctOfXAxisInPx(chart, pct){
+    var area = chart.chartArea;
+    if (!area) return 20;
+    var width = area.right - area.left;
+    return Math.max(6, width * pct);
+  }
+
+  function buildChart(canvasId, primary, secondary, yAxisTitle, primaryCode, secondaryCode){
     var rows = primary.rows || [];
     var secRows = (secondary && secondary.rows) || [];
     var labels = rows.map(function(r){ return r.zeitLeft; });
@@ -241,7 +282,11 @@
       return (idx >= 0 && idx < secRows.length) ? num(secRows[idx].delta) : null;
     });
 
-    var midLabel = labels.length ? labels[Math.max(0, labels.length - Math.round(labels.length * 0.4))] : null;
+    var midIndex = Math.floor(labels.length / 2);
+    var midLabel = labels.length ? labels[midIndex] : null;
+
+    var blueFill = 'rgba(62,110,142,0.2)';   // --cool bei 20% Deckkraft (80% transparent)
+    var redFill = 'rgba(193,68,60,0.2)';     // --alert bei 20% Deckkraft
 
     var annotations = {
       lineSoft: { type: 'line', yMin: CHART_LINE_SOFT, yMax: CHART_LINE_SOFT, borderColor: getVar('--threshold-soft'), borderWidth: 2 },
@@ -251,30 +296,76 @@
       annotations.nordArrow = {
         type: 'line',
         xMin: midLabel, xMax: midLabel,
-        yMin: 0.5, yMax: CHART_LINE_HARD + 0.6,
-        borderColor: '#9DBFD3', borderWidth: 12,
-        arrowHeads: { end: { display: true, width: 16, length: 16, fill: true } }
+        yMin: -3, yMax: -8,
+        borderColor: 'rgba(143,181,203,0.45)',
+        borderWidth: 20, // Platzhalter, wird von arrowWidthPlugin nach dem Layout exakt gesetzt
+        arrowHeads: {
+          end: { display: true, fill: true, width: 30, length: 26 }
+        }
       };
       annotations.nordLabel = {
         type: 'label',
         xValue: midLabel,
-        yValue: CHART_LINE_HARD - 1.3,
+        yValue: -8.9,
         content: ['NORDFÖHN'],
-        color: '#7FA5BC',
+        color: 'rgba(127,165,188,0.9)',
         font: { family: "'IBM Plex Sans', sans-serif", weight: '700', size: 14 },
         backgroundColor: 'transparent'
       };
     }
 
+    // Setzt die Pfeilbreite exakt auf 10% der aktuellen X-Achsenbreite in Pixeln -
+    // läuft nach jedem Layout (inkl. Resize), bevor das Annotation-Plugin zeichnet.
+    var arrowWidthPlugin = {
+      id: 'arrowWidthSync-' + canvasId,
+      afterLayout: function(chart){
+        var annCfg = chart.options.plugins && chart.options.plugins.annotation && chart.options.plugins.annotation.annotations;
+        if (!annCfg || !annCfg.nordArrow) return;
+        var w = pctOfXAxisInPx(chart, 0.03);
+        var headW = pctOfXAxisInPx(chart, 0.10);
+        var headL = pctOfXAxisInPx(chart, 0.08);
+        annCfg.nordArrow.borderWidth = w;
+        if (annCfg.nordArrow.arrowHeads && annCfg.nordArrow.arrowHeads.end) {
+          annCfg.nordArrow.arrowHeads.end.width = headW;
+          annCfg.nordArrow.arrowHeads.end.length = headL;
+        }
+      }
+    };
+
     var ctx = document.getElementById(canvasId).getContext('2d');
     if (charts[canvasId]) charts[canvasId].destroy();
     charts[canvasId] = new Chart(ctx, {
       type: 'line',
+      plugins: midLabel !== null ? [arrowWidthPlugin] : [],
       data: {
         labels: labels,
         datasets: [
-          { data: secondaryData, borderColor: getVar('--line-secondary'), backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.1 },
-          { data: primaryData, borderColor: getVar('--line-primary'), backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.1 }
+          {
+            label: secondaryCode,
+            data: secondaryData,
+            borderColor: 'rgba(185,194,192,0.6)',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0.1,
+            fill: false
+          },
+          {
+            label: primaryCode,
+            data: primaryData,
+            borderColor: getVar('--line-primary'),
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.1,
+            fill: 'origin',
+            segment: {
+              backgroundColor: function(segCtx){
+                var y0 = segCtx.p0.parsed.y, y1 = segCtx.p1.parsed.y;
+                return ((y0 + y1) / 2 < 0) ? blueFill : redFill;
+              }
+            }
+          }
         ]
       },
       options: {
@@ -282,7 +373,14 @@
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          tooltip: { mode: 'index', intersect: false },
+          tooltip: {
+            mode: 'index', intersect: false,
+            callbacks: {
+              label: function(ctx){
+                return ctx.dataset.label + ': ' + fmt(ctx.parsed.y) + ' hPa';
+              }
+            }
+          },
           annotation: { annotations: annotations }
         },
         scales: {
@@ -293,7 +391,13 @@
               font: { family: "'IBM Plex Mono', monospace", size: 10 }, color: '#5B6B72',
               callback: function(value, index){
                 var label = this.getLabelForValue(value);
-                return (label && label.slice(-2) === '00') ? label : '';
+                if (!label) return '';
+                var parts = label.split(':');
+                if (parts.length !== 2 || parts[1] !== '00') return '';
+                var hh = parseInt(parts[0], 10);
+                var totalPoints = this.chart.data.labels.length;
+                var stepHours = totalPoints > 80 ? 2 : 1; // > ~13h Daten -> nur jede 2. Stunde
+                return (hh % stepHours === 0) ? label : '';
               }
             }
           },
@@ -314,7 +418,9 @@
       return;
     }
     document.getElementById(tableElId).innerHTML = buildTable(primary);
-    buildChart(chartElId, primary, secondary, yAxisTitle);
+    var primaryCode = shortCode(primary.leftLabel) + '-' + shortCode(primary.rightLabel);
+    var secondaryCode = secondary ? (shortCode(secondary.leftLabel) + '-' + shortCode(secondary.rightLabel)) : '';
+    buildChart(chartElId, primary, secondary, yAxisTitle, primaryCode, secondaryCode);
     var wrap = document.getElementById(tableElId);
     wrap.scrollTop = wrap.scrollHeight;
   }
@@ -327,22 +433,26 @@
 
     content.innerHTML =
       '<div class="section">' +
-        '<h2>Föhndiagramm ' + bi.leftLabel + '<span class="arrow">–</span>' + bi.rightLabel + '</h2>' +
+        '<h2>Föhndiagramm ' + bi.leftLabel + '-' + bi.rightLabel + '</h2>' +
+        '<p class="desc">' + DESCRIPTIONS.bozenInnsbruck + '</p>' +
+        '<p class="desc-attr">Textgrundlage: Föhndiagramm der <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Wetterseite der Autonomen Provinz Bozen – Südtirol</a>.</p>' +
         '<div class="section-grid">' +
           '<div class="table-wrap" id="table-bi"></div>' +
           '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-bi"></canvas></div>' +
         '</div>' +
       '</div>' +
       '<div class="section">' +
-        '<h2>Föhndiagramm ' + im.leftLabel + '<span class="arrow">–</span>' + im.rightLabel + '</h2>' +
+        '<h2>Föhndiagramm ' + im.leftLabel + '-' + im.rightLabel + '</h2>' +
+        '<p class="desc">' + DESCRIPTIONS.imstMeran + '</p>' +
+        '<p class="desc-attr">Textgrundlage: Föhndiagramm der <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Wetterseite der Autonomen Provinz Bozen – Südtirol</a>.</p>' +
         '<div class="section-grid">' +
           '<div class="table-wrap" id="table-im"></div>' +
           '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-im"></canvas></div>' +
         '</div>' +
       '</div>';
 
-    renderSection(data.bozenInnsbruck, data.imstMeran, 'table-bi', 'chart-bi', 'Druckdifferenz ' + bi.leftLabel + ' – ' + bi.rightLabel);
-    renderSection(data.imstMeran, data.bozenInnsbruck, 'table-im', 'chart-im', 'Druckdifferenz ' + im.leftLabel + ' – ' + im.rightLabel);
+    renderSection(data.bozenInnsbruck, data.imstMeran, 'table-bi', 'chart-bi', 'Druckdifferenz ' + bi.leftLabel + ' - ' + bi.rightLabel);
+    renderSection(data.imstMeran, data.bozenInnsbruck, 'table-im', 'chart-im', 'Druckdifferenz ' + im.leftLabel + ' - ' + im.rightLabel);
 
     document.getElementById('pageFoot').textContent = data.generatedAt
       ? ('Zuletzt aktualisiert: ' + data.generatedAt + ' · automatisch alle 10 Minuten')
