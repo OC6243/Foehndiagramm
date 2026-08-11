@@ -158,6 +158,7 @@
 
   .chart-wrap{ position:relative; }
   canvas.foehn-chart{ width:100% !important; height:460px !important; }
+  .arrow-svg{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
 
   .foot{
     display:flex; justify-content:space-between; gap:12px;
@@ -305,9 +306,6 @@
       return (idx >= 0 && idx < secRows.length) ? num(secRows[idx].delta) : null;
     });
 
-    var midIndex = Math.floor(labels.length / 2);
-    var midLabel = labels.length ? labels[midIndex] : null;
-
     var blueFill = 'rgba(62,110,142,0.2)';   // --cool bei 20% Deckkraft (80% transparent)
     var redFill = 'rgba(193,68,60,0.2)';     // --alert bei 20% Deckkraft
 
@@ -315,66 +313,51 @@
       lineSoft: { type: 'line', yMin: CHART_LINE_SOFT, yMax: CHART_LINE_SOFT, borderColor: '#3399FF', borderWidth: 2 },
       lineHard: { type: 'line', yMin: CHART_LINE_HARD, yMax: CHART_LINE_HARD, borderColor: '#0000FF', borderWidth: 2.5 }
     };
-    if (midLabel !== null) {
-      // Schaft und Kopf sind ZWEI separate Annotationen, die im arrowWidthPlugin
-      // aus DEMSELBEN Basiswert berechnet werden - dadurch bleiben sie immer
-      // exakt gleich breit am Übergang (y=-6), unabhängig von der Chart-Größe.
-      annotations.nordShaft = {
-        type: 'line',
-        xMin: midLabel, xMax: midLabel,
-        yMin: -3, yMax: -6,
-        borderColor: 'rgba(143,181,203,0.45)',
-        borderWidth: 20 // Platzhalter, wird von arrowWidthPlugin exakt gesetzt
-      };
-      annotations.nordHead = {
-        type: 'line',
-        xMin: midLabel, xMax: midLabel,
-        yMin: -6, yMax: -8,
-        borderColor: 'rgba(143,181,203,0.45)',
-        borderWidth: 20, // wird identisch zum Schaft gesetzt -> nahtloser Übergang
-        arrowHeads: {
-          end: {
-            display: true, fill: true,
-            backgroundColor: 'rgba(143,181,203,0.45)',
-            borderColor: 'rgba(143,181,203,0.45)',
-            width: 30, length: 26
-          }
-        }
-      };
-      annotations.nordLabel = {
-        type: 'label',
-        xValue: midLabel,
-        yValue: -8.9,
-        content: ['NORDFÖHN'],
-        color: 'rgba(127,165,188,0.9)',
-        font: { family: "'IBM Plex Sans', sans-serif", weight: '700', size: 14 },
-        backgroundColor: 'transparent'
-      };
+
+    // Der Pfeil wird NICHT mehr über das Annotation-Plugin gezeichnet (arrowHeads
+    // hat sich als unzuverlässig erwiesen - falsche Breiten, inkonsistente
+    // Transparenz). Stattdessen: eigenes SVG-Overlay mit voller, direkter
+    // Kontrolle über die exakte Form - siehe updateArrowSvg() weiter unten.
+
+    // Zeichnet den Pfeil als eigenes SVG (Rechteck = Schaft, Polygon = Kopf),
+    // positioniert exakt über den Chart-Koordinaten. Läuft nach jedem Layout
+    // (inkl. Resize) - dadurch bleiben Schaft und Kopf garantiert im selben
+    // Verhältnis, weil beide aus derselben chartArea-Breite berechnet werden.
+    function updateArrowSvg(chart){
+      var svg = document.getElementById('svg-' + canvasId);
+      if (!svg) return;
+      var area = chart.chartArea;
+      var yScale = chart.scales.y;
+      if (!area || !yScale || labels.length === 0) { svg.innerHTML = ''; return; }
+
+      var centerX = (area.left + area.right) / 2;
+      var y3 = yScale.getPixelForValue(-3);
+      var y6 = yScale.getPixelForValue(-6);
+      var y8 = yScale.getPixelForValue(-8);
+      var totalW = area.right - area.left;
+      var shaftW = totalW * 0.09;
+      var headW = totalW * 0.13;
+      var color = 'rgba(143,181,203,0.5)';
+      var textColor = 'rgba(112,150,173,0.95)';
+
+      svg.setAttribute('width', chart.width);
+      svg.setAttribute('height', chart.height);
+      svg.innerHTML =
+        '<rect x="' + (centerX - shaftW / 2) + '" y="' + y3 + '" width="' + shaftW + '" height="' + (y6 - y3) + '" fill="' + color + '"></rect>' +
+        '<polygon points="' + (centerX - headW / 2) + ',' + y6 + ' ' + (centerX + headW / 2) + ',' + y6 + ' ' + centerX + ',' + y8 + '" fill="' + color + '"></polygon>' +
+        '<text x="' + centerX + '" y="' + (y8 + 22) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-weight="700" font-size="14" fill="' + textColor + '">NORDFÖHN</text>';
     }
 
-    // Setzt Schaft- und Kopfbreite aus DEMSELBEN Basiswert (w) - läuft nach jedem
-    // Layout (inkl. Resize), bevor das Annotation-Plugin zeichnet. Dadurch können
-    // Schaft und Kopf nie unabhängig voneinander unterschiedlich groß werden.
-    var arrowWidthPlugin = {
-      id: 'arrowWidthSync-' + canvasId,
-      afterLayout: function(chart){
-        var annCfg = chart.options.plugins && chart.options.plugins.annotation && chart.options.plugins.annotation.annotations;
-        if (!annCfg || !annCfg.nordShaft) return;
-        var w = pctOfXAxisInPx(chart, 0.09);
-        annCfg.nordShaft.borderWidth = w;
-        annCfg.nordHead.borderWidth = w; // exakt gleiche Breite wie Schaft -> nahtloser Übergang bei y=-6
-        if (annCfg.nordHead.arrowHeads && annCfg.nordHead.arrowHeads.end) {
-          annCfg.nordHead.arrowHeads.end.width = w * 1.45;  // Kopf sichtbar breiter als Schaft
-          annCfg.nordHead.arrowHeads.end.length = w * 0.9;
-        }
-      }
+    var arrowSvgPlugin = {
+      id: 'arrowSvgSync-' + canvasId,
+      afterLayout: function(chart){ updateArrowSvg(chart); }
     };
 
     var ctx = document.getElementById(canvasId).getContext('2d');
     if (charts[canvasId]) charts[canvasId].destroy();
     charts[canvasId] = new Chart(ctx, {
       type: 'line',
-      plugins: midLabel !== null ? [arrowWidthPlugin] : [],
+      plugins: labels.length ? [arrowSvgPlugin] : [],
       data: {
         labels: labels,
         datasets: [
@@ -473,14 +456,14 @@
       '<div class="section">' +
         '<h2>Föhndiagramm ' + bi.leftLabel + '-' + bi.rightLabel + '</h2>' +
         '<div class="section-grid">' +
-          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-bi"></canvas></div>' +
+          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-bi"></canvas><svg class="arrow-svg" id="svg-chart-bi"></svg></div>' +
           '<div class="table-wrap" id="table-bi"></div>' +
         '</div>' +
       '</div>' +
       '<div class="section">' +
         '<h2>Föhndiagramm ' + im.leftLabel + '-' + im.rightLabel + '</h2>' +
         '<div class="section-grid">' +
-          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-im"></canvas></div>' +
+          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-im"></canvas><svg class="arrow-svg" id="svg-chart-im"></svg></div>' +
           '<div class="table-wrap" id="table-im"></div>' +
         '</div>' +
       '</div>';
