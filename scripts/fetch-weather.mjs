@@ -1,16 +1,22 @@
-// Holt Luftdruckwerte für einen FESTEN Zielzeitpunkt (TARGET_LAG_MINUTES in der
-// Vergangenheit, gerundet auf den 10-Minuten-Messtakt) aus beiden Quellen und
-// aktualisiert die rollierende Historie (letzte MAX_ROWS Messungen) in
-// data/history.json.
+// Holt Luftdruckwerte für feste Zielzeitpunkte (TARGET_LAG_MINUTES in der
+// Vergangenheit, gerundet auf den 10-Minuten-Messtakt der Stationen) aus
+// beiden Quellen und aktualisiert die rollierende Historie (letzte MAX_ROWS
+// Messungen) in data/history.json.
 //
 // Warum ein fester Zielzeitpunkt statt "aktuell"?
 // Bürgernetz und GeoSphere könnten zu leicht unterschiedlichen Momenten
 // "aktuell" sein - das würde die Druckdifferenz verfälschen. Stattdessen
 // fragen wir beide Quellen gezielt nach demselben Zeitstempel (z.B. bei
-// Trigger um 20:00 -> Zielzeitpunkt 19:40). 20 Minuten Puffer sind mehr als
-// genug, damit beide Quellen diesen Messwert längst veröffentlicht haben.
-// Als zusätzliches Sicherheitsnetz wird jede Abfrage bis zu RETRY_COUNT-mal
-// wiederholt, falls der Zielwert doch noch nicht verfügbar ist.
+// Trigger um 20:00 -> Zielzeitpunkt 19:40).
+//
+// Warum eine Nachhol-Logik (Backfill)?
+// GitHub-Actions-Cron ist nicht exakt punktgenau - gerade um runde Uhrzeiten
+// (z.B. Mitternacht UTC) kann ein Lauf um mehrere Minuten verzögert starten.
+// Würde man dann einfach "jetzt minus 20 Minuten" berechnen, verschiebt sich
+// der Zielzeitpunkt und ein eigentlich verfügbarer Slot (z.B. 23:40) wird für
+// immer übersprungen. Stattdessen merkt sich das Skript den letzten
+// gespeicherten Zeitpunkt pro Stationspaar und holt ALLE fehlenden
+// 20-Minuten-Schritte bis zum aktuell spätestmöglichen Zielzeitpunkt nach.
 //
 // Quellen:
 //  - Bozen, Meran:      Bürgernetz Südtirol API, /timeseries-Endpunkt
@@ -25,14 +31,19 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_PATH = path.join(__dirname, "..", "data", "history.json");
 
-const MAX_ROWS = 144; // 144 x 10 Minuten = 24 Stunden Verlauf
+const MAX_ROWS = 72; // 72 x 20 Minuten = 24 Stunden Verlauf
 const TIMEZONE = "Europe/Berlin"; // Bozen/Meran/Innsbruck/Imst liegen alle hier (CET/CEST)
 
-const SLOT_MINUTES = 10;        // Messtakt der Stationen
-const TARGET_LAG_MINUTES = 20;  // wie weit der Zielzeitpunkt in der Vergangenheit liegt
-const WINDOW_MINUTES = 5;       // Suchfenster um den Zielzeitpunkt (± Minuten)
-const RETRY_COUNT = 5;          // Sicherheitsnetz, falls der Zielwert kurz nach
-const RETRY_DELAY_MS = 30 * 1000; // der 20-Min.-Marke noch nicht verfügbar ist (max. ~2,5 Min. Geduld pro Quelle)
+const SLOT_MINUTES = 10;             // Messtakt der Stationen (zum Runden)
+const SAMPLING_INTERVAL_MINUTES = 20; // wie oft ein neuer Wert erzeugt wird (= Cron-Takt)
+const TARGET_LAG_MINUTES = 20;       // wie weit der Zielzeitpunkt in der Vergangenheit liegt
+const WINDOW_MINUTES = 5;            // Suchfenster um den Zielzeitpunkt (± Minuten)
+const MAX_BACKFILL_SLOTS = 12;       // Sicherheitsnetz: max. so viele fehlende Slots pro Lauf nachholen (= 4h)
+
+const RETRY_COUNT_LATEST = 5;        // für den neuesten (spätesten) Slot: geduldiger,
+const RETRY_DELAY_MS = 30 * 1000;    // falls er kurz nach der 20-Min.-Marke noch fehlt
+const RETRY_COUNT_BACKFILL = 2;      // für ältere Slots: die sollten längst da sein,
+                                      // schneller aufgeben und beim nächsten Lauf erneut versuchen
 
 // GeoSphere Austria Stations-IDs (TAWES, tawes-v1-10min)
 const GEOSPHERE_STATIONS = {
@@ -72,9 +83,10 @@ function floorToSlot(date) {
   return new Date(Math.floor(date.getTime() / slotMs) * slotMs);
 }
 
-// Ziel-Zeitpunkt: aktueller Trigger, abgerundet auf den 10-Minuten-Takt,
-// minus TARGET_LAG_MINUTES. Beispiel: Trigger 20:03 -> Slot 20:00 -> Ziel 19:40.
-function computeTargetSlot(now) {
+// Spätestmöglicher Ziel-Zeitpunkt: aktueller Trigger, abgerundet auf den
+// 10-Minuten-Takt, minus TARGET_LAG_MINUTES. Beispiel: Trigger 20:03 ->
+// Slot 20:00 -> Ziel 19:40.
+function computeLatestTargetSlot(now) {
   return addMinutes(floorToSlot(now), -TARGET_LAG_MINUTES);
 }
 
@@ -86,15 +98,15 @@ async function fetchJson(url, options) {
   return res.json();
 }
 
-async function withRetry(fn, label) {
+async function withRetry(fn, label, maxAttempts) {
   let lastErr;
-  for (let attempt = 1; attempt <= RETRY_COUNT; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await fn();
     } catch (err) {
       lastErr = err;
-      console.warn(`${label}: Versuch ${attempt}/${RETRY_COUNT} fehlgeschlagen (${err.message})`);
-      if (attempt < RETRY_COUNT) await sleep(RETRY_DELAY_MS);
+      console.warn(`${label}: Versuch ${attempt}/${maxAttempts} fehlgeschlagen (${err.message})`);
+      if (attempt < maxAttempts) await sleep(RETRY_DELAY_MS);
     }
   }
   throw lastErr;
@@ -110,6 +122,36 @@ function closestTo(entries, targetSlot) {
     if (diff < bestDiff) { bestDiff = diff; best = e; }
   }
   return best;
+}
+
+/******************** Nachhol-Logik (Backfill) ********************/
+
+// Letzter bekannter Zeitpunkt eines Stationspaars, aus dem gespeicherten
+// instantUTC-Feld rekonstruiert. Fehlt es (z.B. bei sehr alten Einträgen vor
+// diesem Update), wird null zurückgegeben - dann startet die Nachhol-Logik
+// einfach beim aktuellen Zielzeitpunkt statt zu versuchen, unbegrenzt weit
+// zurückzugehen.
+function lastSlotOf(pair) {
+  const rows = pair.rows || [];
+  const last = rows[rows.length - 1];
+  if (!last || !last.instantUTC) return null;
+  const d = new Date(last.instantUTC);
+  return isNaN(d) ? null : floorToSlot(d);
+}
+
+// Liste aller SAMPLING_INTERVAL_MINUTES-Schritte zwischen (lastSlot + Intervall)
+// und latestTarget, inklusive - das sind die "fehlenden" Slots, die nachgeholt
+// werden müssen. Ohne bekannten lastSlot (erster Lauf) wird nur der aktuelle
+// Zielzeitpunkt zurückgegeben.
+function computeNeededSlots(lastSlot, latestTarget) {
+  if (!lastSlot) return [latestTarget];
+  const slots = [];
+  let s = addMinutes(lastSlot, SAMPLING_INTERVAL_MINUTES);
+  while (s.getTime() <= latestTarget.getTime() && slots.length < MAX_BACKFILL_SLOTS) {
+    slots.push(s);
+    s = addMinutes(s, SAMPLING_INTERVAL_MINUTES);
+  }
+  return slots;
 }
 
 /******************** Bozen / Meran (Bürgernetz Südtirol) ********************/
@@ -217,64 +259,94 @@ async function loadHistory() {
 }
 
 function pushRow(pair, row) {
-  // Duplikate vermeiden, falls der Trigger mal etwas früher/später als geplant läuft
-  // und denselben Zielzeitpunkt zweimal treffen würde.
+  // Duplikate vermeiden (Vergleich über den echten UTC-Zeitpunkt, nicht die
+  // formatierten Anzeige-Strings - robuster bei Tages-/Zeitzonenwechseln).
   const last = pair.rows[pair.rows.length - 1];
-  if (last && last.zeitLeft === row.zeitLeft && last.datumLeft === row.datumLeft) return;
+  if (last && last.instantUTC === row.instantUTC) return;
 
   pair.rows.push(row);
+  pair.rows.sort((a, b) => new Date(a.instantUTC) - new Date(b.instantUTC));
   if (pair.rows.length > MAX_ROWS) {
     pair.rows = pair.rows.slice(pair.rows.length - MAX_ROWS);
   }
 }
 
+function buildRow(left, right) {
+  const delta = round1(left.value - right.value);
+  return {
+    instantUTC: left.instant.toISOString(),
+    datumLeft: fmtDate(left.instant), zeitLeft: fmtTime(left.instant), wertLeft: left.value,
+    datumRight: fmtDate(right.instant), zeitRight: fmtTime(right.instant), wertRight: right.value,
+    delta
+  };
+}
+
 /******************** Hauptlogik ********************/
+
+async function fillPair(history, pairKey, stationCode, stationLabel, geosphereKey, geosphereCache, now) {
+  const pair = history[pairKey];
+  const latestTarget = computeLatestTargetSlot(now);
+  const lastSlot = lastSlotOf(pair);
+  const neededSlots = computeNeededSlots(lastSlot, latestTarget);
+
+  if (!neededSlots.length) {
+    console.log(`${pairKey}: bereits aktuell, nichts nachzuholen.`);
+    return;
+  }
+  if (lastSlot) {
+    console.log(`${pairKey}: ${neededSlots.length} fehlende(r) Slot(s) werden nachgeholt (letzter bekannter Wert: ${lastSlot.toISOString()}).`);
+  }
+
+  for (let i = 0; i < neededSlots.length; i++) {
+    const slot = neededSlots[i];
+    const isLatest = i === neededSlots.length - 1;
+    const retryCount = isLatest ? RETRY_COUNT_LATEST : RETRY_COUNT_BACKFILL;
+
+    try {
+      const stationValue = await withRetry(
+        () => fetchBuergernetzAtSlot(stationCode, stationLabel, slot),
+        `${stationLabel} @ ${slot.toISOString()}`,
+        retryCount
+      );
+
+      const slotKey = slot.toISOString();
+      if (!(slotKey in geosphereCache)) {
+        try {
+          geosphereCache[slotKey] = await withRetry(
+            () => fetchGeosphereAtSlot(slot),
+            `GeoSphere @ ${slotKey}`,
+            retryCount
+          );
+        } catch (err) {
+          console.warn(`GeoSphere @ ${slotKey} fehlgeschlagen: ${err.message}`);
+          geosphereCache[slotKey] = null;
+        }
+      }
+      const geo = geosphereCache[slotKey];
+      const otherValue = geo && geo[geosphereKey];
+
+      if (otherValue) {
+        const row = buildRow(stationValue, otherValue);
+        pushRow(pair, row);
+        console.log(`${pairKey} @ ${fmtTime(stationValue.instant)}: ${stationValue.value} / ${otherValue.value} hPa -> Δ ${row.delta}`);
+      } else {
+        console.warn(`${pairKey}: kein GeoSphere-Wert für ${slotKey}, übersprungen.`);
+      }
+    } catch (err) {
+      console.warn(`${pairKey}: ${stationLabel} @ ${slot.toISOString()} fehlgeschlagen: ${err.message}`);
+    }
+  }
+}
 
 async function main() {
   const history = await loadHistory();
   const now = new Date();
-  const targetSlot = computeTargetSlot(now);
-  console.log(`Ziel-Zeitpunkt: ${targetSlot.toISOString()} UTC (= ${fmtTime(targetSlot)} Ortszeit, ${TARGET_LAG_MINUTES} Min. Verzögerung zum Trigger)`);
+  const geosphereCache = {}; // slotISO -> {innsbruck, imst} | null - vermeidet doppelte GeoSphere-Abrufe
 
-  const results = await Promise.allSettled([
-    withRetry(() => fetchBuergernetzAtSlot("83200MS", "Bozen", targetSlot), "Bozen"),
-    withRetry(() => fetchBuergernetzAtSlot("23200MS", "Meran", targetSlot), "Meran"),
-    withRetry(() => fetchGeosphereAtSlot(targetSlot), "GeoSphere")
-  ]);
+  console.log(`Lauf gestartet um ${now.toISOString()} UTC.`);
 
-  const bozen = results[0].status === "fulfilled" ? results[0].value : null;
-  const meran = results[1].status === "fulfilled" ? results[1].value : null;
-  const geo = results[2].status === "fulfilled" ? results[2].value : null;
-  if (results[0].status === "rejected") console.warn("Bozen fehlgeschlagen:", results[0].reason.message);
-  if (results[1].status === "rejected") console.warn("Meran fehlgeschlagen:", results[1].reason.message);
-  if (results[2].status === "rejected") console.warn("GeoSphere fehlgeschlagen:", results[2].reason.message);
-
-  const innsbruck = geo?.innsbruck || null;
-  const imst = geo?.imst || null;
-
-  if (bozen && innsbruck) {
-    const delta = round1(bozen.value - innsbruck.value);
-    pushRow(history.bozenInnsbruck, {
-      datumLeft: fmtDate(bozen.instant), zeitLeft: fmtTime(bozen.instant), wertLeft: bozen.value,
-      datumRight: fmtDate(innsbruck.instant), zeitRight: fmtTime(innsbruck.instant), wertRight: innsbruck.value,
-      delta
-    });
-    console.log(`Bozen-Innsbruck @ ${fmtTime(bozen.instant)}: ${bozen.value} / ${innsbruck.value} hPa -> Δ ${delta}`);
-  } else {
-    console.warn("Bozen-Innsbruck: Datensatz übersprungen (fehlende Daten).");
-  }
-
-  if (meran && imst) {
-    const delta = round1(meran.value - imst.value);
-    pushRow(history.imstMeran, {
-      datumLeft: fmtDate(meran.instant), zeitLeft: fmtTime(meran.instant), wertLeft: meran.value,
-      datumRight: fmtDate(imst.instant), zeitRight: fmtTime(imst.instant), wertRight: imst.value,
-      delta
-    });
-    console.log(`Meran-Imst @ ${fmtTime(meran.instant)}: ${meran.value} / ${imst.value} hPa -> Δ ${delta}`);
-  } else {
-    console.warn("Meran-Imst: Datensatz übersprungen (fehlende Daten).");
-  }
+  await fillPair(history, "bozenInnsbruck", "83200MS", "Bozen", "innsbruck", geosphereCache, now);
+  await fillPair(history, "imstMeran", "23200MS", "Meran", "imst", geosphereCache, now);
 
   history.generatedAt = new Intl.DateTimeFormat("de-DE", {
     timeZone: TIMEZONE, day: "2-digit", month: "2-digit", year: "numeric",
