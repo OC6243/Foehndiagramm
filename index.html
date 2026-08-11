@@ -85,24 +85,37 @@
   @media (prefers-reduced-motion:reduce){ .section{opacity:1;transform:none;animation:none;} }
 
   .section h2{
-    font-size:20px; margin:0 0 10px; font-weight:700;
+    font-size:20px; margin:0 0 14px; font-weight:700;
   }
-  .desc{
-    font-size:14px; line-height:1.65; color:#3A4750;
-    max-width:80ch; white-space:pre-line; margin:0 0 6px;
+
+  .global-desc{
+    background:var(--panel); border:1px solid var(--hairline); border-radius:12px;
+    padding:16px 20px; margin-top:16px;
   }
-  .desc-attr{
-    font-size:12px; color:var(--muted); font-style:italic; margin:0 0 18px;
+  .global-desc p{
+    font-size:14px; line-height:1.65; color:#3A4750; max-width:80ch;
+    white-space:pre-line; margin:0;
   }
-  .desc-attr a{ color:var(--cool); }
+  .global-desc details{ margin-top:8px; }
+  .global-desc details p{ margin-top:8px; }
+  .global-desc summary{
+    cursor:pointer; color:var(--cool); font-size:13.5px; font-weight:600;
+    list-style:none; display:inline-block;
+  }
+  .global-desc summary::-webkit-details-marker{ display:none; }
+  .global-desc summary:hover{ text-decoration:underline; }
+  .global-desc summary::after{ content:'▾'; margin-left:5px; font-size:11px; }
+  .global-desc details[open] summary::after{ content:'▴'; }
+  .global-desc .desc-attr{
+    font-size:12px; color:var(--muted); font-style:italic; margin-top:12px;
+  }
+  .global-desc .desc-attr a{ color:var(--cool); }
 
   .section-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
+    display:flex;
+    flex-direction:column;
     gap:20px;
-    align-items:start;
   }
-  @media (max-width:900px){ .section-grid{grid-template-columns:1fr;} }
 
   .table-wrap{
     max-height:480px;
@@ -138,6 +151,7 @@
   tbody tr.hint-hard td{ background:var(--cell-hard); color:#fff; font-weight:600; }
   tbody tr.hint-hard:hover td{ background:var(--cell-hard); }
   tbody tr.hint-soft td{ background:var(--cell-soft); }
+  tbody tr.hint-pre td{ background:rgba(62,110,142,0.14); }
   tbody tr.current td{ background:var(--cell-current); }
   td.hint-text{ font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:11.5px; background:transparent !important; color:var(--threshold-hard) !important; }
   tbody tr.hint-hard td.hint-text{ color:#fff !important; }
@@ -174,9 +188,18 @@
       <div class="eyebrow"><span class="dot"></span>Live-Messstation · Update alle 10 Minuten</div>
       <h1>Föhndiagramm</h1>
       <div class="legend-note">
+        <span><span class="swatch" style="background:rgba(62,110,142,0.14)"></span>Δ ≤ -2,5 hPa</span>
         <span><span class="swatch" style="background:var(--cell-soft)"></span>Δ ≤ -3 hPa</span>
         <span><span class="swatch" style="background:var(--cell-hard)"></span>Δ ≤ -6 hPa (starker Nordföhn)</span>
         <span><span class="swatch" style="background:var(--cell-current)"></span>aktuellster Wert</span>
+      </div>
+      <div class="global-desc">
+        <p id="descFirst"></p>
+        <details>
+          <summary>Mehr erfahren…</summary>
+          <p id="descRest"></p>
+          <p class="desc-attr">Textgrundlage: Föhndiagramm der <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Wetterseite der Autonomen Provinz Bozen – Südtirol</a>.</p>
+        </details>
       </div>
     </header>
 
@@ -191,6 +214,7 @@
 
 <script>
   // Schwellenwerte, jetzt abgeglichen mit dem offiziellen Beschreibungstext (3 / 6 hPa).
+  var TABLE_PRE = -2.5;
   var TABLE_SOFT = -3;
   var TABLE_HARD = -6;
   var CHART_LINE_SOFT = -3;
@@ -200,21 +224,19 @@
   var SHORT_CODES = { Bozen: 'BZ', Innsbruck: 'IBK', Meran: 'MER', Imst: 'IMST' };
   function shortCode(name){ return SHORT_CODES[name] || name; }
 
-  var DESCRIPTIONS = {
-    bozenInnsbruck:
-      "Die Grafik zeigt die vorhergesagte Luftdruckdifferenz in Hektopascal [hPa] zwischen Bozen und Innsbruck. Die Druckdifferenz gibt an, welche Windverhältnisse in den Alpen zu erwarten sind.\n" +
-      "Bei negativen Werten, d.h. Bozen hat den tieferen Druck als Innsbruck, ist in Südtirol Nordföhn zu erwarten. Je größer die Druckdifferenz, desto stärker weht der Föhn und desto weiter greift er in die südlichen Täler durch.\n" +
-      "Erfahrungsgemäß muss die Druckdifferenz mindestens 3 hPa betragen, damit der Föhn die Täler nahe am Alpenhauptkamm (Obervinschgau, Wipptal) erfasst. Bei einer Differenz von über 6 hPa schafft es der Föhnwind in den meisten Fällen bis ins Unterland.\n" +
-      "Im umgekehrten Fall, also bei positiven Werten, ist mit Südföhn an der Alpennordseite zu rechnen. Gleichzeitig frischt des Öfteren starker Taleinwind/Südwind auf Südtiroler Seite auf.",
-    // Hinweis: Für dieses Stationspaar lag mir nur der Bozen-Innsbruck-Text vor.
-    // Hier 1:1 übernommen, nur die Stationsnamen getauscht - bitte prüfen/ersetzen,
-    // falls die Originalseite für Meran-Imst einen eigenen Text hat.
-    imstMeran:
-      "Die Grafik zeigt die vorhergesagte Luftdruckdifferenz in Hektopascal [hPa] zwischen Meran und Imst. Die Druckdifferenz gibt an, welche Windverhältnisse in den Alpen zu erwarten sind.\n" +
-      "Bei negativen Werten, d.h. Meran hat den tieferen Druck als Imst, ist in Südtirol Nordföhn zu erwarten. Je größer die Druckdifferenz, desto stärker weht der Föhn und desto weiter greift er in die südlichen Täler durch.\n" +
-      "Erfahrungsgemäß muss die Druckdifferenz mindestens 3 hPa betragen, damit der Föhn die Täler nahe am Alpenhauptkamm (Obervinschgau, Wipptal) erfasst. Bei einer Differenz von über 6 hPa schafft es der Föhnwind in den meisten Fällen bis ins Unterland.\n" +
-      "Im umgekehrten Fall, also bei positiven Werten, ist mit Südföhn an der Alpennordseite zu rechnen. Gleichzeitig frischt des Öfteren starker Taleinwind/Südwind auf Südtiroler Seite auf."
-  };
+  // Einmalige, globale Beschreibung (oben auf der Seite) - erster Satz sichtbar,
+  // Rest über "Mehr erfahren..." aufklappbar. Textgrundlage: offizielles
+  // Föhndiagramm der Provinz Bozen (für Bozen-Innsbruck; siehe Hinweis unten).
+  var DESC_FIRST =
+    "Die Grafik zeigt die vorhergesagte Luftdruckdifferenz in Hektopascal [hPa] zwischen den jeweiligen Stationspaaren.";
+  var DESC_REST =
+    "Die Druckdifferenz gibt an, welche Windverhältnisse in den Alpen zu erwarten sind.\n" +
+    "Bei negativen Werten, d.h. die Südtiroler Station hat den tieferen Druck als die Tiroler Station, ist in Südtirol Nordföhn zu erwarten. Je größer die Druckdifferenz, desto stärker weht der Föhn und desto weiter greift er in die südlichen Täler durch.\n" +
+    "Erfahrungsgemäß muss die Druckdifferenz mindestens 3 hPa betragen, damit der Föhn die Täler nahe am Alpenhauptkamm (Obervinschgau, Wipptal) erfasst. Bei einer Differenz von über 6 hPa schafft es der Föhnwind in den meisten Fällen bis ins Unterland.\n" +
+    "Im umgekehrten Fall, also bei positiven Werten, ist mit Südföhn an der Alpennordseite zu rechnen. Gleichzeitig frischt des Öfteren starker Taleinwind/Südwind auf Südtiroler Seite auf.";
+
+  document.getElementById('descFirst').textContent = DESC_FIRST;
+  document.getElementById('descRest').textContent = DESC_REST;
 
   var charts = {};
   if (window.Chart && window['chartjs-plugin-annotation']) {
@@ -249,6 +271,7 @@
       var hint = '';
       if (d !== null && d <= TABLE_HARD) { cls = 'hint-hard'; hint = 'Nordföhn!'; }
       else if (d !== null && d <= TABLE_SOFT) { cls = 'hint-soft'; }
+      else if (d !== null && d <= TABLE_PRE) { cls = 'hint-pre'; }
       if (i === rows.length - 1) cls = (cls ? cls + ' ' : '') + 'current';
 
       html += '<tr class="' + cls + '">' +
@@ -300,7 +323,12 @@
         borderColor: 'rgba(143,181,203,0.45)',
         borderWidth: 20, // Platzhalter, wird von arrowWidthPlugin nach dem Layout exakt gesetzt
         arrowHeads: {
-          end: { display: true, fill: true, width: 30, length: 26 }
+          end: {
+            display: true, fill: true,
+            backgroundColor: 'rgba(143,181,203,0.45)', // exakt dieselbe Farbe/Transparenz wie der Schaft
+            borderColor: 'rgba(143,181,203,0.45)',
+            width: 30, length: 26
+          }
         }
       };
       annotations.nordLabel = {
@@ -321,7 +349,7 @@
       afterLayout: function(chart){
         var annCfg = chart.options.plugins && chart.options.plugins.annotation && chart.options.plugins.annotation.annotations;
         if (!annCfg || !annCfg.nordArrow) return;
-        var w = pctOfXAxisInPx(chart, 0.03);
+        var w = pctOfXAxisInPx(chart, 0.09);
         var headW = pctOfXAxisInPx(chart, 0.10);
         var headL = pctOfXAxisInPx(chart, 0.08);
         annCfg.nordArrow.borderWidth = w;
@@ -434,20 +462,16 @@
     content.innerHTML =
       '<div class="section">' +
         '<h2>Föhndiagramm ' + bi.leftLabel + '-' + bi.rightLabel + '</h2>' +
-        '<p class="desc">' + DESCRIPTIONS.bozenInnsbruck + '</p>' +
-        '<p class="desc-attr">Textgrundlage: Föhndiagramm der <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Wetterseite der Autonomen Provinz Bozen – Südtirol</a>.</p>' +
         '<div class="section-grid">' +
-          '<div class="table-wrap" id="table-bi"></div>' +
           '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-bi"></canvas></div>' +
+          '<div class="table-wrap" id="table-bi"></div>' +
         '</div>' +
       '</div>' +
       '<div class="section">' +
         '<h2>Föhndiagramm ' + im.leftLabel + '-' + im.rightLabel + '</h2>' +
-        '<p class="desc">' + DESCRIPTIONS.imstMeran + '</p>' +
-        '<p class="desc-attr">Textgrundlage: Föhndiagramm der <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Wetterseite der Autonomen Provinz Bozen – Südtirol</a>.</p>' +
         '<div class="section-grid">' +
-          '<div class="table-wrap" id="table-im"></div>' +
           '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-im"></canvas></div>' +
+          '<div class="table-wrap" id="table-im"></div>' +
         '</div>' +
       '</div>';
 
