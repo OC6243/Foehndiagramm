@@ -1,0 +1,35 @@
+name: Wetterdaten abrufen
+
+on:
+  schedule:
+    # Alle 10 Minuten (UTC) - entspricht dem Messtakt der Stationen selbst.
+    # Das Skript wartet zusätzlich intern bis zu 4 Minuten, falls die beiden
+    # Quellen (Bürgernetz, GeoSphere) kurzzeitig noch nicht synchron sind.
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {} # erlaubt manuelles Auslösen über den "Actions"-Tab
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repo auschecken
+        uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Wetterdaten abrufen
+        run: node scripts/fetch-weather.mjs
+
+      - name: Änderungen committen
+        run: |
+          git config user.name "foehn-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/history.json
+          git diff --quiet --cached || git commit -m "Wetterdaten aktualisiert"
+          git push
