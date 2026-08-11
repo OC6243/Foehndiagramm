@@ -1,0 +1,13 @@
+{
+  "name": "foehndiagramm-web",
+  "version": "1.0.0",
+  "description": "Föhndiagramm Tirol/Südtirol - Luftdruckdifferenz Bozen-Innsbruck und Meran-Imst",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "fetch": "node scripts/fetch-weather.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
