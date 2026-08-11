@@ -12,11 +12,13 @@
 // Warum eine Nachhol-Logik (Backfill)?
 // GitHub-Actions-Cron ist nicht exakt punktgenau - gerade um runde Uhrzeiten
 // (z.B. Mitternacht UTC) kann ein Lauf um mehrere Minuten verzögert starten.
-// Würde man dann einfach "jetzt minus 20 Minuten" berechnen, verschiebt sich
-// der Zielzeitpunkt und ein eigentlich verfügbarer Slot (z.B. 23:40) wird für
-// immer übersprungen. Stattdessen merkt sich das Skript den letzten
-// gespeicherten Zeitpunkt pro Stationspaar und holt ALLE fehlenden
-// 20-Minuten-Schritte bis zum aktuell spätestmöglichen Zielzeitpunkt nach.
+// Der Zielzeitpunkt wird deshalb IMMER auf das feste :00/:20/:40-Raster
+// gerundet (nicht nur auf 10 Minuten) - so bleibt er auch bei Verzögerungen
+// bis zu 19 Minuten exakt korrekt, statt auf :10/:30/:50 "abzudriften".
+// Zusätzlich merkt sich das Skript pro Stationspaar den letzten gespeicherten
+// Zeitpunkt und holt ALLE fehlenden Raster-Schritte bis zum aktuell
+// spätestmöglichen Zielzeitpunkt nach (mit Selbstkorrektur, falls ein alter
+// Wert doch mal nicht exakt auf dem Raster lag).
 //
 // Quellen:
 //  - Bozen, Meran:      Bürgernetz Südtirol API, /timeseries-Endpunkt
@@ -78,16 +80,31 @@ function fmtTime(date) {
 }
 
 // Rundet einen Zeitpunkt auf den Beginn seines 10-Minuten-Fensters ab (UTC).
+// Wird für das Suchfenster in den APIs gebraucht (Stationstakt), NICHT für
+// das :00/:20/:40-Anzeigeraster - dafür siehe floorToGrid/ceilToGrid unten.
 function floorToSlot(date) {
   const slotMs = SLOT_MINUTES * 60 * 1000;
   return new Date(Math.floor(date.getTime() / slotMs) * slotMs);
 }
 
-// Spätestmöglicher Ziel-Zeitpunkt: aktueller Trigger, abgerundet auf den
-// 10-Minuten-Takt, minus TARGET_LAG_MINUTES. Beispiel: Trigger 20:03 ->
-// Slot 20:00 -> Ziel 19:40.
+// Rundet auf das :00/:20/:40-Raster (oder allgemein: Vielfache von
+// intervalMinutes seit Mitternacht UTC) ab bzw. auf.
+function floorToGrid(date, intervalMinutes) {
+  const ms = intervalMinutes * 60 * 1000;
+  return new Date(Math.floor(date.getTime() / ms) * ms);
+}
+function ceilToGrid(date, intervalMinutes) {
+  const ms = intervalMinutes * 60 * 1000;
+  return new Date(Math.ceil(date.getTime() / ms) * ms);
+}
+
+// Spätestmöglicher Ziel-Zeitpunkt: aktueller Trigger, abgerundet auf das
+// :00/:20/:40-Raster (NICHT nur 10 Minuten - sonst könnte der Zielzeitpunkt
+// bei Verzögerungen auf :10/:30/:50 "abdriften" und dauerhaft falsch bleiben).
+// Beispiel: Trigger 20:03 -> Raster 20:00 -> Ziel 19:40. Trigger 20:47 (späte
+// Ausführung) -> Raster 20:40 -> Ziel 20:20 (weiterhin korrekt).
 function computeLatestTargetSlot(now) {
-  return addMinutes(floorToSlot(now), -TARGET_LAG_MINUTES);
+  return addMinutes(floorToGrid(now, SAMPLING_INTERVAL_MINUTES), -TARGET_LAG_MINUTES);
 }
 
 async function fetchJson(url, options) {
@@ -139,14 +156,17 @@ function lastSlotOf(pair) {
   return isNaN(d) ? null : floorToSlot(d);
 }
 
-// Liste aller SAMPLING_INTERVAL_MINUTES-Schritte zwischen (lastSlot + Intervall)
-// und latestTarget, inklusive - das sind die "fehlenden" Slots, die nachgeholt
+// Liste aller :00/:20/:40-Raster-Zeitpunkte zwischen lastSlot (exklusiv) und
+// latestTarget (inklusiv) - das sind die "fehlenden" Slots, die nachgeholt
 // werden müssen. Ohne bekannten lastSlot (erster Lauf) wird nur der aktuelle
-// Zielzeitpunkt zurückgegeben.
+// Zielzeitpunkt zurückgegeben. ceilToGrid richtet den Start-Slot selbst dann
+// korrekt auf das Raster aus, wenn lastSlot (z.B. durch alte Daten vor diesem
+// Update) nicht exakt darauf liegt - ab da bleibt alles automatisch im Raster.
 function computeNeededSlots(lastSlot, latestTarget) {
   if (!lastSlot) return [latestTarget];
+  if (lastSlot.getTime() >= latestTarget.getTime()) return [];
   const slots = [];
-  let s = addMinutes(lastSlot, SAMPLING_INTERVAL_MINUTES);
+  let s = ceilToGrid(addMinutes(lastSlot, 1), SAMPLING_INTERVAL_MINUTES);
   while (s.getTime() <= latestTarget.getTime() && slots.length < MAX_BACKFILL_SLOTS) {
     slots.push(s);
     s = addMinutes(s, SAMPLING_INTERVAL_MINUTES);
