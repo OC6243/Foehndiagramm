@@ -312,20 +312,30 @@
     var redFill = 'rgba(193,68,60,0.2)';     // --alert bei 20% Deckkraft
 
     var annotations = {
-      lineSoft: { type: 'line', yMin: CHART_LINE_SOFT, yMax: CHART_LINE_SOFT, borderColor: getVar('--threshold-soft'), borderWidth: 2 },
-      lineHard: { type: 'line', yMin: CHART_LINE_HARD, yMax: CHART_LINE_HARD, borderColor: getVar('--threshold-hard'), borderWidth: 2.5 }
+      lineSoft: { type: 'line', yMin: CHART_LINE_SOFT, yMax: CHART_LINE_SOFT, borderColor: '#3399FF', borderWidth: 2 },
+      lineHard: { type: 'line', yMin: CHART_LINE_HARD, yMax: CHART_LINE_HARD, borderColor: '#0000FF', borderWidth: 2.5 }
     };
     if (midLabel !== null) {
-      annotations.nordArrow = {
+      // Schaft und Kopf sind ZWEI separate Annotationen, die im arrowWidthPlugin
+      // aus DEMSELBEN Basiswert berechnet werden - dadurch bleiben sie immer
+      // exakt gleich breit am Übergang (y=-6), unabhängig von der Chart-Größe.
+      annotations.nordShaft = {
         type: 'line',
         xMin: midLabel, xMax: midLabel,
-        yMin: -3, yMax: -8,
+        yMin: -3, yMax: -6,
         borderColor: 'rgba(143,181,203,0.45)',
-        borderWidth: 20, // Platzhalter, wird von arrowWidthPlugin nach dem Layout exakt gesetzt
+        borderWidth: 20 // Platzhalter, wird von arrowWidthPlugin exakt gesetzt
+      };
+      annotations.nordHead = {
+        type: 'line',
+        xMin: midLabel, xMax: midLabel,
+        yMin: -6, yMax: -8,
+        borderColor: 'rgba(143,181,203,0.45)',
+        borderWidth: 20, // wird identisch zum Schaft gesetzt -> nahtloser Übergang
         arrowHeads: {
           end: {
             display: true, fill: true,
-            backgroundColor: 'rgba(143,181,203,0.45)', // exakt dieselbe Farbe/Transparenz wie der Schaft
+            backgroundColor: 'rgba(143,181,203,0.45)',
             borderColor: 'rgba(143,181,203,0.45)',
             width: 30, length: 26
           }
@@ -342,20 +352,20 @@
       };
     }
 
-    // Setzt die Pfeilbreite exakt auf 10% der aktuellen X-Achsenbreite in Pixeln -
-    // läuft nach jedem Layout (inkl. Resize), bevor das Annotation-Plugin zeichnet.
+    // Setzt Schaft- und Kopfbreite aus DEMSELBEN Basiswert (w) - läuft nach jedem
+    // Layout (inkl. Resize), bevor das Annotation-Plugin zeichnet. Dadurch können
+    // Schaft und Kopf nie unabhängig voneinander unterschiedlich groß werden.
     var arrowWidthPlugin = {
       id: 'arrowWidthSync-' + canvasId,
       afterLayout: function(chart){
         var annCfg = chart.options.plugins && chart.options.plugins.annotation && chart.options.plugins.annotation.annotations;
-        if (!annCfg || !annCfg.nordArrow) return;
+        if (!annCfg || !annCfg.nordShaft) return;
         var w = pctOfXAxisInPx(chart, 0.09);
-        var headW = pctOfXAxisInPx(chart, 0.10);
-        var headL = pctOfXAxisInPx(chart, 0.08);
-        annCfg.nordArrow.borderWidth = w;
-        if (annCfg.nordArrow.arrowHeads && annCfg.nordArrow.arrowHeads.end) {
-          annCfg.nordArrow.arrowHeads.end.width = headW;
-          annCfg.nordArrow.arrowHeads.end.length = headL;
+        annCfg.nordShaft.borderWidth = w;
+        annCfg.nordHead.borderWidth = w; // exakt gleiche Breite wie Schaft -> nahtloser Übergang bei y=-6
+        if (annCfg.nordHead.arrowHeads && annCfg.nordHead.arrowHeads.end) {
+          annCfg.nordHead.arrowHeads.end.width = w * 1.45;  // Kopf sichtbar breiter als Schaft
+          annCfg.nordHead.arrowHeads.end.length = w * 0.9;
         }
       }
     };
