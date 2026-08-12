@@ -20,8 +20,12 @@ permissions:
 # die Ursache für die früher beobachteten großen Verzögerungen). Die
 # Nachhol-Logik im Skript holt einen dadurch übersprungenen Slot beim
 # nächsten erfolgreichen Lauf automatisch nach.
+# Eigene Concurrency-Gruppe pro Auslöse-Art (geplant vs. manuell) - so kann
+# ein manuell gestarteter Lauf (workflow_dispatch) niemals mit einem
+# planmäßigen Cron-Lauf um dieselbe "Warteschlange" konkurrieren oder ihn
+# versehentlich verdrängen.
 concurrency:
-  group: fetch-weather
+  group: fetch-weather-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
