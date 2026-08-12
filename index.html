@@ -52,7 +52,16 @@
     background:#22C55E;
     animation:pulse 2.4s ease-in-out infinite;
   }
-  @media (prefers-reduced-motion:reduce){ .eyebrow .dot{animation:none;} }
+  .eyebrow.stale .dot{
+    background:#DC2626;
+    animation:fastBlink 0.6s steps(1,end) infinite;
+  }
+  .eyebrow-stale-text{
+    color:#DC2626; font-weight:700;
+    animation:fastBlink 0.6s steps(1,end) infinite;
+  }
+  @keyframes fastBlink{ 0%,49%{opacity:1;} 50%,100%{opacity:.25;} }
+  @media (prefers-reduced-motion:reduce){ .eyebrow .dot{animation:none;} .eyebrow.stale .dot{animation:none;} .eyebrow-stale-text{animation:none;} }
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
 
   h1{
@@ -195,13 +204,44 @@
   tbody tr.current .hint-text{ color:var(--ink) !important; }
 
   .chart-wrap{ position:relative; touch-action: pan-y; }
-  canvas.foehn-chart{ width:100% !important; height:460px !important; }
-  @media (max-width:600px){
-    /* Bei Handybreite: gleicher Wertebereich (-10 bis 10) auf halber Höhe -
-       dadurch wird der Pixelabstand pro Y-Einheit automatisch halbiert. */
-    canvas.foehn-chart{ height:230px !important; }
-  }
+  canvas.foehn-chart{ width:100% !important; height:460px; display:block; }
   .arrow-svg{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+  .current-value-badge{
+    position:absolute; top:10px; right:10px; z-index:3;
+    background:rgba(255,255,255,0.94);
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    padding:7px 12px;
+    text-align:right;
+    box-shadow:0 3px 10px rgba(28,43,58,0.08);
+    pointer-events:none;
+  }
+  .cvb-label{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:9.5px; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--muted); display:block;
+  }
+  .cvb-time{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px; font-weight:600; color:var(--ink); display:block; margin-top:1px;
+  }
+  .cvb-delta-row{
+    display:flex; align-items:baseline; justify-content:flex-end; gap:5px; margin-top:2px;
+  }
+  .cvb-delta{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:19px; font-weight:700; color:var(--ink);
+  }
+  .cvb-delta.warn{ color:var(--cool); }
+  .cvb-delta.alert{ color:var(--alert); }
+  .cvb-unit{ font-family:'IBM Plex Sans', sans-serif; font-size:10.5px; color:var(--muted); }
+  .cvb-bang{
+    color:var(--alert); font-weight:800; font-size:14px;
+    animation:bangBlink 1s steps(1,end) infinite;
+  }
+  @keyframes bangBlink{ 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
+  @media (prefers-reduced-motion:reduce){ .cvb-bang{ animation:none; } }
+
   .zoom-hint{
     font-size:11px; color:var(--muted); text-align:right; margin-top:4px;
     font-family:'IBM Plex Mono', monospace;
@@ -230,7 +270,7 @@
 <body>
   <div class="wrap">
     <header>
-      <div class="eyebrow"><span class="dot"></span>On Air</div>
+      <div class="eyebrow" id="eyebrow"><span class="dot"></span><span id="onAirText">On Air</span></div>
       <div class="title-row">
         <h1>Föhndiagramm GCV</h1>
         <img class="logo" src="./logo.png" alt="Logo Gleitschirm Club Vinschgau">
@@ -285,6 +325,19 @@
 
   // Wie viele Stunden standardmäßig sichtbar sein sollen, abhängig von der
   // Chart-Breite: schmal (Handy) -> 6h, breit (Desktop) -> volle 16h.
+  // Pixelabstand für 2 Y-Achsen-Einheiten: am Laptop wie bisher (460px Höhe /
+  // 10 Zwei-Einheiten-Schritte = 46px), am Handy 20% größer, dazwischen
+  // linear interpoliert.
+  function computeChartHeight(containerWidth){
+    var minW = 380, maxW = 900; // Handy .. Laptop
+    var desktopUnitPx = 460 / 10;           // 46px pro 2pt bei Laptop-Breite
+    var mobileUnitPx = desktopUnitPx * 1.2; // 55,2px pro 2pt bei Handy-Breite
+    var w = Math.max(minW, Math.min(maxW, containerWidth));
+    var t = (w - minW) / (maxW - minW); // 0 = Handy, 1 = Laptop
+    var unitPx = mobileUnitPx + t * (desktopUnitPx - mobileUnitPx);
+    return Math.round(unitPx * 10);
+  }
+
   function computeDefaultVisibleHours(containerWidth){
     var minW = 380, maxW = 900, minH = 6, maxH = 16;
     var w = Math.max(minW, Math.min(maxW, containerWidth));
@@ -426,6 +479,8 @@
       var y3 = yScale.getPixelForValue(-3);
       var y6 = yScale.getPixelForValue(-6);
       var y8 = yScale.getPixelForValue(-8);
+      var y10 = yScale.getPixelForValue(-10);
+      var textY = (y8 + y10) / 2; // exakt mittig zwischen y=-8 und y=-10, unabhängig von der Y-Skala
       var totalW = area.right - area.left;
       var yUnitPx = Math.abs(y0 - y2); // Pixelabstand für 2 Einheiten auf der Y-Achse
       var shaftW = Math.max(totalW * 0.09, yUnitPx);
@@ -438,7 +493,7 @@
       svg.innerHTML =
         '<rect x="' + (centerX - shaftW / 2) + '" y="' + y3 + '" width="' + shaftW + '" height="' + (y6 - y3) + '" fill="' + color + '"></rect>' +
         '<polygon points="' + (centerX - headW / 2) + ',' + y6 + ' ' + (centerX + headW / 2) + ',' + y6 + ' ' + centerX + ',' + y8 + '" fill="' + color + '"></polygon>' +
-        '<text x="' + centerX + '" y="' + (y8 + 26) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-weight="500" font-size="16.8" fill="' + textColor + '">NORDFÖHN</text>';
+        '<text x="' + centerX + '" y="' + textY + '" text-anchor="middle" dominant-baseline="middle" font-family="\'IBM Plex Sans\', sans-serif" font-weight="500" font-size="16.8" fill="' + textColor + '">NORDFÖHN</text>';
     }
 
     var arrowSvgPlugin = {
@@ -490,6 +545,10 @@
     if (!initialRange && labels.length) {
       initialRange = computeDefaultRange(labels, computeDefaultVisibleHours(containerWidth));
     }
+
+    var computedHeight = computeChartHeight(containerWidth);
+    document.getElementById(canvasId).style.height = computedHeight + 'px';
+    document.getElementById('svg-' + canvasId).style.height = computedHeight + 'px';
 
     function handleZoomOrPan(ctx){
       var chart = ctx.chart;
@@ -607,16 +666,66 @@
     });
   }
 
+  var latestInstants = {}; // pairKey -> Date - für den On-Air-Verzögerungscheck
+
+  function buildCurrentValueBadge(primary){
+    var rows = primary.rows || [];
+    if (!rows.length) return '';
+    var last = rows[rows.length - 1];
+    var d = num(last.delta);
+    var deltaClass = '';
+    var bangs = '';
+    if (d !== null && d <= TABLE_HARD) {
+      deltaClass = 'alert';
+      bangs = '<span class="cvb-bang" style="animation-delay:0s">!</span>' +
+              '<span class="cvb-bang" style="animation-delay:.15s">!</span>' +
+              '<span class="cvb-bang" style="animation-delay:.3s">!</span>';
+    } else if (d !== null && d <= TABLE_SOFT) {
+      deltaClass = 'warn';
+      bangs = '<span class="cvb-bang">!</span>';
+    }
+    return '<span class="cvb-label">Aktuellster Wert</span>' +
+      '<span class="cvb-time">' + (last.zeitLeft || '—') + '</span>' +
+      '<div class="cvb-delta-row"><span class="cvb-delta ' + deltaClass + '">' + fmt(last.delta) + '</span><span class="cvb-unit">hPa</span>' + bangs + '</div>';
+  }
+
   function renderSection(primary, secondary, tableElId, chartElId, chartInstId, yAxisTitle){
     if (!primary || !primary.rows || !primary.rows.length){
       document.getElementById(tableElId).innerHTML = '<div class="error" style="padding:24px;">Noch keine Daten für diese Passroute.</div>';
       return;
     }
     document.getElementById(tableElId).innerHTML = buildTable(primary);
+    var badgeEl = document.getElementById('badge-' + chartElId);
+    if (badgeEl) badgeEl.innerHTML = buildCurrentValueBadge(primary);
+    var lastRow = primary.rows[primary.rows.length - 1];
+    if (lastRow && lastRow.instantUTC) latestInstants[chartInstId] = new Date(lastRow.instantUTC);
     var primaryCode = shortCode(primary.leftLabel) + '-' + shortCode(primary.rightLabel);
     var secondaryCode = secondary ? (shortCode(secondary.leftLabel) + '-' + shortCode(secondary.rightLabel)) : '';
     buildChart(chartElId, primary, secondary, yAxisTitle, primaryCode, secondaryCode);
   }
+
+  // Prüft regelmäßig (unabhängig vom Datenrefresh, da die Zeit ja
+  // weiterläuft), ob der aktuellste bekannte Wert mehr als 1h alt ist.
+  function checkDataFreshness(){
+    var eyebrow = document.getElementById('eyebrow');
+    var textEl = document.getElementById('onAirText');
+    if (!eyebrow || !textEl) return;
+    var now = Date.now();
+    var maxAgeMs = 60 * 60 * 1000;
+    var isStale = Object.keys(latestInstants).some(function(k){
+      var t = latestInstants[k];
+      return t && (now - t.getTime()) > maxAgeMs;
+    });
+    if (isStale) {
+      eyebrow.classList.add('stale');
+      textEl.innerHTML = 'On Air <span class="eyebrow-stale-text">· Zeitverzögerung &gt; 1h!</span>';
+    } else {
+      eyebrow.classList.remove('stale');
+      textEl.textContent = 'On Air';
+    }
+  }
+  setInterval(checkDataFreshness, 30 * 1000);
+
 
   function resetZoom(chartInstId){
     if (!charts[chartInstId]) return;
@@ -649,7 +758,7 @@
       '<div class="section">' +
         '<h2>' + bi.leftLabel + ' - ' + bi.rightLabel + '</h2>' +
         '<div class="section-grid">' +
-          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-bi"></canvas><svg class="arrow-svg" id="svg-chart-bi"></svg></div>' +
+          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-bi"></canvas><svg class="arrow-svg" id="svg-chart-bi"></svg><div class="current-value-badge" id="badge-chart-bi"></div></div>' +
           '<div class="zoom-hint"><button class="zoom-reset" onclick="resetZoom(\'chart-bi\')">Zoom zurücksetzen</button> · Mausrad/Pinch zum Zoomen, Ziehen zum Verschieben</div>' +
           '<details class="table-collapse">' +
             '<summary class="table-summary">' +
@@ -664,7 +773,7 @@
       '<div class="section">' +
         '<h2>' + im.leftLabel + ' - ' + im.rightLabel + '</h2>' +
         '<div class="section-grid">' +
-          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-im"></canvas><svg class="arrow-svg" id="svg-chart-im"></svg></div>' +
+          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-im"></canvas><svg class="arrow-svg" id="svg-chart-im"></svg><div class="current-value-badge" id="badge-chart-im"></div></div>' +
           '<div class="zoom-hint"><button class="zoom-reset" onclick="resetZoom(\'chart-im\')">Zoom zurücksetzen</button> · Mausrad/Pinch zum Zoomen, Ziehen zum Verschieben</div>' +
           '<details class="table-collapse">' +
             '<summary class="table-summary">' +
@@ -683,6 +792,8 @@
     document.getElementById('pageFoot').textContent = data.generatedAt
       ? ('Zuletzt aktualisiert: ' + data.generatedAt)
       : 'Noch kein Datenstand';
+
+    checkDataFreshness();
   }
 
   function showError(err){
