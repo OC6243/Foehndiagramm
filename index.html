@@ -327,12 +327,12 @@
   // Wie viele Stunden standardmäßig sichtbar sein sollen, abhängig von der
   // Chart-Breite: schmal (Handy) -> 6h, breit (Desktop) -> volle 16h.
   // Pixelabstand für 2 Y-Achsen-Einheiten: am Laptop wie bisher (460px Höhe /
-  // 10 Zwei-Einheiten-Schritte = 46px), am Handy 20% größer, dazwischen
-  // linear interpoliert.
+  // 10 Zwei-Einheiten-Schritte = 46px), am Handy auf 70% davon gestaucht,
+  // dazwischen linear interpoliert.
   function computeChartHeight(containerWidth){
     var minW = 380, maxW = 900; // Handy .. Laptop
     var desktopUnitPx = 460 / 10;           // 46px pro 2pt bei Laptop-Breite
-    var mobileUnitPx = desktopUnitPx * 1.2; // 55,2px pro 2pt bei Handy-Breite
+    var mobileUnitPx = desktopUnitPx * 0.7; // 32,2px pro 2pt bei Handy-Breite (70%)
     var w = Math.max(minW, Math.min(maxW, containerWidth));
     var t = (w - minW) / (maxW - minW); // 0 = Handy, 1 = Laptop
     var unitPx = mobileUnitPx + t * (desktopUnitPx - mobileUnitPx);
