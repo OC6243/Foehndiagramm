@@ -196,6 +196,11 @@
 
   .chart-wrap{ position:relative; touch-action: pan-y; }
   canvas.foehn-chart{ width:100% !important; height:460px !important; }
+  @media (max-width:600px){
+    /* Bei Handybreite: gleicher Wertebereich (-10 bis 10) auf halber Höhe -
+       dadurch wird der Pixelabstand pro Y-Einheit automatisch halbiert. */
+    canvas.foehn-chart{ height:230px !important; }
+  }
   .arrow-svg{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
   .zoom-hint{
     font-size:11px; color:var(--muted); text-align:right; margin-top:4px;
@@ -260,7 +265,7 @@
   var MIN_LABEL_PX = 55; // Mindestabstand zwischen zwei X-Achsen-Beschriftungen
 
   var DESC_FIRST =
-    "Die Grafik zeigt die vorhergesagte Luftdruckdifferenz in Hektopascal [hPa] zwischen den jeweiligen Stationspaaren.";
+    "Die Grafik zeigt die aktuelle und vergangene Luftdruckdifferenz in Hektopascal [hPa] zwischen den jeweiligen Stationspaaren.";
   var DESC_REST =
     "Die Druckdifferenz gibt an, welche Windverhältnisse in den Alpen zu erwarten sind.\n" +
     "Bei negativen Werten, d.h. die Südtiroler Station hat den tieferen Druck als die Tiroler Station, ist in Südtirol Nordföhn zu erwarten. Je größer die Druckdifferenz, desto stärker weht der Föhn und desto weiter greift er in die südlichen Täler durch.\n" +
@@ -274,6 +279,61 @@
   function shortCode(name){ return SHORT_CODES[name] || name; }
 
   var charts = {};
+  var savedZoomRange = {};   // canvasId -> {min,max} - bleibt über Datenaktualisierungen erhalten, nicht über Seiten-Reload
+  var syncingZoom = false;   // Schutz gegen Endlosschleife beim gegenseitigen Zoom-Abgleich
+  var CHART_PAIR = { 'chart-bi': 'chart-im', 'chart-im': 'chart-bi' };
+
+  // Wie viele Stunden standardmäßig sichtbar sein sollen, abhängig von der
+  // Chart-Breite: schmal (Handy) -> 6h, breit (Desktop) -> volle 16h.
+  function computeDefaultVisibleHours(containerWidth){
+    var minW = 380, maxW = 900, minH = 6, maxH = 16;
+    var w = Math.max(minW, Math.min(maxW, containerWidth));
+    var t = (w - minW) / (maxW - minW);
+    return minH + t * (maxH - minH);
+  }
+
+  // Sucht, von der Zielanzahl Stunden rückwärts gerechnet, die nächste volle
+  // Stunde (damit der linke Rand immer auf :00 beginnt) und liefert den
+  // passenden Index-Bereich für die Kategorie-Achse.
+  function computeDefaultRange(labels, targetHours){
+    if (!labels.length) return null;
+    var pointsPerHour = 3; // 20-Minuten-Takt
+    var idealStart = labels.length - 1 - Math.round(targetHours * pointsPerHour);
+    var startIdx = -1;
+    for (var i = Math.max(0, idealStart); i >= 0; i--){
+      var label = labels[i];
+      if (label && label.slice(-2) === '00') { startIdx = i; break; }
+    }
+    if (startIdx === -1) startIdx = 0;
+    return { min: startIdx, max: labels.length - 1 };
+  }
+
+  function clearChartTooltip(chart){
+    if (!chart) return;
+    chart.setActiveElements([]);
+    if (chart.tooltip) chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+    chart.update('none');
+  }
+
+  // Klick/Tipp außerhalb der eigentlichen Plot-Fläche (x/y-Achsen-Bereich)
+  // blendet ein evtl. noch offenes Tooltip-Detailfeld wieder aus.
+  document.addEventListener('click', function(e){
+    Object.keys(charts).forEach(function(id){
+      var chart = charts[id];
+      if (!chart) return;
+      var canvas = chart.canvas;
+      var withinArea = false;
+      if (e.target === canvas) {
+        var rect = canvas.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var y = e.clientY - rect.top;
+        var area = chart.chartArea;
+        withinArea = !!area && x >= area.left && x <= area.right && y >= area.top && y <= area.bottom;
+      }
+      if (!withinArea) clearChartTooltip(chart);
+    });
+  });
+
   if (window.Chart && window['chartjs-plugin-annotation']) {
     Chart.register(window['chartjs-plugin-annotation']);
   }
@@ -371,7 +431,7 @@
       var shaftW = Math.max(totalW * 0.09, yUnitPx);
       var headW = Math.max(totalW * 0.156, yUnitPx * 1.7);
       var color = 'rgba(51,153,255,0.2)';   // #3399FF bei 80% Transparenz (20% Deckkraft)
-      var textColor = color;                // "NORDFÖHN"-Text in derselben Transparenz wie der Pfeil
+      var textColor = 'rgba(51,153,255,0.4)'; // 20%-Punkte weniger transparent als der Pfeil (Alpha 0,2 -> 0,4)
 
       svg.setAttribute('width', chart.width);
       svg.setAttribute('height', chart.height);
@@ -395,11 +455,61 @@
       }
     };
 
+    // Kurze Tick-Striche auf der X-Achse an JEDEM tatsächlichen Datenpunkt
+    // (nicht nur an den beschrifteten Stunden) - reine Positionsmarkierung.
+    var tickMarksPlugin = {
+      id: 'tickMarks-' + canvasId,
+      afterDraw: function(chart){
+        var xScale = chart.scales.x;
+        var area = chart.chartArea;
+        if (!xScale || !area) return;
+        var ctx = chart.ctx;
+        ctx.save();
+        ctx.strokeStyle = '#C9CFCD';
+        ctx.lineWidth = 1;
+        for (var i = 0; i < labels.length; i++){
+          var x = xScale.getPixelForValue(i);
+          if (x < area.left - 1 || x > area.right + 1) continue; // nur im sichtbaren (ggf. gezoomten) Bereich
+          ctx.beginPath();
+          ctx.moveTo(x, area.bottom);
+          ctx.lineTo(x, area.bottom + 4);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    };
+
+    // Zoom-Zustand bei Datenaktualisierung erhalten (nicht bei Seiten-Reload,
+    // da savedZoomRange ein reines JS-Objekt im Speicher ist): falls schon ein
+    // Bereich gemerkt wurde, den wiederverwenden - sonst responsiven
+    // Standardbereich berechnen (schmal -> 6h, breit -> 16h, links auf volle
+    // Stunde ausgerichtet).
+    var containerEl = document.getElementById(canvasId).parentElement;
+    var containerWidth = (containerEl && containerEl.clientWidth) || 800;
+    var initialRange = savedZoomRange[canvasId];
+    if (!initialRange && labels.length) {
+      initialRange = computeDefaultRange(labels, computeDefaultVisibleHours(containerWidth));
+    }
+
+    function handleZoomOrPan(ctx){
+      var chart = ctx.chart;
+      savedZoomRange[canvasId] = { min: chart.scales.x.min, max: chart.scales.x.max };
+      if (syncingZoom) return;
+      var otherId = CHART_PAIR[canvasId];
+      var otherChart = charts[otherId];
+      if (otherChart) {
+        syncingZoom = true;
+        otherChart.zoomScale('x', { min: chart.scales.x.min, max: chart.scales.x.max }, 'none');
+        savedZoomRange[otherId] = { min: chart.scales.x.min, max: chart.scales.x.max };
+        syncingZoom = false;
+      }
+    }
+
     var ctx = document.getElementById(canvasId).getContext('2d');
     if (charts[canvasId]) charts[canvasId].destroy();
     charts[canvasId] = new Chart(ctx, {
       type: 'line',
-      plugins: labels.length ? [arrowSvgPlugin] : [],
+      plugins: labels.length ? [arrowSvgPlugin, tickMarksPlugin] : [],
       data: {
         labels: labels,
         datasets: [
@@ -449,26 +559,34 @@
           },
           annotation: { annotations: annotations },
           zoom: {
-            pan: { enabled: true, mode: 'x' },
+            pan: { enabled: true, mode: 'x', onPanComplete: handleZoomOrPan },
             zoom: {
               wheel: { enabled: true },
               pinch: { enabled: true },
-              mode: 'x'
+              mode: 'x',
+              onZoomComplete: handleZoomOrPan
             },
             limits: { x: { min: 'original', max: 'original' } }
           }
         },
         scales: {
           x: {
-            grid: { display: false },
+            min: initialRange ? initialRange.min : undefined,
+            max: initialRange ? initialRange.max : undefined,
+            grid: { display: false, drawTicks: false },
             afterBuildTicks: function(axis){
-              var hourTicks = axis.ticks.filter(function(t){
+              var allTicks = axis.ticks;
+              var chartWidth = (axis.chart && axis.chart.width) || 600;
+              var n = allTicks.length;
+              if (n > 1 && (chartWidth / n) >= MIN_LABEL_PX) {
+                return; // genug Platz für jeden sichtbaren Punkt (auch 20-Min-Werte)
+              }
+              var hourTicks = allTicks.filter(function(t){
                 var label = axis.getLabelForValue(t.value);
                 var parts = label ? label.split(':') : [];
                 return parts.length === 2 && parts[1] === '00';
               });
               if (!hourTicks.length) { axis.ticks = []; return; }
-              var chartWidth = (axis.chart && axis.chart.width) || 600;
               var maxLabels = Math.max(1, Math.floor(chartWidth / MIN_LABEL_PX));
               var step = Math.max(1, Math.ceil(hourTicks.length / maxLabels));
               axis.ticks = hourTicks.filter(function(t, i){ return i % step === 0; });
@@ -481,7 +599,7 @@
           y: {
             min: CHART_Y_MIN, max: CHART_Y_MAX,
             title: { display: true, text: yAxisTitle, font: { size: 11, family: "'IBM Plex Sans', sans-serif" }, color: '#5B6B72' },
-            grid: { color: '#EEF1F0' },
+            grid: { color: '#EEF1F0', drawTicks: true, tickLength: 4 },
             ticks: { stepSize: 2, font: { family: "'IBM Plex Mono', monospace", size: 10 }, color: '#5B6B72' }
           }
         }
@@ -501,7 +619,14 @@
   }
 
   function resetZoom(chartInstId){
-    if (charts[chartInstId]) charts[chartInstId].resetZoom();
+    if (!charts[chartInstId]) return;
+    charts[chartInstId].resetZoom();
+    delete savedZoomRange[chartInstId];
+    var otherId = CHART_PAIR[chartInstId];
+    if (charts[otherId]) {
+      charts[otherId].resetZoom();
+      delete savedZoomRange[otherId];
+    }
   }
   window.resetZoom = resetZoom;
 
