@@ -2,18 +2,37 @@ name: Wetterdaten abrufen
 
 on:
   schedule:
-    # Alle 10 Minuten (UTC) - entspricht dem Messtakt der Stationen selbst.
-    # Das Skript wartet zusätzlich intern bis zu 4 Minuten, falls die beiden
-    # Quellen (Bürgernetz, GeoSphere) kurzzeitig noch nicht synchron sind.
-    - cron: "*/10 * * * *"
+    # Alle 20 Minuten (UTC), exakt zu :00, :20, :40. Das Skript fragt dabei
+    # gezielt Messwerte von 20 Minuten VOR dem Trigger ab (fixer, auf dieses
+    # Raster gerundeter Zielzeitpunkt statt "aktuell") - z.B. beim 22:00-Lauf
+    # werden die Werte von 21:40 eingetragen. Eine Nachhol-Logik im Skript
+    # selbst holt automatisch fehlende Slots nach, falls ein Lauf verzögert
+    # startet oder ausfällt. Siehe scripts/fetch-weather.mjs für Details.
+    - cron: "*/20 * * * *"
   workflow_dispatch: {} # erlaubt manuelles Auslösen über den "Actions"-Tab
 
 permissions:
   contents: write
 
+# Falls ein Lauf doch mal hängen bleibt oder ungewöhnlich lange braucht, wird
+# er beim nächsten planmäßigen Trigger ABGEBROCHEN statt dass sich nachfolgende
+# Läufe dahinter aufstauen und die Zeitpunkte immer weiter verschieben (das war
+# die Ursache für die früher beobachteten großen Verzögerungen). Die
+# Nachhol-Logik im Skript holt einen dadurch übersprungenen Slot beim
+# nächsten erfolgreichen Lauf automatisch nach.
+concurrency:
+  group: fetch-weather
+  cancel-in-progress: true
+
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    # Mit der jetzt parallelisierten Abruf-Logik (alle Slots und beide
+    # Stationspaare gleichzeitig statt nacheinander) dauert ein Lauf normal
+    # nur wenige Sekunden. 4 Minuten harte Obergrenze als Sicherheitsnetz -
+    # danach lieber abbrechen und beim nächsten Trigger neu versuchen, statt
+    # nachfolgende Läufe zu blockieren.
+    timeout-minutes: 4
     steps:
       - name: Repo auschecken
         uses: actions/checkout@v4
@@ -31,5 +50,26 @@ jobs:
           git config user.name "foehn-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data/history.json
-          git diff --quiet --cached || git commit -m "Wetterdaten aktualisiert"
-          git push
+
+          if git diff --quiet --cached; then
+            echo "Keine Änderungen an data/history.json - nichts zu committen."
+            exit 0
+          fi
+
+          git commit -m "Wetterdaten aktualisiert"
+
+          # Robuster Push: falls zwischenzeitlich ein anderer Lauf gepusht hat,
+          # neu holen (rebase) und erneut versuchen, statt den Lauf fehlschlagen
+          # zu lassen und Daten zu verlieren.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              echo "Push erfolgreich (Versuch $attempt)."
+              exit 0
+            fi
+            echo "Push fehlgeschlagen (Versuch $attempt), hole Änderungen und versuche erneut..."
+            git pull --rebase origin main
+            sleep 5
+          done
+
+          echo "Push nach mehreren Versuchen fehlgeschlagen."
+          exit 1
