@@ -23,7 +23,6 @@
 
     --line-primary:#1C2B3A;
     --line-secondary:#B9C2C0;
-    --cell-current:#DCEFE0;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -50,7 +49,7 @@
   }
   .eyebrow .dot{
     width:7px;height:7px;border-radius:50%;
-    background:var(--warm);
+    background:#22C55E;
     animation:pulse 2.4s ease-in-out infinite;
   }
   @media (prefers-reduced-motion:reduce){ .eyebrow .dot{animation:none;} }
@@ -70,6 +69,20 @@
   .legend-note span{display:inline-flex; align-items:center; gap:6px;}
   .swatch{width:14px;height:14px;border-radius:3px;display:inline-block;}
   .swatch.line{width:20px;height:3px;border-radius:0;}
+
+  .table-collapse{ margin-top:4px; }
+  .table-summary{
+    cursor:pointer; list-style:none;
+    background:#F1F3F2; border-radius:8px;
+    padding:10px 16px; margin-bottom:12px;
+  }
+  .table-summary::-webkit-details-marker{ display:none; }
+  .table-summary:hover{ background:#EBEEED; }
+  .table-summary-title{ font-weight:600; font-size:14px; color:var(--ink); display:block; }
+  .table-summary-sub{ font-size:12.5px; color:var(--cool); font-weight:600; display:block; margin-top:2px; }
+  .table-collapse:not([open]) .when-open{ display:none; }
+  .table-collapse[open] .when-closed{ display:none; }
+  .table-collapse .legend-note{ margin-top:14px; }
 
   .global-desc{
     background:var(--panel); border:1px solid var(--hairline); border-radius:12px;
@@ -134,7 +147,7 @@
     height:28px;
     background:#F1F3F2;
     border-bottom:1px solid var(--hairline);
-    font-weight:700; text-align:center;
+    font-weight:700; text-align:left;
     font-size:11.5px; letter-spacing:.03em; text-transform:uppercase;
     font-family:'IBM Plex Sans', sans-serif;
   }
@@ -158,23 +171,20 @@
     font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:10.5px;
   }
 
-  /* Δ-Stufen: die Delta-Zelle bekommt die volle Farbe, der Rest der Zeile
-     ist 5%-Punkte transparenter - Delta bleibt so optisch am kräftigsten. */
-  tbody tr.hint-pre td{ background:rgba(62,110,142,0.14); }
+  /* Δ-Stufen: die Delta-Zelle bekommt die volle Farbe, der Rest der Zeile ist
+     deutlich transparenter (Kontrast bewusst hoch, damit der Unterschied
+     gut sichtbar ist). Keine gesonderte Hervorhebung der aktuellsten Zeile
+     mehr - die steht durch ihre Position (oben) ohnehin heraus. */
+  tbody tr.hint-pre td{ background:rgba(62,110,142,0.04); }
   tbody tr.hint-pre td.delta-cell{ background:rgba(62,110,142,0.19); }
 
-  tbody tr.hint-soft td{ background:rgba(62,110,142,0.35); }
+  tbody tr.hint-soft td{ background:rgba(62,110,142,0.25); }
   tbody tr.hint-soft td.delta-cell{ background:rgba(62,110,142,0.40); }
 
-  tbody tr.hint-hard td{ background:rgba(46,109,164,0.82); color:#fff; }
+  tbody tr.hint-hard td{ background:rgba(46,109,164,0.72); color:#fff; }
   tbody tr.hint-hard td.delta-cell{ background:rgba(46,109,164,0.90); }
   tbody tr.hint-hard .hint-text{ color:#fff; }
-  tbody tr.hint-hard:hover td{ background:rgba(46,109,164,0.82); }
-
-  tbody tr.current td{ background:var(--cell-current) !important; }
-  tbody tr.current.hint-soft td, tbody tr.current.hint-hard td, tbody tr.current.hint-pre td{
-    box-shadow: inset 0 0 0 1.5px #6FAE8C;
-  }
+  tbody tr.hint-hard:hover td{ background:rgba(46,109,164,0.72); }
 
   .chart-wrap{ position:relative; touch-action: pan-y; }
   canvas.foehn-chart{ width:100% !important; height:460px !important; }
@@ -209,14 +219,8 @@
     <header>
       <div class="eyebrow"><span class="dot"></span>On Air</div>
       <div class="title-row">
+        <h1>Föhndiagramm GCV</h1>
         <img class="logo" src="./logo.png" alt="Logo Gleitschirm Club Vinschgau">
-        <h1>Föhndiagramm</h1>
-      </div>
-      <div class="legend-note">
-        <span><span class="swatch" style="background:rgba(62,110,142,0.14)"></span>Δ ≤ -2,5 hPa</span>
-        <span><span class="swatch" style="background:rgba(62,110,142,0.35)"></span>Δ ≤ -3 hPa</span>
-        <span><span class="swatch" style="background:rgba(46,109,164,0.82)"></span>Δ ≤ -6 hPa (starker Nordföhn)</span>
-        <span><span class="swatch" style="background:var(--cell-current)"></span>aktuellster Wert</span>
       </div>
       <div class="global-desc">
         <p id="descFirst"></p>
@@ -287,24 +291,24 @@
   function buildTable(pair){
     var rows = (pair.rows || []).slice().reverse(); // neueste zuerst
     var html = '<table><thead>' +
-      '<tr class="group"><th colspan="4"></th><th>' + pair.leftLabel.toUpperCase() + '</th><th>' + pair.rightLabel.toUpperCase() + '</th></tr>' +
-      '<tr class="sub"><th>ΔhPa</th><th></th><th>Datum</th><th>Uhrzeit</th><th>Luftdruck [hPa]</th><th>Luftdruck [hPa]</th></tr>' +
+      '<tr class="group"><th colspan="3"></th><th>' + pair.leftLabel.toUpperCase() + '</th><th>' + pair.rightLabel.toUpperCase() + '</th><th></th></tr>' +
+      '<tr class="sub"><th>ΔhPa</th><th></th><th>Uhrzeit</th><th>Luftdruck [hPa]</th><th>Luftdruck [hPa]</th><th>Datum</th></tr>' +
       '</thead><tbody>';
 
-    rows.forEach(function(r, i){
+    rows.forEach(function(r){
       var d = num(r.delta);
       var tier = '';
       var hint = '';
       if (d !== null && d <= TABLE_HARD) { tier = 'hint-hard'; hint = 'Nordföhn!'; }
       else if (d !== null && d <= TABLE_SOFT) { tier = 'hint-soft'; }
       else if (d !== null && d <= TABLE_PRE) { tier = 'hint-pre'; }
-      var cls = tier + (i === 0 ? ' current' : '');
 
-      html += '<tr class="' + cls + '">' +
+      html += '<tr class="' + tier + '">' +
         '<td class="delta-cell">' + fmt(r.delta) + '</td>' +
         '<td class="hint-text">' + hint + '</td>' +
-        '<td>' + (r.datumLeft || '—') + '</td><td>' + (r.zeitLeft || '—') + '</td>' +
+        '<td>' + (r.zeitLeft || '—') + '</td>' +
         '<td>' + fmt(r.wertLeft) + '</td><td>' + fmt(r.wertRight) + '</td>' +
+        '<td>' + (r.datumLeft || '—') + '</td>' +
         '</tr>';
     });
 
@@ -348,14 +352,17 @@
       if (!area || !yScale || labels.length === 0) { svg.innerHTML = ''; return; }
 
       var centerX = (area.left + area.right) / 2;
+      var y0 = yScale.getPixelForValue(0);
+      var y2 = yScale.getPixelForValue(2);
       var y3 = yScale.getPixelForValue(-3);
       var y6 = yScale.getPixelForValue(-6);
       var y8 = yScale.getPixelForValue(-8);
       var totalW = area.right - area.left;
-      var shaftW = totalW * 0.09;
-      var headW = totalW * 0.156;
+      var yUnitPx = Math.abs(y0 - y2); // Pixelabstand für 2 Einheiten auf der Y-Achse
+      var shaftW = Math.max(totalW * 0.09, yUnitPx);
+      var headW = Math.max(totalW * 0.156, yUnitPx * 1.7);
       var color = 'rgba(51,153,255,0.2)';   // #3399FF bei 80% Transparenz (20% Deckkraft)
-      var textColor = 'rgba(51,153,255,0.9)';
+      var textColor = color;                // "NORDFÖHN"-Text in derselben Transparenz wie der Pfeil
 
       svg.setAttribute('width', chart.width);
       svg.setAttribute('height', chart.height);
@@ -367,7 +374,16 @@
 
     var arrowSvgPlugin = {
       id: 'arrowSvgSync-' + canvasId,
-      afterLayout: function(chart){ updateArrowSvg(chart); }
+      afterLayout: function(chart){
+        updateArrowSvg(chart);
+        // Hammer.js (für Pinch-Zoom) setzt touch-action="none" per Inline-Style
+        // auf das Canvas - das blockiert vertikales Scrollen mit dem Finger.
+        // Hier zurück auf pan-y erzwingen: vertikales Scrollen bleibt möglich,
+        // horizontales Ziehen/Pinch wird weiterhin vom Zoom-Plugin abgefangen.
+        if (chart.canvas.style.touchAction !== 'pan-y') {
+          chart.canvas.style.touchAction = 'pan-y';
+        }
+      }
     };
 
     var ctx = document.getElementById(canvasId).getContext('2d');
@@ -480,6 +496,14 @@
   }
   window.resetZoom = resetZoom;
 
+  function legendHtml(){
+    return '<div class="legend-note">' +
+      '<span><span class="swatch" style="background:rgba(62,110,142,0.19)"></span>Δ ≤ -2,5 hPa</span>' +
+      '<span><span class="swatch" style="background:rgba(62,110,142,0.40)"></span>Δ ≤ -3 hPa</span>' +
+      '<span><span class="swatch" style="background:rgba(46,109,164,0.90)"></span>Δ ≤ -6 hPa (starker Nordföhn)</span>' +
+      '</div>';
+  }
+
   function render(data){
     var content = document.getElementById('content');
     content.className = '';
@@ -492,7 +516,14 @@
         '<div class="section-grid">' +
           '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-bi"></canvas><svg class="arrow-svg" id="svg-chart-bi"></svg></div>' +
           '<div class="zoom-hint"><button class="zoom-reset" onclick="resetZoom(\'chart-bi\')">Zoom zurücksetzen</button> · Mausrad/Pinch zum Zoomen, Ziehen zum Verschieben</div>' +
-          '<div class="table-wrap" id="table-bi"></div>' +
+          '<details class="table-collapse">' +
+            '<summary class="table-summary">' +
+              '<span class="table-summary-title">Details Luftdruckwerte</span>' +
+              '<span class="table-summary-sub"><span class="when-closed">Mehr anzeigen…</span><span class="when-open">Weniger anzeigen…</span></span>' +
+            '</summary>' +
+            '<div class="table-wrap" id="table-bi"></div>' +
+            legendHtml() +
+          '</details>' +
         '</div>' +
       '</div>' +
       '<div class="section">' +
@@ -500,7 +531,14 @@
         '<div class="section-grid">' +
           '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-im"></canvas><svg class="arrow-svg" id="svg-chart-im"></svg></div>' +
           '<div class="zoom-hint"><button class="zoom-reset" onclick="resetZoom(\'chart-im\')">Zoom zurücksetzen</button> · Mausrad/Pinch zum Zoomen, Ziehen zum Verschieben</div>' +
-          '<div class="table-wrap" id="table-im"></div>' +
+          '<details class="table-collapse">' +
+            '<summary class="table-summary">' +
+              '<span class="table-summary-title">Details Luftdruckwerte</span>' +
+              '<span class="table-summary-sub"><span class="when-closed">Mehr anzeigen…</span><span class="when-open">Weniger anzeigen…</span></span>' +
+            '</summary>' +
+            '<div class="table-wrap" id="table-im"></div>' +
+            legendHtml() +
+          '</details>' +
         '</div>' +
       '</div>';
 
@@ -508,7 +546,7 @@
     renderSection(data.imstMeran, data.bozenInnsbruck, 'table-im', 'chart-im', 'chart-im', 'Druckdifferenz  ' + im.leftLabel + ' - ' + im.rightLabel + '  [hPa]');
 
     document.getElementById('pageFoot').textContent = data.generatedAt
-      ? ('Zuletzt aktualisiert: ' + data.generatedAt + ' · automatisch alle 20 Minuten')
+      ? ('Zuletzt aktualisiert: ' + data.generatedAt + ' · automatisch um :00, :20 und :40')
       : 'Noch kein Datenstand';
   }
 
