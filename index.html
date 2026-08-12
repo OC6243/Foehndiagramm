@@ -303,6 +303,7 @@
   var CHART_LINE_HARD = -6;
   var CHART_Y_MIN = -10, CHART_Y_MAX = 10;
   var MIN_LABEL_PX = 55; // Mindestabstand zwischen zwei X-Achsen-Beschriftungen
+  var DESKTOP_UNIT_PX = 46; // Pixelabstand für 2 Y-Einheiten bei Laptop-Breite - fixer Referenzwert (u.a. für die Pfeil-Mindestbreite), unabhängig von der responsiven Y-Skalierung
 
   var DESC_FIRST =
     "Die Grafik zeigt die aktuelle und vergangene Luftdruckdifferenz in Hektopascal [hPa] zwischen den jeweiligen Stationspaaren.";
@@ -331,11 +332,10 @@
   // dazwischen linear interpoliert.
   function computeChartHeight(containerWidth){
     var minW = 380, maxW = 900; // Handy .. Laptop
-    var desktopUnitPx = 460 / 10;           // 46px pro 2pt bei Laptop-Breite
-    var mobileUnitPx = desktopUnitPx * 0.7; // 32,2px pro 2pt bei Handy-Breite (70%)
+    var mobileUnitPx = DESKTOP_UNIT_PX * 0.7; // 32,2px pro 2pt bei Handy-Breite (70%)
     var w = Math.max(minW, Math.min(maxW, containerWidth));
     var t = (w - minW) / (maxW - minW); // 0 = Handy, 1 = Laptop
-    var unitPx = mobileUnitPx + t * (desktopUnitPx - mobileUnitPx);
+    var unitPx = mobileUnitPx + t * (DESKTOP_UNIT_PX - mobileUnitPx);
     return Math.round(unitPx * 10);
   }
 
@@ -475,17 +475,14 @@
       if (!area || !yScale || labels.length === 0) { svg.innerHTML = ''; return; }
 
       var centerX = (area.left + area.right) / 2;
-      var y0 = yScale.getPixelForValue(0);
-      var y2 = yScale.getPixelForValue(2);
       var y3 = yScale.getPixelForValue(-3);
       var y6 = yScale.getPixelForValue(-6);
       var y8 = yScale.getPixelForValue(-8);
       var y10 = yScale.getPixelForValue(-10);
       var textY = (y8 + y10) / 2; // exakt mittig zwischen y=-8 und y=-10, unabhängig von der Y-Skala
       var totalW = area.right - area.left;
-      var yUnitPx = Math.abs(y0 - y2); // Pixelabstand für 2 Einheiten auf der Y-Achse
-      var shaftW = Math.max(totalW * 0.09, yUnitPx);
-      var headW = Math.max(totalW * 0.156, yUnitPx * 1.7);
+      var shaftW = Math.max(totalW * 0.09, DESKTOP_UNIT_PX);
+      var headW = Math.max(totalW * 0.156, DESKTOP_UNIT_PX * 1.7);
       var color = 'rgba(51,153,255,0.2)';   // #3399FF bei 80% Transparenz (20% Deckkraft)
       var textColor = 'rgba(51,153,255,0.4)'; // 20%-Punkte weniger transparent als der Pfeil (Alpha 0,2 -> 0,4)
 
