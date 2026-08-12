@@ -319,6 +319,7 @@
   function shortCode(name){ return SHORT_CODES[name] || name; }
 
   var charts = {};
+  var resizeObservers = {}; // canvasId -> ResizeObserver - hält die Höhe live synchron mit der Breite
   var savedZoomRange = {};   // canvasId -> {min,max} - bleibt über Datenaktualisierungen erhalten, nicht über Seiten-Reload
   var syncingZoom = false;   // Schutz gegen Endlosschleife beim gegenseitigen Zoom-Abgleich
   var CHART_PAIR = { 'chart-bi': 'chart-im', 'chart-im': 'chart-bi' };
@@ -565,6 +566,25 @@
 
     var computedHeight = computeChartHeight(containerWidth);
     if (containerEl) containerEl.style.height = computedHeight + 'px';
+
+    // Höhe bleibt sonst nur beim (Neu-)Erstellen des Charts aktuell (z.B. alle
+    // 3 Min. beim Datenrefresh) - reagiert aber nicht, wenn der Nutzer das
+    // Browserfenster live verkleinert/vergrößert oder das Handy dreht. Der
+    // ResizeObserver hält die Höhe deshalb kontinuierlich synchron zur
+    // tatsächlichen Breite.
+    if (containerEl && window.ResizeObserver) {
+      if (resizeObservers[canvasId]) resizeObservers[canvasId].disconnect();
+      var lastObservedWidth = containerWidth;
+      var ro = new ResizeObserver(function(entries){
+        var w = entries[0].contentRect.width;
+        if (Math.abs(w - lastObservedWidth) < 2) return; // nur bei echter Breitenänderung reagieren (verhindert Endlosschleife durchs eigene Höhensetzen)
+        lastObservedWidth = w;
+        var newHeight = computeChartHeight(w) + 'px';
+        if (containerEl.style.height !== newHeight) containerEl.style.height = newHeight;
+      });
+      ro.observe(containerEl);
+      resizeObservers[canvasId] = ro;
+    }
 
     function handleZoomOrPan(ctx){
       var chart = ctx.chart;
