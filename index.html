@@ -147,6 +147,7 @@
     height:28px;
     background:#F1F3F2;
     border-bottom:1px solid var(--hairline);
+    padding:0 7px;
     font-weight:700; text-align:left;
     font-size:11.5px; letter-spacing:.03em; text-transform:uppercase;
     font-family:'IBM Plex Sans', sans-serif;
@@ -185,6 +186,13 @@
   tbody tr.hint-hard td.delta-cell{ background:rgba(46,109,164,0.90); }
   tbody tr.hint-hard .hint-text{ color:#fff; }
   tbody tr.hint-hard:hover td{ background:rgba(46,109,164,0.72); }
+
+  /* Aktuellste Zeile: eigene grüne Hervorhebung im selben Modus wie die
+     Δ-Stufen (Δ-Zelle kräftiger, Rest der Zeile transparenter) - überschreibt
+     eine eventuelle Δ-Stufenfarbe, da sie unabhängig vom Schweregrad gilt. */
+  tbody tr.current td{ background:rgba(46,163,89,0.12) !important; color:var(--ink) !important; }
+  tbody tr.current td.delta-cell{ background:rgba(46,163,89,0.32) !important; }
+  tbody tr.current .hint-text{ color:var(--ink) !important; }
 
   .chart-wrap{ position:relative; touch-action: pan-y; }
   canvas.foehn-chart{ width:100% !important; height:460px !important; }
@@ -235,8 +243,8 @@
     <div id="content" class="loading">Lade aktuelle Messwerte …</div>
 
     <div class="sources">
-      Quelle Messdaten Wetterstationen Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a><br>
-      Quelle Messdaten Wetterstationen Tirol: <a href="https://www.geosphere.at/de" target="_blank" rel="noopener">GeoSphere Austria</a>
+      Quelle Messdaten Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a><br>
+      Quelle Messdaten Tirol: <a href="https://www.geosphere.at/de" target="_blank" rel="noopener">GeoSphere Austria</a>
     </div>
     <div class="page-foot" id="pageFoot"></div>
   </div>
@@ -295,15 +303,16 @@
       '<tr class="sub"><th>ΔhPa</th><th></th><th>Uhrzeit</th><th>Luftdruck [hPa]</th><th>Luftdruck [hPa]</th><th>Datum</th></tr>' +
       '</thead><tbody>';
 
-    rows.forEach(function(r){
+    rows.forEach(function(r, i){
       var d = num(r.delta);
       var tier = '';
       var hint = '';
       if (d !== null && d <= TABLE_HARD) { tier = 'hint-hard'; hint = 'Nordföhn!'; }
       else if (d !== null && d <= TABLE_SOFT) { tier = 'hint-soft'; }
       else if (d !== null && d <= TABLE_PRE) { tier = 'hint-pre'; }
+      var cls = tier + (i === 0 ? ' current' : '');
 
-      html += '<tr class="' + tier + '">' +
+      html += '<tr class="' + cls + '">' +
         '<td class="delta-cell">' + fmt(r.delta) + '</td>' +
         '<td class="hint-text">' + hint + '</td>' +
         '<td>' + (r.zeitLeft || '—') + '</td>' +
@@ -501,6 +510,7 @@
       '<span><span class="swatch" style="background:rgba(62,110,142,0.19)"></span>Δ ≤ -2,5 hPa</span>' +
       '<span><span class="swatch" style="background:rgba(62,110,142,0.40)"></span>Δ ≤ -3 hPa</span>' +
       '<span><span class="swatch" style="background:rgba(46,109,164,0.90)"></span>Δ ≤ -6 hPa (starker Nordföhn)</span>' +
+      '<span><span class="swatch" style="background:rgba(46,163,89,0.32)"></span>aktuellster Wert</span>' +
       '</div>';
   }
 
@@ -546,7 +556,7 @@
     renderSection(data.imstMeran, data.bozenInnsbruck, 'table-im', 'chart-im', 'chart-im', 'Druckdifferenz  ' + im.leftLabel + ' - ' + im.rightLabel + '  [hPa]');
 
     document.getElementById('pageFoot').textContent = data.generatedAt
-      ? ('Zuletzt aktualisiert: ' + data.generatedAt + ' · automatisch um :00, :20 und :40')
+      ? ('Zuletzt aktualisiert: ' + data.generatedAt)
       : 'Noch kein Datenstand';
   }
 
