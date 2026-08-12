@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.1.0/chartjs-plugin-annotation.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.2.0/chartjs-plugin-zoom.min.js"></script>
 <style>
   :root{
     --ink:#1C2B3A;
@@ -21,10 +23,6 @@
 
     --line-primary:#1C2B3A;
     --line-secondary:#B9C2C0;
-    --threshold-soft:#3E6E8E;
-    --threshold-hard:#16324A;
-    --cell-soft:#CFE3F2;
-    --cell-hard:#2E6DA4;
     --cell-current:#DCEFE0;
   }
   *{box-sizing:border-box;}
@@ -39,6 +37,8 @@
   .wrap{max-width:1320px;margin:0 auto;}
 
   header{margin-bottom:22px;}
+  .title-row{ display:flex; align-items:center; gap:14px; }
+  .title-row img.logo{ width:56px; height:56px; border-radius:50%; flex-shrink:0; }
   .eyebrow{
     font-family:'IBM Plex Mono', monospace;
     font-size:12px;
@@ -58,7 +58,7 @@
 
   h1{
     font-size:clamp(28px,4vw,40px);
-    margin:0 0 4px;
+    margin:0;
     font-weight:700;
     letter-spacing:-0.01em;
   }
@@ -70,23 +70,6 @@
   .legend-note span{display:inline-flex; align-items:center; gap:6px;}
   .swatch{width:14px;height:14px;border-radius:3px;display:inline-block;}
   .swatch.line{width:20px;height:3px;border-radius:0;}
-
-  .section{
-    background:var(--panel);
-    border:1px solid var(--hairline);
-    border-radius:14px;
-    padding:24px;
-    margin-top:24px;
-    opacity:0; transform:translateY(6px);
-    animation:rise .5s ease forwards;
-  }
-  .section:nth-of-type(2){animation-delay:.08s;}
-  @keyframes rise{to{opacity:1;transform:none;}}
-  @media (prefers-reduced-motion:reduce){ .section{opacity:1;transform:none;animation:none;} }
-
-  .section h2{
-    font-size:20px; margin:0 0 14px; font-weight:700;
-  }
 
   .global-desc{
     background:var(--panel); border:1px solid var(--hairline); border-radius:12px;
@@ -111,6 +94,23 @@
   }
   .global-desc .desc-attr a{ color:var(--cool); }
 
+  .section{
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:24px;
+    margin-top:24px;
+    opacity:0; transform:translateY(6px);
+    animation:rise .5s ease forwards;
+  }
+  .section:nth-of-type(2){animation-delay:.08s;}
+  @keyframes rise{to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:reduce){ .section{opacity:1;transform:none;animation:none;} }
+
+  .section h2{
+    font-size:20px; margin:0 0 14px; font-weight:700;
+  }
+
   .section-grid{
     display:flex;
     flex-direction:column;
@@ -129,18 +129,23 @@
     font-size:12px;
     font-family:'IBM Plex Mono', monospace;
   }
-  thead th{
-    position:sticky; top:0; z-index:1;
+  thead tr.group th{
+    position:sticky; top:0; z-index:2;
+    height:28px;
+    background:#F1F3F2;
+    border-bottom:1px solid var(--hairline);
+    font-weight:700; text-align:center;
+    font-size:11.5px; letter-spacing:.03em; text-transform:uppercase;
+    font-family:'IBM Plex Sans', sans-serif;
+  }
+  thead tr.sub th{
+    position:sticky; top:28px; z-index:1;
     background:var(--panel);
     border-bottom:1px solid var(--hairline);
     padding:6px 7px;
     text-align:left;
     font-family:'IBM Plex Sans', sans-serif;
-  }
-  thead tr.group th{
-    font-weight:700; text-align:center;
-    background:#F1F3F2;
-    font-size:11.5px; letter-spacing:.03em; text-transform:uppercase;
+    font-weight:600;
   }
   tbody td{
     padding:4px 7px;
@@ -148,25 +153,41 @@
     white-space:nowrap;
   }
   tbody tr:hover td{ background:#F5F7F6; }
-  tbody tr.hint-hard td{ background:var(--cell-hard); color:#fff; font-weight:600; }
-  tbody tr.hint-hard:hover td{ background:var(--cell-hard); }
-  tbody tr.hint-soft td{ background:var(--cell-soft); }
-  tbody tr.hint-pre td{ background:rgba(62,110,142,0.14); }
-  tbody tr.current td{ background:var(--cell-current); }
-  td.hint-text{ font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:11.5px; background:transparent !important; color:var(--threshold-hard) !important; }
-  tbody tr.hint-hard td.hint-text{ color:#fff !important; }
+  td.delta-cell{ font-weight:700; }
+  .hint-text{
+    font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:10.5px;
+  }
 
-  .chart-wrap{ position:relative; }
+  /* Δ-Stufen: die Delta-Zelle bekommt die volle Farbe, der Rest der Zeile
+     ist 5%-Punkte transparenter - Delta bleibt so optisch am kräftigsten. */
+  tbody tr.hint-pre td{ background:rgba(62,110,142,0.14); }
+  tbody tr.hint-pre td.delta-cell{ background:rgba(62,110,142,0.19); }
+
+  tbody tr.hint-soft td{ background:rgba(62,110,142,0.35); }
+  tbody tr.hint-soft td.delta-cell{ background:rgba(62,110,142,0.40); }
+
+  tbody tr.hint-hard td{ background:rgba(46,109,164,0.82); color:#fff; }
+  tbody tr.hint-hard td.delta-cell{ background:rgba(46,109,164,0.90); }
+  tbody tr.hint-hard .hint-text{ color:#fff; }
+  tbody tr.hint-hard:hover td{ background:rgba(46,109,164,0.82); }
+
+  tbody tr.current td{ background:var(--cell-current) !important; }
+  tbody tr.current.hint-soft td, tbody tr.current.hint-hard td, tbody tr.current.hint-pre td{
+    box-shadow: inset 0 0 0 1.5px #6FAE8C;
+  }
+
+  .chart-wrap{ position:relative; touch-action: pan-y; }
   canvas.foehn-chart{ width:100% !important; height:460px !important; }
   .arrow-svg{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
-
-  .foot{
-    display:flex; justify-content:space-between; gap:12px;
-    margin-top:14px; padding-top:12px;
-    border-top:1px solid var(--hairline);
-    font-size:12.5px; color:var(--muted);
+  .zoom-hint{
+    font-size:11px; color:var(--muted); text-align:right; margin-top:4px;
+    font-family:'IBM Plex Mono', monospace;
   }
-  .foot b{ color:var(--ink); font-weight:600; }
+  .zoom-reset{
+    font-size:11px; color:var(--cool); background:none; border:1px solid var(--hairline);
+    border-radius:6px; padding:2px 8px; cursor:pointer; font-family:'IBM Plex Sans', sans-serif;
+  }
+  .zoom-reset:hover{ background:#F1F3F2; }
 
   .sources{
     margin-top:28px; padding-top:14px; border-top:1px solid var(--hairline);
@@ -186,12 +207,15 @@
 <body>
   <div class="wrap">
     <header>
-      <div class="eyebrow"><span class="dot"></span>Live-Messstation · Update alle 10 Minuten</div>
-      <h1>Föhndiagramm</h1>
+      <div class="eyebrow"><span class="dot"></span>On Air</div>
+      <div class="title-row">
+        <img class="logo" src="./logo.png" alt="Logo Gleitschirm Club Vinschgau">
+        <h1>Föhndiagramm</h1>
+      </div>
       <div class="legend-note">
         <span><span class="swatch" style="background:rgba(62,110,142,0.14)"></span>Δ ≤ -2,5 hPa</span>
-        <span><span class="swatch" style="background:var(--cell-soft)"></span>Δ ≤ -3 hPa</span>
-        <span><span class="swatch" style="background:var(--cell-hard)"></span>Δ ≤ -6 hPa (starker Nordföhn)</span>
+        <span><span class="swatch" style="background:rgba(62,110,142,0.35)"></span>Δ ≤ -3 hPa</span>
+        <span><span class="swatch" style="background:rgba(46,109,164,0.82)"></span>Δ ≤ -6 hPa (starker Nordföhn)</span>
         <span><span class="swatch" style="background:var(--cell-current)"></span>aktuellster Wert</span>
       </div>
       <div class="global-desc">
@@ -208,26 +232,21 @@
 
     <div class="sources">
       Quelle Messdaten Wetterstationen Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a><br>
-      Quelle Messdaten Wetterstationen Tirol: GeoSphere Austria
+      Quelle Messdaten Wetterstationen Tirol: <a href="https://www.geosphere.at/de" target="_blank" rel="noopener">GeoSphere Austria</a>
     </div>
     <div class="page-foot" id="pageFoot"></div>
   </div>
 
 <script>
-  // Schwellenwerte, jetzt abgeglichen mit dem offiziellen Beschreibungstext (3 / 6 hPa).
+  // Schwellenwerte, abgeglichen mit dem offiziellen Beschreibungstext (3 / 6 hPa).
   var TABLE_PRE = -2.5;
   var TABLE_SOFT = -3;
   var TABLE_HARD = -6;
   var CHART_LINE_SOFT = -3;
   var CHART_LINE_HARD = -6;
   var CHART_Y_MIN = -10, CHART_Y_MAX = 10;
+  var MIN_LABEL_PX = 55; // Mindestabstand zwischen zwei X-Achsen-Beschriftungen
 
-  var SHORT_CODES = { Bozen: 'BZ', Innsbruck: 'IBK', Meran: 'MER', Imst: 'IMST' };
-  function shortCode(name){ return SHORT_CODES[name] || name; }
-
-  // Einmalige, globale Beschreibung (oben auf der Seite) - erster Satz sichtbar,
-  // Rest über "Mehr erfahren..." aufklappbar. Textgrundlage: offizielles
-  // Föhndiagramm der Provinz Bozen (für Bozen-Innsbruck; siehe Hinweis unten).
   var DESC_FIRST =
     "Die Grafik zeigt die vorhergesagte Luftdruckdifferenz in Hektopascal [hPa] zwischen den jeweiligen Stationspaaren.";
   var DESC_REST =
@@ -239,9 +258,15 @@
   document.getElementById('descFirst').textContent = DESC_FIRST;
   document.getElementById('descRest').textContent = DESC_REST;
 
+  var SHORT_CODES = { Bozen: 'BZ', Innsbruck: 'IBK', Meran: 'MER', Imst: 'IMST' };
+  function shortCode(name){ return SHORT_CODES[name] || name; }
+
   var charts = {};
   if (window.Chart && window['chartjs-plugin-annotation']) {
     Chart.register(window['chartjs-plugin-annotation']);
+  }
+  if (window.Chart && window.ChartZoom) {
+    Chart.register(window.ChartZoom);
   }
 
   function num(v){
@@ -257,28 +282,29 @@
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#999';
   }
 
+  // Tabelle: Δ zuerst (wichtigster Wert), Datum/Uhrzeit nur einmal (stimmen für
+  // beide Stationen überein), neueste Messung oben.
   function buildTable(pair){
-    var rows = pair.rows || [];
+    var rows = (pair.rows || []).slice().reverse(); // neueste zuerst
     var html = '<table><thead>' +
-      '<tr class="group"><th colspan="3">' + pair.leftLabel.toUpperCase() + '</th><th colspan="3">' + pair.rightLabel.toUpperCase() + '</th><th colspan="2"></th></tr>' +
-      '<tr><th>Datum</th><th>Uhrzeit</th><th>Luftdruck [hPa]</th>' +
-      '<th>Datum</th><th>Uhrzeit</th><th>Luftdruck [hPa]</th>' +
-      '<th>ΔhPa</th><th></th></tr>' +
+      '<tr class="group"><th colspan="4"></th><th>' + pair.leftLabel.toUpperCase() + '</th><th>' + pair.rightLabel.toUpperCase() + '</th></tr>' +
+      '<tr class="sub"><th>ΔhPa</th><th></th><th>Datum</th><th>Uhrzeit</th><th>Luftdruck [hPa]</th><th>Luftdruck [hPa]</th></tr>' +
       '</thead><tbody>';
 
     rows.forEach(function(r, i){
       var d = num(r.delta);
-      var cls = '';
+      var tier = '';
       var hint = '';
-      if (d !== null && d <= TABLE_HARD) { cls = 'hint-hard'; hint = 'Nordföhn!'; }
-      else if (d !== null && d <= TABLE_SOFT) { cls = 'hint-soft'; }
-      else if (d !== null && d <= TABLE_PRE) { cls = 'hint-pre'; }
-      if (i === rows.length - 1) cls = (cls ? cls + ' ' : '') + 'current';
+      if (d !== null && d <= TABLE_HARD) { tier = 'hint-hard'; hint = 'Nordföhn!'; }
+      else if (d !== null && d <= TABLE_SOFT) { tier = 'hint-soft'; }
+      else if (d !== null && d <= TABLE_PRE) { tier = 'hint-pre'; }
+      var cls = tier + (i === 0 ? ' current' : '');
 
       html += '<tr class="' + cls + '">' +
-        '<td>' + (r.datumLeft || '—') + '</td><td>' + (r.zeitLeft || '—') + '</td><td>' + fmt(r.wertLeft) + '</td>' +
-        '<td>' + (r.datumRight || '—') + '</td><td>' + (r.zeitRight || '—') + '</td><td>' + fmt(r.wertRight) + '</td>' +
-        '<td>' + fmt(r.delta) + '</td><td class="hint-text">' + hint + '</td>' +
+        '<td class="delta-cell">' + fmt(r.delta) + '</td>' +
+        '<td class="hint-text">' + hint + '</td>' +
+        '<td>' + (r.datumLeft || '—') + '</td><td>' + (r.zeitLeft || '—') + '</td>' +
+        '<td>' + fmt(r.wertLeft) + '</td><td>' + fmt(r.wertRight) + '</td>' +
         '</tr>';
     });
 
@@ -286,8 +312,6 @@
     return html;
   }
 
-  // Nutzt die tatsächliche Plot-Breite (chartArea) - zuverlässiger als
-  // Pixel-Berechnungen über die Kategorie-Skala.
   function pctOfXAxisInPx(chart, pct){
     var area = chart.chartArea;
     if (!area) return 20;
@@ -306,23 +330,16 @@
       return (idx >= 0 && idx < secRows.length) ? num(secRows[idx].delta) : null;
     });
 
-    var blueFill = 'rgba(62,110,142,0.2)';   // --cool bei 20% Deckkraft (80% transparent)
-    var redFill = 'rgba(193,68,60,0.2)';     // --alert bei 20% Deckkraft
+    var blueFill = 'rgba(62,110,142,0.2)';
+    var redFill = 'rgba(193,68,60,0.2)';
 
     var annotations = {
       lineSoft: { type: 'line', yMin: CHART_LINE_SOFT, yMax: CHART_LINE_SOFT, borderColor: '#3399FF', borderWidth: 2 },
       lineHard: { type: 'line', yMin: CHART_LINE_HARD, yMax: CHART_LINE_HARD, borderColor: '#0000FF', borderWidth: 2.5 }
     };
 
-    // Der Pfeil wird NICHT mehr über das Annotation-Plugin gezeichnet (arrowHeads
-    // hat sich als unzuverlässig erwiesen - falsche Breiten, inkonsistente
-    // Transparenz). Stattdessen: eigenes SVG-Overlay mit voller, direkter
-    // Kontrolle über die exakte Form - siehe updateArrowSvg() weiter unten.
-
-    // Zeichnet den Pfeil als eigenes SVG (Rechteck = Schaft, Polygon = Kopf),
-    // positioniert exakt über den Chart-Koordinaten. Läuft nach jedem Layout
-    // (inkl. Resize) - dadurch bleiben Schaft und Kopf garantiert im selben
-    // Verhältnis, weil beide aus derselben chartArea-Breite berechnet werden.
+    // Pfeil als eigenes SVG-Overlay (nicht über das Annotation-Plugin - dessen
+    // arrowHeads-Funktion war unzuverlässig bei Breite/Transparenz).
     function updateArrowSvg(chart){
       var svg = document.getElementById('svg-' + canvasId);
       if (!svg) return;
@@ -336,8 +353,8 @@
       var y8 = yScale.getPixelForValue(-8);
       var totalW = area.right - area.left;
       var shaftW = totalW * 0.09;
-      var headW = totalW * 0.156; // 0.13 * 1.2 = 20% breiter als bisher
-      var color = 'rgba(51,153,255,0.3)';   // #3399FF bei 70% Transparenz (30% Deckkraft)
+      var headW = totalW * 0.156;
+      var color = 'rgba(51,153,255,0.2)';   // #3399FF bei 80% Transparenz (20% Deckkraft)
       var textColor = 'rgba(51,153,255,0.9)';
 
       svg.setAttribute('width', chart.width);
@@ -345,7 +362,7 @@
       svg.innerHTML =
         '<rect x="' + (centerX - shaftW / 2) + '" y="' + y3 + '" width="' + shaftW + '" height="' + (y6 - y3) + '" fill="' + color + '"></rect>' +
         '<polygon points="' + (centerX - headW / 2) + ',' + y6 + ' ' + (centerX + headW / 2) + ',' + y6 + ' ' + centerX + ',' + y8 + '" fill="' + color + '"></polygon>' +
-        '<text x="' + centerX + '" y="' + (y8 + 22) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-weight="700" font-size="14" fill="' + textColor + '">NORDFÖHN</text>';
+        '<text x="' + centerX + '" y="' + (y8 + 26) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-weight="500" font-size="16.8" fill="' + textColor + '">NORDFÖHN</text>';
     }
 
     var arrowSvgPlugin = {
@@ -368,7 +385,8 @@
             backgroundColor: 'transparent',
             borderWidth: 1.5,
             pointRadius: 0,
-            tension: 0.1,
+            tension: 0.35,
+            cubicInterpolationMode: 'monotone',
             fill: false
           },
           {
@@ -378,7 +396,8 @@
             backgroundColor: 'transparent',
             borderWidth: 2,
             pointRadius: 0,
-            tension: 0.1,
+            tension: 0.35,
+            cubicInterpolationMode: 'monotone',
             fill: 'origin',
             segment: {
               backgroundColor: function(segCtx){
@@ -392,6 +411,7 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -402,20 +422,35 @@
               }
             }
           },
-          annotation: { annotations: annotations }
+          annotation: { annotations: annotations },
+          zoom: {
+            pan: { enabled: true, mode: 'x' },
+            zoom: {
+              wheel: { enabled: true },
+              pinch: { enabled: true },
+              mode: 'x'
+            },
+            limits: { x: { min: 'original', max: 'original' } }
+          }
         },
         scales: {
           x: {
             grid: { display: false },
+            afterBuildTicks: function(axis){
+              var hourTicks = axis.ticks.filter(function(t){
+                var label = axis.getLabelForValue(t.value);
+                var parts = label ? label.split(':') : [];
+                return parts.length === 2 && parts[1] === '00';
+              });
+              if (!hourTicks.length) { axis.ticks = []; return; }
+              var chartWidth = (axis.chart && axis.chart.width) || 600;
+              var maxLabels = Math.max(1, Math.floor(chartWidth / MIN_LABEL_PX));
+              var step = Math.max(1, Math.ceil(hourTicks.length / maxLabels));
+              axis.ticks = hourTicks.filter(function(t, i){ return i % step === 0; });
+            },
             ticks: {
-              autoSkip: false, maxRotation: 0,
-              font: { family: "'IBM Plex Mono', monospace", size: 10 }, color: '#5B6B72',
-              callback: function(value, index){
-                var label = this.getLabelForValue(value);
-                if (!label) return '';
-                var parts = label.split(':');
-                return (parts.length === 2 && parts[1] === '00') ? label : '';
-              }
+              maxRotation: 0,
+              font: { family: "'IBM Plex Mono', monospace", size: 10 }, color: '#5B6B72'
             }
           },
           y: {
@@ -429,7 +464,7 @@
     });
   }
 
-  function renderSection(primary, secondary, tableElId, chartElId, yAxisTitle){
+  function renderSection(primary, secondary, tableElId, chartElId, chartInstId, yAxisTitle){
     if (!primary || !primary.rows || !primary.rows.length){
       document.getElementById(tableElId).innerHTML = '<div class="error" style="padding:24px;">Noch keine Daten für diese Passroute.</div>';
       return;
@@ -438,9 +473,12 @@
     var primaryCode = shortCode(primary.leftLabel) + '-' + shortCode(primary.rightLabel);
     var secondaryCode = secondary ? (shortCode(secondary.leftLabel) + '-' + shortCode(secondary.rightLabel)) : '';
     buildChart(chartElId, primary, secondary, yAxisTitle, primaryCode, secondaryCode);
-    var wrap = document.getElementById(tableElId);
-    wrap.scrollTop = wrap.scrollHeight;
   }
+
+  function resetZoom(chartInstId){
+    if (charts[chartInstId]) charts[chartInstId].resetZoom();
+  }
+  window.resetZoom = resetZoom;
 
   function render(data){
     var content = document.getElementById('content');
@@ -450,25 +488,27 @@
 
     content.innerHTML =
       '<div class="section">' +
-        '<h2>Föhndiagramm ' + bi.leftLabel + '-' + bi.rightLabel + '</h2>' +
+        '<h2>' + bi.leftLabel + ' - ' + bi.rightLabel + '</h2>' +
         '<div class="section-grid">' +
           '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-bi"></canvas><svg class="arrow-svg" id="svg-chart-bi"></svg></div>' +
+          '<div class="zoom-hint"><button class="zoom-reset" onclick="resetZoom(\'chart-bi\')">Zoom zurücksetzen</button> · Mausrad/Pinch zum Zoomen, Ziehen zum Verschieben</div>' +
           '<div class="table-wrap" id="table-bi"></div>' +
         '</div>' +
       '</div>' +
       '<div class="section">' +
-        '<h2>Föhndiagramm ' + im.leftLabel + '-' + im.rightLabel + '</h2>' +
+        '<h2>' + im.leftLabel + ' - ' + im.rightLabel + '</h2>' +
         '<div class="section-grid">' +
           '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-im"></canvas><svg class="arrow-svg" id="svg-chart-im"></svg></div>' +
+          '<div class="zoom-hint"><button class="zoom-reset" onclick="resetZoom(\'chart-im\')">Zoom zurücksetzen</button> · Mausrad/Pinch zum Zoomen, Ziehen zum Verschieben</div>' +
           '<div class="table-wrap" id="table-im"></div>' +
         '</div>' +
       '</div>';
 
-    renderSection(data.bozenInnsbruck, data.imstMeran, 'table-bi', 'chart-bi', 'Druckdifferenz ' + bi.leftLabel + ' - ' + bi.rightLabel);
-    renderSection(data.imstMeran, data.bozenInnsbruck, 'table-im', 'chart-im', 'Druckdifferenz ' + im.leftLabel + ' - ' + im.rightLabel);
+    renderSection(data.bozenInnsbruck, data.imstMeran, 'table-bi', 'chart-bi', 'chart-bi', 'Druckdifferenz  ' + bi.leftLabel + ' - ' + bi.rightLabel + '  [hPa]');
+    renderSection(data.imstMeran, data.bozenInnsbruck, 'table-im', 'chart-im', 'chart-im', 'Druckdifferenz  ' + im.leftLabel + ' - ' + im.rightLabel + '  [hPa]');
 
     document.getElementById('pageFoot').textContent = data.generatedAt
-      ? ('Zuletzt aktualisiert: ' + data.generatedAt + ' · automatisch alle 10 Minuten')
+      ? ('Zuletzt aktualisiert: ' + data.generatedAt + ' · automatisch alle 20 Minuten')
       : 'Noch kein Datenstand';
   }
 
