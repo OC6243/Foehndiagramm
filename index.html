@@ -516,19 +516,36 @@
       id: 'tickMarks-' + canvasId,
       afterDraw: function(chart){
         var xScale = chart.scales.x;
+        var yScale = chart.scales.y;
         var area = chart.chartArea;
-        if (!xScale || !area) return;
+        if (!area) return;
         var ctx = chart.ctx;
         ctx.save();
-        ctx.strokeStyle = '#C9CFCD';
+        ctx.strokeStyle = '#9AA3A0';
         ctx.lineWidth = 1;
-        for (var i = 0; i < labels.length; i++){
-          var x = xScale.getPixelForValue(i);
-          if (x < area.left - 1 || x > area.right + 1) continue; // nur im sichtbaren (ggf. gezoomten) Bereich
-          ctx.beginPath();
-          ctx.moveTo(x, area.bottom);
-          ctx.lineTo(x, area.bottom + 4);
-          ctx.stroke();
+
+        // X-Achse: kurze Striche an JEDEM tatsächlichen Datenpunkt (nicht nur
+        // an den beschrifteten Stunden).
+        if (xScale) {
+          for (var i = 0; i < labels.length; i++){
+            var x = xScale.getPixelForValue(i);
+            if (x < area.left - 1 || x > area.right + 1) continue; // nur im sichtbaren (ggf. gezoomten) Bereich
+            ctx.beginPath();
+            ctx.moveTo(x, area.bottom);
+            ctx.lineTo(x, area.bottom + 4);
+            ctx.stroke();
+          }
+        }
+
+        // Y-Achse: kurze Striche an jeder beschrifteten Stelle (alle 2 Einheiten).
+        if (yScale) {
+          for (var v = CHART_Y_MIN; v <= CHART_Y_MAX; v += 2){
+            var y = yScale.getPixelForValue(v);
+            ctx.beginPath();
+            ctx.moveTo(area.left - 4, y);
+            ctx.lineTo(area.left, y);
+            ctx.stroke();
+          }
         }
         ctx.restore();
       }
