@@ -33,19 +33,25 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_PATH = path.join(__dirname, "..", "data", "history.json");
 
-const MAX_ROWS = 72; // 72 x 20 Minuten = 24 Stunden Verlauf
+const MAX_ROWS = 48; // 48 x 20 Minuten = 16 Stunden Verlauf
 const TIMEZONE = "Europe/Berlin"; // Bozen/Meran/Innsbruck/Imst liegen alle hier (CET/CEST)
 
 const SLOT_MINUTES = 10;             // Messtakt der Stationen (zum Runden)
 const SAMPLING_INTERVAL_MINUTES = 20; // wie oft ein neuer Wert erzeugt wird (= Cron-Takt)
 const TARGET_LAG_MINUTES = 20;       // wie weit der Zielzeitpunkt in der Vergangenheit liegt
 const WINDOW_MINUTES = 5;            // Suchfenster um den Zielzeitpunkt (± Minuten)
-const MAX_BACKFILL_SLOTS = 12;       // Sicherheitsnetz: max. so viele fehlende Slots pro Lauf nachholen (= 4h)
+const MAX_BACKFILL_SLOTS = 6;        // Sicherheitsnetz: max. so viele fehlende Slots pro Lauf nachholen (= 2h)
 
-const RETRY_COUNT_LATEST = 5;        // für den neuesten (spätesten) Slot: geduldiger,
-const RETRY_DELAY_MS = 30 * 1000;    // falls er kurz nach der 20-Min.-Marke noch fehlt
-const RETRY_COUNT_BACKFILL = 2;      // für ältere Slots: die sollten längst da sein,
-                                      // schneller aufgeben und beim nächsten Lauf erneut versuchen
+// WICHTIG: Diese Werte bewusst klein halten. Frühere Version hatte hier
+// 5 Versuche x 30s = bis zu 2,5 Min. PRO Slot, sequenziell, zweimal (BI/IM) -
+// bei mehreren fehlenden Slots konnte ein Lauf dadurch sehr lange dauern und
+// blockierte (per Concurrency-Regel) alle nachfolgenden geplanten Läufe, was
+// sich zu großen Verzögerungen aufschaukelte. Jetzt: alle Slots UND beide
+// Stationspaare laufen parallel (Promise.all), nicht mehr nacheinander -
+// die Laufzeit ist dadurch durch den langsamsten EINZELNEN Abruf begrenzt,
+// nicht durch die Summe aller Abrufe.
+const RETRY_COUNT = 3;
+const RETRY_DELAY_MS = 8 * 1000;
 
 // GeoSphere Austria Stations-IDs (TAWES, tawes-v1-10min)
 const GEOSPHERE_STATIONS = {
@@ -314,48 +320,51 @@ async function fillPair(history, pairKey, stationCode, stationLabel, geosphereKe
     return;
   }
   if (lastSlot) {
-    console.log(`${pairKey}: ${neededSlots.length} fehlende(r) Slot(s) werden nachgeholt (letzter bekannter Wert: ${lastSlot.toISOString()}).`);
+    console.log(`${pairKey}: ${neededSlots.length} fehlende(r) Slot(s) werden parallel nachgeholt (letzter bekannter Wert: ${lastSlot.toISOString()}).`);
   }
 
-  for (let i = 0; i < neededSlots.length; i++) {
-    const slot = neededSlots[i];
-    const isLatest = i === neededSlots.length - 1;
-    const retryCount = isLatest ? RETRY_COUNT_LATEST : RETRY_COUNT_BACKFILL;
-
+  // Alle fehlenden Slots PARALLEL abfragen (nicht mehr nacheinander) - die
+  // Laufzeit ist dadurch durch den langsamsten einzelnen Abruf begrenzt, nicht
+  // durch die Summe aller Abrufe. Der geosphereCache kann dabei in seltenen
+  // Fällen einen Slot doppelt abfragen (Race zwischen parallelen Prüfungen) -
+  // das ist unkritisch, kostet höchstens einen zusätzlichen API-Call.
+  const results = await Promise.all(neededSlots.map(async (slot) => {
+    const slotIso = slot.toISOString();
     try {
       const stationValue = await withRetry(
         () => fetchBuergernetzAtSlot(stationCode, stationLabel, slot),
-        `${stationLabel} @ ${slot.toISOString()}`,
-        retryCount
+        `${stationLabel} @ ${slotIso}`,
+        RETRY_COUNT
       );
 
-      const slotKey = slot.toISOString();
-      if (!(slotKey in geosphereCache)) {
-        try {
-          geosphereCache[slotKey] = await withRetry(
-            () => fetchGeosphereAtSlot(slot),
-            `GeoSphere @ ${slotKey}`,
-            retryCount
-          );
-        } catch (err) {
-          console.warn(`GeoSphere @ ${slotKey} fehlgeschlagen: ${err.message}`);
-          geosphereCache[slotKey] = null;
-        }
+      if (!(slotIso in geosphereCache)) {
+        geosphereCache[slotIso] = withRetry(
+          () => fetchGeosphereAtSlot(slot),
+          `GeoSphere @ ${slotIso}`,
+          RETRY_COUNT
+        ).catch((err) => {
+          console.warn(`GeoSphere @ ${slotIso} fehlgeschlagen: ${err.message}`);
+          return null;
+        });
       }
-      const geo = geosphereCache[slotKey];
+      const geo = await geosphereCache[slotIso];
       const otherValue = geo && geo[geosphereKey];
 
-      if (otherValue) {
-        const row = buildRow(stationValue, otherValue);
-        pushRow(pair, row);
-        console.log(`${pairKey} @ ${fmtTime(stationValue.instant)}: ${stationValue.value} / ${otherValue.value} hPa -> Δ ${row.delta}`);
-      } else {
-        console.warn(`${pairKey}: kein GeoSphere-Wert für ${slotKey}, übersprungen.`);
+      if (!otherValue) {
+        console.warn(`${pairKey}: kein GeoSphere-Wert für ${slotIso}, übersprungen.`);
+        return null;
       }
+      return buildRow(stationValue, otherValue);
     } catch (err) {
-      console.warn(`${pairKey}: ${stationLabel} @ ${slot.toISOString()} fehlgeschlagen: ${err.message}`);
+      console.warn(`${pairKey}: ${stationLabel} @ ${slotIso} fehlgeschlagen: ${err.message}`);
+      return null;
     }
-  }
+  }));
+
+  results.filter(Boolean).forEach((row) => {
+    pushRow(pair, row);
+    console.log(`${pairKey} @ ${row.zeitLeft}: ${row.wertLeft} / ${row.wertRight} hPa -> Δ ${row.delta}`);
+  });
 }
 
 async function main() {
@@ -365,8 +374,10 @@ async function main() {
 
   console.log(`Lauf gestartet um ${now.toISOString()} UTC.`);
 
-  await fillPair(history, "bozenInnsbruck", "83200MS", "Bozen", "innsbruck", geosphereCache, now);
-  await fillPair(history, "imstMeran", "23200MS", "Meran", "imst", geosphereCache, now);
+  await Promise.all([
+    fillPair(history, "bozenInnsbruck", "83200MS", "Bozen", "innsbruck", geosphereCache, now),
+    fillPair(history, "imstMeran", "23200MS", "Meran", "imst", geosphereCache, now)
+  ]);
 
   history.generatedAt = new Intl.DateTimeFormat("de-DE", {
     timeZone: TIMEZONE, day: "2-digit", month: "2-digit", year: "numeric",
