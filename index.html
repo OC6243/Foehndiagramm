@@ -277,7 +277,6 @@
       </div>
       <div class="global-desc">
         <p id="descFirst"></p>
-        <p id="descSecond" style="margin-top:8px;"></p>
         <details>
           <summary>Mehr erfahren…</summary>
           <p id="descRest"></p>
@@ -308,16 +307,14 @@
 
   var DESC_FIRST =
     "Die Grafik zeigt die aktuelle und vergangene Luftdruckdifferenz in Hektopascal [hPa] zwischen den jeweiligen Stationspaaren.";
-  var DESC_SECOND =
-    "Das jeweils andere Stationspaar wird mit einer hellgrauen Linie im Diagramm dargestellt.";
   var DESC_REST =
+    "Das jeweils andere Stationspaar wird mit einer hellgrauen Linie im Diagramm dargestellt.\n" +
     "Die Druckdifferenz gibt an, welche Windverhältnisse in den Alpen zu erwarten sind.\n" +
     "Bei negativen Werten, d.h. die Südtiroler Station hat den tieferen Druck als die Tiroler Station, ist in Südtirol Nordföhn zu erwarten. Je größer die Druckdifferenz, desto stärker weht der Föhn und desto weiter greift er in die südlichen Täler durch.\n" +
     "Erfahrungsgemäß muss die Druckdifferenz mindestens 3 hPa betragen, damit der Föhn die Täler nahe am Alpenhauptkamm (Obervinschgau, Wipptal) erfasst. Bei einer Differenz von über 6 hPa schafft es der Föhnwind in den meisten Fällen bis ins Unterland.\n" +
     "Im umgekehrten Fall, also bei positiven Werten, ist mit Südföhn an der Alpennordseite zu rechnen. Gleichzeitig frischt des Öfteren starker Taleinwind/Südwind auf Südtiroler Seite auf.";
 
   document.getElementById('descFirst').textContent = DESC_FIRST;
-  document.getElementById('descSecond').textContent = DESC_SECOND;
   document.getElementById('descRest').textContent = DESC_REST;
 
   var SHORT_CODES = { Bozen: 'BZ', Innsbruck: 'IBK', Meran: 'MER', Imst: 'IMST' };
