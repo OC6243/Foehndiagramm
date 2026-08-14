@@ -33,14 +33,14 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_PATH = path.join(__dirname, "..", "data", "history.json");
 
-const MAX_ROWS = 48; // 48 x 20 Minuten = 16 Stunden Verlauf
+const MAX_ROWS = 96; // 96 x 10 Minuten = 16 Stunden Verlauf
 const TIMEZONE = "Europe/Berlin"; // Bozen/Meran/Innsbruck/Imst liegen alle hier (CET/CEST)
 
 const SLOT_MINUTES = 10;             // Messtakt der Stationen (zum Runden)
-const SAMPLING_INTERVAL_MINUTES = 20; // wie oft ein neuer Wert erzeugt wird (= Cron-Takt)
-const TARGET_LAG_MINUTES = 20;       // wie weit der Zielzeitpunkt in der Vergangenheit liegt
+const SAMPLING_INTERVAL_MINUTES = 10; // wie oft ein neuer Wert erzeugt wird (= Trigger-Takt, jetzt über externen Cron alle 10 Min.)
+const TARGET_LAG_MINUTES = 20;       // wie weit der Zielzeitpunkt in der Vergangenheit liegt (unverändert)
 const WINDOW_MINUTES = 5;            // Suchfenster um den Zielzeitpunkt (± Minuten)
-const MAX_BACKFILL_SLOTS = 6;        // Sicherheitsnetz: max. so viele fehlende Slots pro Lauf nachholen (= 2h)
+const MAX_BACKFILL_SLOTS = 12;       // Sicherheitsnetz: max. so viele fehlende Slots pro Lauf nachholen (= 2h, wie zuvor)
 
 // WICHTIG: Diese Werte bewusst klein halten. Frühere Version hatte hier
 // 5 Versuche x 30s = bis zu 2,5 Min. PRO Slot, sequenziell, zweimal (BI/IM) -
