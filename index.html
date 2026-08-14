@@ -277,6 +277,7 @@
       </div>
       <div class="global-desc">
         <p id="descFirst"></p>
+        <p id="descSecond" style="margin-top:8px;"></p>
         <details>
           <summary>Mehr erfahren…</summary>
           <p id="descRest"></p>
@@ -307,6 +308,8 @@
 
   var DESC_FIRST =
     "Die Grafik zeigt die aktuelle und vergangene Luftdruckdifferenz in Hektopascal [hPa] zwischen den jeweiligen Stationspaaren.";
+  var DESC_SECOND =
+    "Das jeweils andere Stationspaar wird mit einer hellgrauen Linie im Diagramm dargestellt.";
   var DESC_REST =
     "Die Druckdifferenz gibt an, welche Windverhältnisse in den Alpen zu erwarten sind.\n" +
     "Bei negativen Werten, d.h. die Südtiroler Station hat den tieferen Druck als die Tiroler Station, ist in Südtirol Nordföhn zu erwarten. Je größer die Druckdifferenz, desto stärker weht der Föhn und desto weiter greift er in die südlichen Täler durch.\n" +
@@ -314,6 +317,7 @@
     "Im umgekehrten Fall, also bei positiven Werten, ist mit Südföhn an der Alpennordseite zu rechnen. Gleichzeitig frischt des Öfteren starker Taleinwind/Südwind auf Südtiroler Seite auf.";
 
   document.getElementById('descFirst').textContent = DESC_FIRST;
+  document.getElementById('descSecond').textContent = DESC_SECOND;
   document.getElementById('descRest').textContent = DESC_REST;
 
   var SHORT_CODES = { Bozen: 'BZ', Innsbruck: 'IBK', Meran: 'MER', Imst: 'IMST' };
@@ -351,7 +355,7 @@
   // passenden Index-Bereich für die Kategorie-Achse.
   function computeDefaultRange(labels, targetHours){
     if (!labels.length) return null;
-    var pointsPerHour = 3; // 20-Minuten-Takt
+    var pointsPerHour = 6; // 10-Minuten-Takt
     var idealStart = labels.length - 1 - Math.round(targetHours * pointsPerHour);
     var startIdx = -1;
     for (var i = Math.max(0, idealStart); i >= 0; i--){
@@ -751,7 +755,7 @@
     });
     if (isStale) {
       eyebrow.classList.add('stale');
-      textEl.innerHTML = 'On Air <span class="eyebrow-stale-text">· Zeitverzögerung &gt; 1h!</span>';
+      textEl.innerHTML = 'On Air <span class="eyebrow-stale-text">· Zeitverzögerung &gt; 1<span style="font-size:0.68em;">h</span>!</span>';
     } else {
       eyebrow.classList.remove('stale');
       textEl.textContent = 'On Air';
