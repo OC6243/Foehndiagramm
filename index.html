@@ -37,6 +37,35 @@
 
   header{margin-bottom:22px;}
   .title-row{ display:flex; align-items:center; gap:14px; }
+
+  .top-bar{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .menu-wrap{ position:relative; }
+  .menu-toggle{
+    background:none; border:none; cursor:pointer;
+    padding:8px; border-radius:8px;
+    display:flex; flex-direction:column; justify-content:center; gap:5px;
+  }
+  .menu-toggle:hover{ background:#DEE2E1; }
+  .menu-toggle .bar{
+    width:24px; height:3.5px; border-radius:2px; background:var(--ink); display:block;
+  }
+  .menu-dropdown{
+    position:absolute; top:calc(100% + 6px); right:0; z-index:50;
+    background:var(--panel); border:1px solid var(--hairline); border-radius:10px;
+    box-shadow:0 6px 20px rgba(28,43,58,0.14);
+    min-width:230px; padding:6px;
+    display:none;
+  }
+  .menu-dropdown.open{ display:block; }
+  .menu-item{
+    display:block; width:100%; text-align:left;
+    padding:10px 12px; border-radius:8px;
+    font-family:'IBM Plex Sans', sans-serif; font-size:14px; color:var(--ink);
+    background:none; border:none; cursor:pointer;
+  }
+  .menu-item + .menu-item{ margin-top:2px; }
+  .menu-item:hover{ background:#F1F3F2; }
+  .menu-item.active{ background:rgba(62,110,142,0.12); color:var(--cool); font-weight:700; }
   .title-row img.logo{ width:56px; height:56px; border-radius:50%; flex-shrink:0; }
   .eyebrow{
     font-family:'IBM Plex Mono', monospace;
@@ -270,11 +299,25 @@
 <body>
   <div class="wrap">
     <header>
-      <div class="eyebrow" id="eyebrow"><span class="dot"></span><span id="onAirText">On Air</span></div>
+      <div class="top-bar">
+        <div class="eyebrow" id="eyebrow"><span class="dot"></span><span id="onAirText">On Air</span></div>
+        <div class="menu-wrap">
+          <button class="menu-toggle" id="menuToggle" aria-label="Menü öffnen" aria-expanded="false">
+            <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          </button>
+          <div class="menu-dropdown" id="menuDropdown">
+            <button class="menu-item active" data-page="foehndiagramm">Föhndiagramm</button>
+            <button class="menu-item" data-page="livewerte">Live-Werte Wetterstationen</button>
+          </div>
+        </div>
+      </div>
       <div class="title-row">
         <h1>Föhndiagramm GCV</h1>
         <img class="logo" src="./logo.png" alt="Logo Gleitschirm Club Vinschgau">
       </div>
+    </header>
+
+    <div id="page-foehndiagramm">
       <div class="global-desc">
         <p id="descFirst"></p>
         <details>
@@ -283,18 +326,58 @@
           <p class="desc-attr">Textgrundlage: Föhndiagramm der <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Wetterseite der Autonomen Provinz Bozen – Südtirol</a>.</p>
         </details>
       </div>
-    </header>
 
-    <div id="content" class="loading">Lade aktuelle Messwerte …</div>
+      <div id="content" class="loading">Lade aktuelle Messwerte …</div>
 
-    <div class="sources">
-      Quelle Messdaten Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a><br>
-      Quelle Messdaten Tirol: <a href="https://www.geosphere.at/de" target="_blank" rel="noopener">GeoSphere Austria</a>
+      <div class="sources">
+        Quelle Messdaten Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a><br>
+        Quelle Messdaten Tirol: <a href="https://www.geosphere.at/de" target="_blank" rel="noopener">GeoSphere Austria</a>
+      </div>
+      <div class="page-foot" id="pageFoot"></div>
     </div>
-    <div class="page-foot" id="pageFoot"></div>
+
+    <div id="page-livewerte" style="display:none;">
+      <div class="global-desc">
+        <p>Dieser Bereich ist noch in Arbeit und folgt in Kürze.</p>
+      </div>
+    </div>
   </div>
 
 <script>
+  function initMenu(){
+    var toggle = document.getElementById('menuToggle');
+    var dropdown = document.getElementById('menuDropdown');
+    var items = dropdown.querySelectorAll('.menu-item');
+    var pages = { foehndiagramm: document.getElementById('page-foehndiagramm'), livewerte: document.getElementById('page-livewerte') };
+
+    toggle.addEventListener('click', function(e){
+      e.stopPropagation();
+      var isOpen = dropdown.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    items.forEach(function(item){
+      item.addEventListener('click', function(){
+        var page = item.getAttribute('data-page');
+        items.forEach(function(i){ i.classList.remove('active'); });
+        item.classList.add('active');
+        Object.keys(pages).forEach(function(key){
+          pages[key].style.display = (key === page) ? '' : 'none';
+        });
+        dropdown.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    document.addEventListener('click', function(e){
+      if (!dropdown.contains(e.target) && e.target !== toggle && !toggle.contains(e.target)) {
+        dropdown.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+  initMenu();
+
   // Schwellenwerte, abgeglichen mit dem offiziellen Beschreibungstext (3 / 6 hPa).
   var TABLE_PRE = -2.5;
   var TABLE_SOFT = -3;
