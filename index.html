@@ -10,6 +10,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.1.0/chartjs-plugin-annotation.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.2.0/chartjs-plugin-zoom.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   :root{
     --ink:#1C2B3A;
@@ -174,6 +176,33 @@
   .empty-state h2{ margin:0 0 8px; font-size:19px; color:var(--ink); font-weight:700; }
   .empty-state p{ margin:0; color:var(--muted); font-size:14px; max-width:38ch; line-height:1.6; }
 
+  #windMap{ height:560px; width:100%; border-radius:14px; background:#EEF1F0; }
+  .wind-marker{
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%; color:#fff; font-family:'IBM Plex Sans', sans-serif;
+    font-weight:700; font-size:12px; border:2px solid rgba(255,255,255,0.85);
+    box-shadow:0 2px 6px rgba(0,0,0,0.25);
+  }
+  .wind-legend{
+    display:flex; flex-wrap:wrap; gap:14px; align-items:center;
+    margin-top:14px; font-size:12.5px; color:var(--muted);
+  }
+  .wind-legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .wind-legend .sw{ width:14px; height:14px; border-radius:50%; display:inline-block; }
+  .wind-note{ font-size:12px; color:var(--muted); margin-top:10px; line-height:1.6; }
+  .wind-detail-panel{
+    display:none; margin-top:16px; padding:16px 18px;
+    background:#F7F8F8; border:1px solid var(--hairline); border-radius:12px;
+  }
+  .wind-detail-panel.open{ display:block; }
+  .wind-detail-panel h3{ margin:0 0 10px; font-size:16px; }
+  .wind-detail-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:10px 18px; font-family:'IBM Plex Mono', monospace; font-size:13px;
+  }
+  .wind-detail-grid .wdg-label{ font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted); display:block; }
+  .wind-detail-grid .wdg-value{ font-weight:700; color:var(--ink); }
+
   .section-grid{
     display:flex;
     flex-direction:column;
@@ -319,12 +348,12 @@
           </button>
           <div class="menu-dropdown" id="menuDropdown">
             <button class="menu-item active" data-page="foehndiagramm">Föhndiagramm</button>
-            <button class="menu-item" data-page="livewerte">Live-Werte Wetterstationen</button>
+            <button class="menu-item" data-page="livewerte">Live-Windwerte</button>
           </div>
         </div>
       </div>
       <div class="title-row">
-        <h1>Föhndiagramm GCV</h1>
+        <h1 id="pageTitle">Föhndiagramm</h1>
         <img class="logo" src="./logo.png" alt="Logo Gleitschirm Club Vinschgau">
       </div>
     </header>
@@ -349,14 +378,12 @@
     </div>
 
     <div id="page-livewerte" style="display:none;">
-      <div class="section empty-state">
-        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 15l3.5-5"></path>
-          <path d="M3.6 15a9 9 0 1 1 16.8 0"></path>
-          <circle cx="12" cy="15" r="1.3" fill="currentColor" stroke="none"></circle>
-        </svg>
-        <h2>Live-Werte Wetterstationen</h2>
-        <p>Dieser Bereich ist noch in Arbeit und folgt in Kürze.</p>
+      <div class="section">
+        <h2>Live-Windwerte Vinschgau</h2>
+        <div id="windMap"></div>
+        <div class="wind-legend" id="windLegend"></div>
+        <div class="wind-detail-panel" id="windDetailPanel"></div>
+        <p class="wind-note">Quelle: Autonome Provinz Bozen – Südtirol, Wetterstationen im Tal. Zeigt aktuell die Talstationen im Vinschgau; Bergstationen folgen. Auf eine Station klicken für Details.</p>
       </div>
     </div>
   </div>
@@ -367,6 +394,8 @@
     var dropdown = document.getElementById('menuDropdown');
     var items = dropdown.querySelectorAll('.menu-item');
     var pages = { foehndiagramm: document.getElementById('page-foehndiagramm'), livewerte: document.getElementById('page-livewerte') };
+    var titles = { foehndiagramm: 'Föhndiagramm', livewerte: 'Live-Windwerte' };
+    var titleEl = document.getElementById('pageTitle');
 
     toggle.addEventListener('click', function(e){
       e.stopPropagation();
@@ -382,6 +411,8 @@
         Object.keys(pages).forEach(function(key){
           pages[key].style.display = (key === page) ? '' : 'none';
         });
+        titleEl.textContent = titles[page];
+        if (page === 'livewerte' && window.initWindMap) window.initWindMap();
         dropdown.classList.remove('open');
         toggle.setAttribute('aria-expanded', 'false');
       });
@@ -946,6 +977,120 @@
 
   load();
   setInterval(load, 3 * 60 * 1000);
+
+  /* ---------- Live-Windwerte Karte (Vinschgau) ---------- */
+  // Koordinaten stammen aus der offiziellen Bürgernetz-Stationsliste (Talstationen).
+  // Bergstationen im Vinschgau (Schnals, Melag, Schleis) fehlen hier noch, da für
+  // die exakten Koordinaten kein verlässlicher Datenpunkt gefunden wurde - folgen
+  // in einer künftigen Version.
+  var VINSCHGAU_STATIONS = [
+    { code: '02200MS', name: 'St. Valentin a.d. Haide', lat: 46.7759, lon: 10.5289 },
+    { code: '01110MS', name: 'Langtaufers Grub', lat: 46.8365, lon: 10.6330 },
+    { code: '02500MS', name: 'Marienberg', lat: 46.7057, lon: 10.5213 },
+    { code: '09700MS', name: 'Schlanders', lat: 46.6238, lon: 10.7803 },
+    { code: '08200MS', name: 'Laas Eyrs', lat: 46.6249, lon: 10.6496 },
+    { code: '11400MS', name: 'Hintermartell', lat: 46.5169, lon: 10.7269 },
+    { code: '06400MS', name: 'Sulden', lat: 46.5159, lon: 10.5953 },
+    { code: '24400MS', name: 'Ulten Weißbrunn', lat: 46.4868, lon: 10.8318 },
+    { code: '15800MS', name: 'Schnals Vernagt', lat: 46.7357, lon: 10.8493 },
+    { code: '19300MS', name: 'Naturns', lat: 46.6477, lon: 10.9912 },
+    { code: '27100MS', name: 'Gargazon', lat: 46.5767, lon: 11.2008 },
+    { code: '23200MS', name: 'Meran', lat: 46.6880, lon: 11.1366 }
+  ];
+
+  var windMapInstance = null;
+
+  function windColor(kmh){
+    if (kmh === null || kmh === undefined) return '#B9C2C0';
+    if (kmh < 10) return '#22C55E';
+    if (kmh < 18) return '#A3D93B';
+    if (kmh < 26) return '#F2C94C';
+    if (kmh < 34) return '#F2994A';
+    if (kmh < 42) return '#EB5757';
+    return '#C2185B';
+  }
+
+  function windDirLabel(deg){
+    if (deg === null || deg === undefined || isNaN(deg)) return '—';
+    var dirs = ['N','NO','O','SO','S','SW','W','NW'];
+    return dirs[Math.round(deg / 45) % 8];
+  }
+
+  function buildWindLegend(){
+    var steps = [
+      { label: '< 10 km/h', v: 5 }, { label: '10–18 km/h', v: 14 }, { label: '18–26 km/h', v: 22 },
+      { label: '26–34 km/h', v: 30 }, { label: '34–42 km/h', v: 38 }, { label: '≥ 42 km/h', v: 50 }
+    ];
+    document.getElementById('windLegend').innerHTML = steps.map(function(s){
+      return '<span><span class="sw" style="background:' + windColor(s.v) + '"></span>' + s.label + '</span>';
+    }).join('');
+  }
+
+  function showWindDetail(station, d){
+    var panel = document.getElementById('windDetailPanel');
+    var gust = d ? d.gustKmh : null;
+    var avg = d ? d.avgKmh : null;
+    var dir = d ? d.dirDeg : null;
+    var temp = d ? d.tempC : null;
+    var hum = d ? d.humidityPct : null;
+    var time = (d && d.lastUpdated) ? d.lastUpdated.replace('T', ' ').replace(/CEST|CET/, '') : '—';
+
+    panel.innerHTML =
+      '<h3>' + station.name + '</h3>' +
+      '<div class="wind-detail-grid">' +
+        '<div><span class="wdg-label">Windböe</span><span class="wdg-value">' + (gust !== null && gust !== undefined ? gust + ' km/h' : '—') + '</span></div>' +
+        '<div><span class="wdg-label">Mittlere Windgeschwindigkeit</span><span class="wdg-value">' + (avg !== null && avg !== undefined ? avg + ' km/h' : '—') + '</span></div>' +
+        '<div><span class="wdg-label">Windrichtung</span><span class="wdg-value">' + windDirLabel(dir) + (dir !== null && dir !== undefined ? ' (' + Math.round(dir) + '°)' : '') + '</span></div>' +
+        '<div><span class="wdg-label">Lufttemperatur</span><span class="wdg-value">' + (temp !== null && temp !== undefined ? temp.toFixed(1) + ' °C' : '—') + '</span></div>' +
+        '<div><span class="wdg-label">Luftfeuchte</span><span class="wdg-value">' + (hum !== null && hum !== undefined ? hum.toFixed(0) + ' %' : '—') + '</span></div>' +
+        '<div><span class="wdg-label">Letztes Update</span><span class="wdg-value">' + time + '</span></div>' +
+      '</div>';
+    panel.classList.add('open');
+  }
+
+  window.initWindMap = function(){
+    if (windMapInstance) {
+      setTimeout(function(){ windMapInstance.invalidateSize(); }, 50);
+      return; // schon initialisiert - Tab war nur unsichtbar, Größe neu berechnen reicht
+    }
+    buildWindLegend();
+
+    windMapInstance = L.map('windMap', { scrollWheelZoom: true }).setView([46.66, 10.78], 10);
+    L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      attribution: 'Karte: © OpenTopoMap (CC-BY-SA) · Daten: Autonome Provinz Bozen – Südtirol',
+      maxZoom: 16
+    }).addTo(windMapInstance);
+
+    var markersByCode = {};
+    VINSCHGAU_STATIONS.forEach(function(station){
+      var icon = L.divIcon({
+        className: '',
+        html: '<div class="wind-marker" id="marker-' + station.code + '" style="width:36px;height:36px;background:#B9C2C0;">–</div>',
+        iconSize: [36, 36]
+      });
+      var marker = L.marker([station.lat, station.lon], { icon: icon }).addTo(windMapInstance);
+      markersByCode[station.code] = marker;
+    });
+
+    fetch('./data/wind.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.json() : { stations: {} }; })
+      .then(function(payload){
+        var stations = payload.stations || {};
+        VINSCHGAU_STATIONS.forEach(function(station){
+          var d = stations[station.code];
+          var gust = d ? d.gustKmh : null;
+          var el = document.getElementById('marker-' + station.code);
+          if (el) {
+            el.style.background = windColor(gust);
+            el.textContent = (gust !== null && gust !== undefined) ? Math.round(gust) : '–';
+          }
+          markersByCode[station.code].on('click', function(){
+            showWindDetail(station, d);
+          });
+        });
+      })
+      .catch(function(){ /* Karte bleibt grau, still fehlschlagen */ });
+  };
 </script>
 </body>
 </html>
