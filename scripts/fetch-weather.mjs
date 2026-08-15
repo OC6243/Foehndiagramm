@@ -367,6 +367,44 @@ async function fillPair(history, pairKey, stationCode, stationLabel, geosphereKe
   });
 }
 
+/******************** Live-Windwerte (Vinschgau-Stationskarte) ********************/
+// Wird separat vom Föhndiagramm-Verlauf gepflegt: hier reicht der jeweils
+// aktuellste Wert je Station (kein Verlauf), deshalb ein eigener, einfacherer
+// Abruf ohne Backfill-Logik. Läuft serverseitig, weil die Bürgernetz-API keine
+// CORS-Header setzt und Browser-seitige Abrufe deshalb blockiert werden.
+const WIND_STATION_PATH = path.join(__dirname, "..", "data", "wind.json");
+const WIND_STATION_CODES = [
+  "02200MS", "01110MS", "02500MS", "09700MS", "08200MS", "11400MS",
+  "06400MS", "24400MS", "15800MS", "19300MS", "27100MS", "23200MS"
+];
+
+async function fetchWindStations() {
+  const result = {};
+  await Promise.all(WIND_STATION_CODES.map(async (code) => {
+    try {
+      const url = `https://daten.buergernetz.bz.it/services/meteo/v1/sensors?station_code=${code}`;
+      const data = await fetchJson(url, { headers: { Accept: "application/json", "User-Agent": "foehndiagramm-web/1.0" } });
+      const get = (type) => {
+        const e = Array.isArray(data) ? data.find((d) => d.TYPE === type) : null;
+        return e ? e.VALUE : null;
+      };
+      const dateEntry = Array.isArray(data) ? data.find((d) => d.DATE) : null;
+      result[code] = {
+        gustKmh: get("WG.BOE") !== null ? round1(get("WG.BOE") * 3.6) : null,
+        avgKmh: get("WG") !== null ? round1(get("WG") * 3.6) : null,
+        dirDeg: get("WR"),
+        tempC: get("LT"),
+        humidityPct: get("LF"),
+        lastUpdated: dateEntry ? dateEntry.DATE : null
+      };
+    } catch (err) {
+      console.warn(`Windstation ${code} fehlgeschlagen: ${err.message}`);
+      result[code] = null;
+    }
+  }));
+  return result;
+}
+
 async function main() {
   const history = await loadHistory();
   const now = new Date();
@@ -374,9 +412,12 @@ async function main() {
 
   console.log(`Lauf gestartet um ${now.toISOString()} UTC.`);
 
-  await Promise.all([
-    fillPair(history, "bozenInnsbruck", "83200MS", "Bozen", "innsbruck", geosphereCache, now),
-    fillPair(history, "imstMeran", "23200MS", "Meran", "imst", geosphereCache, now)
+  const [, windStations] = await Promise.all([
+    Promise.all([
+      fillPair(history, "bozenInnsbruck", "83200MS", "Bozen", "innsbruck", geosphereCache, now),
+      fillPair(history, "imstMeran", "23200MS", "Meran", "imst", geosphereCache, now)
+    ]),
+    fetchWindStations()
   ]);
 
   history.generatedAt = new Intl.DateTimeFormat("de-DE", {
@@ -386,6 +427,9 @@ async function main() {
 
   await writeFile(DATA_PATH, JSON.stringify(history, null, 2) + "\n", "utf-8");
   console.log("data/history.json aktualisiert.");
+
+  await writeFile(WIND_STATION_PATH, JSON.stringify({ stations: windStations, generatedAt: history.generatedAt }, null, 2) + "\n", "utf-8");
+  console.log("data/wind.json aktualisiert.");
 }
 
 main().catch((err) => {
