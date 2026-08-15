@@ -177,19 +177,11 @@
   .empty-state p{ margin:0; color:var(--muted); font-size:14px; max-width:38ch; line-height:1.6; }
 
   #windMap{ height:560px; width:100%; border-radius:14px; background:#EEF1F0; }
-  .wind-marker{
-    display:flex; align-items:center; justify-content:center;
-    border-radius:50%; color:#fff; font-family:'IBM Plex Sans', sans-serif;
-    font-weight:700; font-size:12px; border:2px solid rgba(255,255,255,0.85);
-    box-shadow:0 2px 6px rgba(0,0,0,0.25);
-  }
-  .wind-legend{
-    display:flex; flex-wrap:wrap; gap:14px; align-items:center;
-    margin-top:14px; font-size:12.5px; color:var(--muted);
-  }
-  .wind-legend span{ display:inline-flex; align-items:center; gap:6px; }
-  .wind-legend .sw{ width:14px; height:14px; border-radius:50%; display:inline-block; }
+  @media (max-width:600px){ #windMap{ height:420px; } }
+  .windsock-icon{ cursor:pointer; }
+  .windsock-icon.no-data{ opacity:0.4; }
   .wind-note{ font-size:12px; color:var(--muted); margin-top:10px; line-height:1.6; }
+  .wind-note a{ color:var(--cool); }
   .wind-detail-panel{
     display:none; margin-top:16px; padding:16px 18px;
     background:#F7F8F8; border:1px solid var(--hairline); border-radius:12px;
@@ -381,9 +373,8 @@
       <div class="section">
         <h2>Live-Windwerte Vinschgau</h2>
         <div id="windMap"></div>
-        <div class="wind-legend" id="windLegend"></div>
         <div class="wind-detail-panel" id="windDetailPanel"></div>
-        <p class="wind-note">Quelle: Autonome Provinz Bozen – Südtirol, Wetterstationen im Tal. Zeigt aktuell die Talstationen im Vinschgau; Bergstationen folgen. Auf eine Station klicken für Details.</p>
+        <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
       </div>
     </div>
   </div>
@@ -978,37 +969,110 @@
   load();
   setInterval(load, 3 * 60 * 1000);
 
-  /* ---------- Live-Windwerte Karte (Vinschgau) ---------- */
-  // Koordinaten stammen aus der offiziellen Bürgernetz-Stationsliste (Talstationen).
-  // Bergstationen im Vinschgau (Schnals, Melag, Schleis) fehlen hier noch, da für
-  // die exakten Koordinaten kein verlässlicher Datenpunkt gefunden wurde - folgen
-  // in einer künftigen Version.
-  var VINSCHGAU_STATIONS = [
-    { code: '02200MS', name: 'St. Valentin a.d. Haide', lat: 46.7759, lon: 10.5289 },
-    { code: '01110MS', name: 'Langtaufers Grub', lat: 46.8365, lon: 10.6330 },
-    { code: '02500MS', name: 'Marienberg', lat: 46.7057, lon: 10.5213 },
-    { code: '09700MS', name: 'Schlanders', lat: 46.6238, lon: 10.7803 },
-    { code: '08200MS', name: 'Laas Eyrs', lat: 46.6249, lon: 10.6496 },
-    { code: '11400MS', name: 'Hintermartell', lat: 46.5169, lon: 10.7269 },
-    { code: '06400MS', name: 'Sulden', lat: 46.5159, lon: 10.5953 },
-    { code: '24400MS', name: 'Ulten Weißbrunn', lat: 46.4868, lon: 10.8318 },
-    { code: '15800MS', name: 'Schnals Vernagt', lat: 46.7357, lon: 10.8493 },
-    { code: '19300MS', name: 'Naturns', lat: 46.6477, lon: 10.9912 },
-    { code: '27100MS', name: 'Gargazon', lat: 46.5767, lon: 11.2008 },
-    { code: '23200MS', name: 'Meran', lat: 46.6880, lon: 11.1366 }
+  /* ---------- Live-Windwerte Karte (ganz Südtirol) ---------- */
+  // Vollständige Liste aller Wetterstationen (Tal- und Bergstationen), vom
+  // Nutzer bereitgestellt - Koordinaten und API-Codes direkt übernommen.
+  var ALL_STATIONS = [
+    { code: '85600MS', name: 'Altrei', lat: 46.297500, lon: 11.418200 },
+    { code: '82300MS', name: 'Andrian', lat: 46.512200, lon: 11.231500 },
+    { code: '52150MS', name: 'Antholz Niedertal', lat: 46.883100, lon: 12.186800 },
+    { code: '86100MS', name: 'Auer', lat: 46.347500, lon: 11.291700 },
+    { code: '70200MS', name: 'Barbian', lat: 46.641200, lon: 11.538500 },
+    { code: '83200MS', name: 'Bozen', lat: 46.497685, lon: 11.312831 },
+    { code: '86200MS', name: 'Branzoll', lat: 46.398000, lon: 11.271500 },
+    { code: '68200MS', name: 'Brixen', lat: 46.728500, lon: 11.649500 },
+    { code: '57300MS', name: 'Bruneck', lat: 46.791500, lon: 11.936200 },
+    { code: '24200MS', name: 'Burgstall', lat: 46.591200, lon: 11.178500 },
+    { code: '63600MS', name: 'Corvara', lat: 46.551800, lon: 11.874500 },
+    { code: '85120MS', name: 'Deutschnofen', lat: 46.420486, lon: 11.426858 },
+    { code: '83800MS', name: 'Eppan Girlan', lat: 46.458200, lon: 11.248200 },
+    { code: '69200MS', name: 'Feldthurns', lat: 46.702500, lon: 11.621500 },
+    { code: '34100MS', name: 'Franzensfeste', lat: 46.812500, lon: 11.558200 },
+    { code: '25200MS', name: 'Gargazon', lat: 46.581500, lon: 11.201400 },
+    { code: '58800MS', name: 'Gsies', lat: 46.758200, lon: 12.181500 },
+    { code: '60200MS', name: 'Innichen', lat: 46.732500, lon: 12.281500 },
+    { code: '84100MS', name: 'Kaltern', lat: 46.419200, lon: 11.248200 },
+    { code: '74200MS', name: 'Kastelruth', lat: 46.568200, lon: 11.561500 },
+    { code: '56200MS', name: 'Kiens', lat: 46.791500, lon: 11.831500 },
+    { code: '70100MS', name: 'Klausen', lat: 46.648200, lon: 11.591500 },
+    { code: '83600MS', name: 'Kohlern', lat: 46.461200, lon: 11.358200 },
+    { code: '08200MS', name: 'Laas', lat: 46.619500, lon: 10.684500 },
+    { code: '24400MS', name: 'Lana', lat: 46.612500, lon: 11.149200 },
+    { code: '16100MS', name: 'Latsch', lat: 46.628200, lon: 10.858200 },
+    { code: '83400MS', name: 'Leifers', lat: 46.421500, lon: 11.304200 },
+    { code: '69100MS', name: 'Lüsen', lat: 46.738200, lon: 11.731500 },
+    { code: '04600MS', name: 'Mals', lat: 46.688200, lon: 10.548500 },
+    { code: '11200MS', name: 'Martell Dorf', lat: 46.558200, lon: 10.781500 },
+    { code: '23200MS', name: 'Meran', lat: 46.688058, lon: 11.136560 },
+    { code: '81200MS', name: 'Mölten', lat: 46.581500, lon: 11.281500 },
+    { code: '86700MS', name: 'Montan', lat: 46.328200, lon: 11.321500 },
+    { code: '82100MS', name: 'Nals', lat: 46.542200, lon: 11.204500 },
+    { code: '19100MS', name: 'Naturns', lat: 46.648200, lon: 10.998500 },
+    { code: '86400MS', name: 'Neumarkt', lat: 46.311500, lon: 11.341500 },
+    { code: '59200MS', name: 'Niederdorf', lat: 46.738500, lon: 12.164200 },
+    { code: '57900MS', name: 'Olang', lat: 46.762200, lon: 12.034500 },
+    { code: '21200MS', name: 'Partschins', lat: 46.682500, lon: 11.064500 },
+    { code: '21700MS', name: 'Passeier St. Leonhard', lat: 46.812500, lon: 11.248200 },
+    { code: '21500MS', name: 'Passeier St. Martin', lat: 46.772500, lon: 11.231500 },
+    { code: '20910MS', name: 'Platt in Passeier', lat: 46.821466, lon: 11.176217 },
+    { code: '06600MS', name: 'Prad am Stilfserjoch', lat: 46.618500, lon: 10.591200 },
+    { code: '53200MS', name: 'Prettau', lat: 47.042500, lon: 12.112200 },
+    { code: '52100MS', name: 'Rasen-Antholz', lat: 46.791500, lon: 12.101500 },
+    { code: '54500MS', name: 'Rein in Taufers', lat: 46.942838, lon: 12.082499 },
+    { code: '01100MS', name: 'Reschen', lat: 46.828500, lon: 10.512200 },
+    { code: '22200MS', name: 'Riffian', lat: 46.702500, lon: 11.184500 },
+    { code: '88820MS', name: 'Salurn', lat: 46.236236, lon: 11.185487 },
+    { code: '54100MS', name: 'Sand in Taufers', lat: 46.918200, lon: 11.954200 },
+    { code: '80200MS', name: 'Sarnthein', lat: 46.642500, lon: 11.358200 },
+    { code: '80500MS', name: 'Sankt Felix', lat: 46.512500, lon: 11.138200 },
+    { code: '62600MS', name: 'Sankt Martin in Thurn', lat: 46.679181, lon: 11.897935 },
+    { code: '24100MS', name: 'Sankt Pankraz', lat: 46.581500, lon: 11.088500 },
+    { code: '09700MS', name: 'Schlanders', lat: 46.623755, lon: 10.780270 },
+    { code: '07200MS', name: 'Schluderns', lat: 46.668200, lon: 10.581500 },
+    { code: '91510MS', name: 'Sexten', lat: 46.702500, lon: 12.351200 },
+    { code: '31200MS', name: 'Sterzing', lat: 46.892500, lon: 11.431500 },
+    { code: '06100MS', name: 'Stilfs', lat: 46.598500, lon: 10.542200 },
+    { code: '05100MS', name: 'Taufers im Münstertal', lat: 46.642500, lon: 10.461500 },
+    { code: '82200MS', name: 'Terlan', lat: 46.531200, lon: 11.248500 },
+    { code: '76200MS', name: 'Tiers', lat: 46.468200, lon: 11.524500 },
+    { code: '59500MS', name: 'Toblach', lat: 46.721500, lon: 12.221500 },
+    { code: '87200MS', name: 'Tramin', lat: 46.341200, lon: 11.241500 },
+    { code: '68300MS', name: 'Vahrn', lat: 46.751500, lon: 11.651500 },
+    { code: '65300MS', name: 'Vintl', lat: 46.818500, lon: 11.714500 },
+    { code: '75600MS', name: 'Völs am Schlern', lat: 46.518200, lon: 11.504200 },
+    { code: '58400MS', name: 'Welsberg', lat: 46.758200, lon: 12.104500 },
+    { code: '85200MS', name: 'Welschnofen', lat: 46.418200, lon: 11.468200 },
+    { code: '64600MS', name: 'Wolkenstein', lat: 46.554200, lon: 11.758500 },
+    { code: '31900WS', name: 'Grubberg', lat: 46.918500, lon: 11.481500 },
+    { code: '15050WS', name: 'Grawand Schnals', lat: 46.770253, lon: 10.796645 },
+    { code: '00390SF', name: 'Graun Schöneben', lat: 46.806492, lon: 10.497973 },
+    { code: '62800MS', name: 'Heiligkreuz', lat: 46.608500, lon: 11.891200 },
+    { code: '22600WS', name: 'Hirzer', lat: 46.731500, lon: 11.264200 },
+    { code: '85800MS', name: 'Jochgrimm', lat: 46.342500, lon: 11.458200 },
+    { code: '74400SF', name: 'Kastelruth Marinzen', lat: 46.558200, lon: 11.551500 },
+    { code: '23600SF', name: 'Knottnkino Hafling', lat: 46.654200, lon: 11.218500 },
+    { code: '31810SF', name: 'Ladurns', lat: 46.934775, lon: 11.366330 },
+    { code: '85400WS', name: 'Latemar', lat: 46.371200, lon: 11.521500 },
+    { code: '06080WS', name: 'Madritsch Sulden', lat: 46.491500, lon: 10.651500 },
+    { code: '02500MS', name: 'Marienberg', lat: 46.702500, lon: 10.518500 },
+    { code: '23400MS', name: 'Meran 2000', lat: 46.671200, lon: 11.241500 },
+    { code: '20600MS', name: 'Pfelders Berg', lat: 46.792500, lon: 11.091200 },
+    { code: '69900MS', name: 'Plose Berg', lat: 46.698630, lon: 11.733841 },
+    { code: '01600MS', name: 'Raseis', lat: 46.811500, lon: 10.541200 },
+    { code: '82500WS', name: 'Rittner Horn', lat: 46.615564, lon: 11.460353 },
+    { code: '31400WS', name: 'Rosskopf', lat: 46.901500, lon: 11.401500 },
+    { code: '80800WS', name: 'Sarner Weißhorn', lat: 46.702500, lon: 11.391200 },
+    { code: '75400MS', name: 'Seiser Alm', lat: 46.542500, lon: 11.621500 },
+    { code: '54800WS', name: 'Speikboden', lat: 46.918500, lon: 11.884200 },
+    { code: '06000MS', name: 'Stilfserjoch', lat: 46.528500, lon: 10.458500 },
+    { code: '06040WS', name: 'Sulden Schöntaufspitze', lat: 46.502882, lon: 10.628586 },
+    { code: '24300SF', name: 'Ulten Rossbänke', lat: 46.469351, lon: 10.819436 },
+    { code: '24170WS', name: 'Ulten Weißbrunnspitz', lat: 46.493978, lon: 10.773983 },
+    { code: '04400MS', name: 'Watles / Marienberg', lat: 46.691500, lon: 10.501200 },
+    { code: '33200WS', name: 'Zinseler', lat: 46.842500, lon: 11.461500 }
   ];
 
   var windMapInstance = null;
-
-  function windColor(kmh){
-    if (kmh === null || kmh === undefined) return '#B9C2C0';
-    if (kmh < 10) return '#22C55E';
-    if (kmh < 18) return '#A3D93B';
-    if (kmh < 26) return '#F2C94C';
-    if (kmh < 34) return '#F2994A';
-    if (kmh < 42) return '#EB5757';
-    return '#C2185B';
-  }
 
   function windDirLabel(deg){
     if (deg === null || deg === undefined || isNaN(deg)) return '—';
@@ -1016,14 +1080,25 @@
     return dirs[Math.round(deg / 45) % 8];
   }
 
-  function buildWindLegend(){
-    var steps = [
-      { label: '< 10 km/h', v: 5 }, { label: '10–18 km/h', v: 14 }, { label: '18–26 km/h', v: 22 },
-      { label: '26–34 km/h', v: 30 }, { label: '34–42 km/h', v: 38 }, { label: '≥ 42 km/h', v: 50 }
-    ];
-    document.getElementById('windLegend').innerHTML = steps.map(function(s){
-      return '<span><span class="sw" style="background:' + windColor(s.v) + '"></span>' + s.label + '</span>';
-    }).join('');
+  // Windsack-Symbol: dunkler Punkt = exakte Stationsposition (Drehpunkt), das
+  // gestreifte Segel zeigt in die Richtung, in die der Wind BLÄST (also
+  // 180° gegenüber der meteorologischen "Windrichtung", die angibt, WOHER
+  // der Wind kommt). Ohne Richtungsdaten: blass dargestellt, Standardausrichtung.
+  function buildWindsockIcon(dirDeg){
+    var hasData = (dirDeg !== null && dirDeg !== undefined && !isNaN(dirDeg));
+    var bearing = hasData ? (dirDeg + 180) % 360 : 90;
+    var rotation = bearing - 90; // 0° im SVG zeigt nach rechts = Osten (90°) -> Differenz ausgleichen
+    return '<div class="windsock-icon' + (hasData ? '' : ' no-data') + '" style="position:relative;width:38px;height:16px;">' +
+      '<svg width="38" height="16" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
+        'style="position:absolute;left:0;top:0;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;">' +
+        '<line x1="6" y1="12" x2="18" y2="5" stroke="#3A4750" stroke-width="1.3"/>' +
+        '<line x1="6" y1="12" x2="18" y2="19" stroke="#3A4750" stroke-width="1.3"/>' +
+        '<polygon points="18,5 18,19 31,17 31,7" fill="#E5342A"/>' +
+        '<polygon points="31,7 31,17 45,15 45,9" fill="#ffffff" stroke="#cfd3d2" stroke-width="0.4"/>' +
+        '<polygon points="45,9 45,15 58,13.5 58,10.5" fill="#E5342A"/>' +
+        '<circle cx="6" cy="12" r="5" fill="#2B2B2B"/>' +
+      '</svg>' +
+    '</div>';
   }
 
   function showWindDetail(station, d){
@@ -1053,43 +1128,30 @@
       setTimeout(function(){ windMapInstance.invalidateSize(); }, 50);
       return; // schon initialisiert - Tab war nur unsichtbar, Größe neu berechnen reicht
     }
-    buildWindLegend();
 
-    windMapInstance = L.map('windMap', { scrollWheelZoom: true }).setView([46.66, 10.78], 10);
+    // Startansicht: gezielt auf den Vinschgau zugeschnitten (wie im Referenzbild),
+    // auch wenn Marker für ganz Südtirol geladen werden - man kann rauszoomen,
+    // um den Rest zu sehen.
+    windMapInstance = L.map('windMap', { scrollWheelZoom: true });
+    windMapInstance.fitBounds([[46.44, 10.35], [46.92, 11.25]]);
     L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       attribution: 'Karte: © OpenTopoMap (CC-BY-SA) · Daten: Autonome Provinz Bozen – Südtirol',
       maxZoom: 16
     }).addTo(windMapInstance);
 
-    var markersByCode = {};
-    VINSCHGAU_STATIONS.forEach(function(station){
-      var icon = L.divIcon({
-        className: '',
-        html: '<div class="wind-marker" id="marker-' + station.code + '" style="width:36px;height:36px;background:#B9C2C0;">–</div>',
-        iconSize: [36, 36]
-      });
-      var marker = L.marker([station.lat, station.lon], { icon: icon }).addTo(windMapInstance);
-      markersByCode[station.code] = marker;
-    });
-
     fetch('./data/wind.json?t=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.ok ? r.json() : { stations: {} }; })
       .then(function(payload){
         var stations = payload.stations || {};
-        VINSCHGAU_STATIONS.forEach(function(station){
+        ALL_STATIONS.forEach(function(station){
           var d = stations[station.code];
-          var gust = d ? d.gustKmh : null;
-          var el = document.getElementById('marker-' + station.code);
-          if (el) {
-            el.style.background = windColor(gust);
-            el.textContent = (gust !== null && gust !== undefined) ? Math.round(gust) : '–';
-          }
-          markersByCode[station.code].on('click', function(){
-            showWindDetail(station, d);
-          });
+          var dir = d ? d.dirDeg : null;
+          var icon = L.divIcon({ className: '', html: buildWindsockIcon(dir), iconSize: [38, 16], iconAnchor: [3.8, 8] });
+          var marker = L.marker([station.lat, station.lon], { icon: icon }).addTo(windMapInstance);
+          marker.on('click', function(){ showWindDetail(station, d); });
         });
       })
-      .catch(function(){ /* Karte bleibt grau, still fehlschlagen */ });
+      .catch(function(){ /* Karte bleibt ohne Marker, still fehlschlagen */ });
   };
 </script>
 </body>
