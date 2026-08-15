@@ -179,7 +179,6 @@
   #windMap{ height:560px; width:100%; border-radius:14px; background:#EEF1F0; }
   @media (max-width:600px){ #windMap{ height:420px; } }
   .windsock-icon{ cursor:pointer; }
-  .windsock-icon.no-data{ opacity:0.4; }
   .wind-note{ font-size:12px; color:var(--muted); margin-top:10px; line-height:1.6; }
   .wind-note a{ color:var(--cool); }
   .wind-detail-panel{
@@ -194,6 +193,20 @@
   }
   .wind-detail-grid .wdg-label{ font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted); display:block; }
   .wind-detail-grid .wdg-value{ font-weight:700; color:var(--ink); }
+
+  .wind-charts-row{
+    display:flex; flex-wrap:wrap; gap:18px; margin-top:18px;
+  }
+  .wind-chart-box{
+    flex:1 1 320px; background:var(--panel); border:1px solid var(--hairline);
+    border-radius:10px; padding:12px 14px;
+  }
+  .wind-chart-title{
+    font-family:'IBM Plex Sans', sans-serif; font-size:12px; font-weight:700;
+    color:var(--muted); margin-bottom:8px;
+  }
+  .wind-compass-box{ display:flex; flex-direction:column; align-items:center; }
+  .wind-compass-box .wind-chart-title{ align-self:flex-start; }
 
   .section-grid{
     display:flex;
@@ -1081,16 +1094,26 @@
   }
 
   // Windsack-Symbol: dunkler Punkt = exakte Stationsposition (Drehpunkt), das
-  // gestreifte Segel zeigt in die Richtung, in die der Wind BLÄST (also
-  // 180° gegenüber der meteorologischen "Windrichtung", die angibt, WOHER
-  // der Wind kommt). Ohne Richtungsdaten: blass dargestellt, Standardausrichtung.
-  function buildWindsockIcon(dirDeg){
+  // gestreifte Segel zeigt in die Richtung, in die der Wind BLÄST (also 180°
+  // gegenüber der meteorologischen "Windrichtung", die angibt, WOHER der Wind
+  // kommt). Auf der gegenüberliegenden Seite (also dort, WOHER der Wind kommt)
+  // steht ein kleines Rechteck mit Geschwindigkeit (oben) und Böe (unten).
+  function buildWindsockIcon(dirDeg, avgKmh, gustKmh){
     var hasData = (dirDeg !== null && dirDeg !== undefined && !isNaN(dirDeg));
     var bearing = hasData ? (dirDeg + 180) % 360 : 90;
     var rotation = bearing - 90; // 0° im SVG zeigt nach rechts = Osten (90°) -> Differenz ausgleichen
-    return '<div class="windsock-icon' + (hasData ? '' : ' no-data') + '" style="position:relative;width:38px;height:16px;">' +
+    var rectAngle = hasData ? dirDeg : 270; // Gegenüberliegende Seite = woher der Wind kommt
+    var rad = rectAngle * Math.PI / 180;
+    var cx = 45, cy = 45, radius = 24;
+    var rx = cx + radius * Math.sin(rad);
+    var ry = cy - radius * Math.cos(rad);
+    var rectW = 30, rectH = 22;
+    var avgTxt = (avgKmh !== null && avgKmh !== undefined) ? Math.round(avgKmh) : '–';
+    var gustTxt = (gustKmh !== null && gustKmh !== undefined) ? Math.round(gustKmh) : '–';
+
+    return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;">' +
       '<svg width="38" height="16" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
-        'style="position:absolute;left:0;top:0;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;">' +
+        'style="position:absolute;left:' + (cx - 3.8) + 'px;top:' + (cy - 8) + 'px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;">' +
         '<line x1="6" y1="12" x2="18" y2="5" stroke="#3A4750" stroke-width="1.3"/>' +
         '<line x1="6" y1="12" x2="18" y2="19" stroke="#3A4750" stroke-width="1.3"/>' +
         '<polygon points="18,5 18,19 31,17 31,7" fill="#E5342A"/>' +
@@ -1098,17 +1121,114 @@
         '<polygon points="45,9 45,15 58,13.5 58,10.5" fill="#E5342A"/>' +
         '<circle cx="6" cy="12" r="5" fill="#2B2B2B"/>' +
       '</svg>' +
+      '<div style="position:absolute;left:' + (rx - rectW / 2) + 'px;top:' + (ry - rectH / 2) + 'px;width:' + rectW + 'px;height:' + rectH + 'px;' +
+        'background:rgba(255,255,255,0.96);border:1px solid #C9CFCD;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,0.18);' +
+        'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:10px;line-height:1.25;color:#1C2B3A;font-weight:700;">' +
+        '<span>' + avgTxt + '</span><span style="color:#C1443C;">' + gustTxt + '</span>' +
+      '</div>' +
     '</div>';
   }
 
-  function showWindDetail(station, d){
+  // ---- Geschwindigkeitsverlauf (Chart.js, wie Föhndiagramm) ----
+  function buildWindSpeedChart(rows){
+    var labels = rows.map(function(r){ return r.time; });
+    var avgData = rows.map(function(r){ return r.avgKmh; });
+    var gustData = rows.map(function(r){ return r.gustKmh; });
+    if (charts['wind-speed-chart']) charts['wind-speed-chart'].destroy();
+    var ctx = document.getElementById('wind-speed-chart').getContext('2d');
+    charts['wind-speed-chart'] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Böe', data: gustData, borderColor: '#C1443C', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
+          { label: 'Mittel', data: avgData, borderColor: '#1C2B3A', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11, family: "'IBM Plex Sans', sans-serif" } } },
+          tooltip: { mode: 'index', intersect: false, callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + (ctx.parsed.y === null ? '—' : ctx.parsed.y) + ' km/h'; } } }
+        },
+        scales: {
+          x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 7, font: { size: 9, family: "'IBM Plex Mono', monospace" } } },
+          y: { beginAtZero: true, title: { display: true, text: 'km/h', font: { size: 10 } }, ticks: { font: { size: 9, family: "'IBM Plex Mono', monospace" } } }
+        }
+      }
+    });
+  }
+
+  // ---- Windrichtungs-Kompass der letzten 6h ----
+  // Radius = wie lange her (innerster Ring = 10 Min., je weiter außen desto
+  // älter, ganz außen = 6h). Winkel = Windrichtung. Farbe je Stunde von
+  // dunkel (aktuell) zu hellgrau (älter), aktuellster Punkt grün.
+  function buildWindCompassSvg(rows){
+    var totalRings = 36; // 6h bei 10-Minuten-Takt
+    var size = 220, center = 110, rMax = 88;
+    var ordered = rows.slice().reverse().slice(0, totalRings); // neueste zuerst
+
+    var svg = '<svg width="220" height="220" viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg">';
+    for (var k = 1; k <= totalRings; k++){
+      var r = (k / totalRings) * rMax;
+      var isHourRing = (k % 6 === 0);
+      svg += '<circle cx="' + center + '" cy="' + center + '" r="' + r.toFixed(1) + '" fill="none" stroke="' +
+        (isHourRing ? '#B9C2C0' : '#E9EDEC') + '" stroke-width="' + (isHourRing ? 1 : 0.6) + '"/>';
+    }
+    svg += '<line x1="' + center + '" y1="' + (center - rMax) + '" x2="' + center + '" y2="' + (center + rMax) + '" stroke="#D5D9D8" stroke-width="1"/>';
+    svg += '<line x1="' + (center - rMax) + '" y1="' + center + '" x2="' + (center + rMax) + '" y2="' + center + '" stroke="#D5D9D8" stroke-width="1"/>';
+    [{ t: 'N', a: 0 }, { t: 'O', a: 90 }, { t: 'S', a: 180 }, { t: 'W', a: 270 }].forEach(function(l){
+      var rad = l.a * Math.PI / 180;
+      var lx = center + (rMax + 13) * Math.sin(rad);
+      var ly = center - (rMax + 13) * Math.cos(rad);
+      svg += '<text x="' + lx.toFixed(1) + '" y="' + (ly + 4).toFixed(1) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-size="12" font-weight="700" fill="#5B6B72">' + l.t + '</text>';
+    });
+
+    var points = [];
+    ordered.forEach(function(row, i){
+      var dir = row.dirDeg;
+      if (dir === null || dir === undefined || isNaN(dir)) return;
+      var r = ((i + 1) / totalRings) * rMax;
+      var rad = dir * Math.PI / 180;
+      points.push({ x: center + r * Math.sin(rad), y: center - r * Math.cos(rad), i: i });
+    });
+
+    if (points.length > 1){
+      var d = 'M' + points[points.length - 1].x.toFixed(1) + ',' + points[points.length - 1].y.toFixed(1);
+      for (var p = points.length - 2; p >= 0; p--){ d += ' L' + points[p].x.toFixed(1) + ',' + points[p].y.toFixed(1); }
+      svg += '<path d="' + d + '" fill="none" stroke="#8FA5B8" stroke-width="1" stroke-opacity="0.5"/>';
+    }
+
+    points.forEach(function(pt){
+      var isNewest = (pt.i === 0);
+      var fill;
+      if (isNewest) {
+        fill = '#22C55E';
+      } else {
+        var hourBucket = Math.min(Math.floor(pt.i / 6), 5);
+        var t = hourBucket / 5; // 0 = aktuellste Stunde (dunkel) .. 1 = älteste (hellgrau)
+        var gray = Math.round(40 + t * 170);
+        fill = 'rgb(' + gray + ',' + gray + ',' + gray + ')';
+      }
+      var radius = isNewest ? 5 : 3.2;
+      svg += '<circle cx="' + pt.x.toFixed(1) + '" cy="' + pt.y.toFixed(1) + '" r="' + radius + '" fill="' + fill + '"' + (isNewest ? ' stroke="#fff" stroke-width="1.2"' : '') + '/>';
+    });
+
+    svg += '</svg>';
+    return svg;
+  }
+
+  function showWindDetail(station, rows){
     var panel = document.getElementById('windDetailPanel');
-    var gust = d ? d.gustKmh : null;
-    var avg = d ? d.avgKmh : null;
-    var dir = d ? d.dirDeg : null;
-    var temp = d ? d.tempC : null;
-    var hum = d ? d.humidityPct : null;
-    var time = (d && d.lastUpdated) ? d.lastUpdated.replace('T', ' ').replace(/CEST|CET/, '') : '—';
+    var last = (rows && rows.length) ? rows[rows.length - 1] : null;
+    var gust = last ? last.gustKmh : null;
+    var avg = last ? last.avgKmh : null;
+    var dir = last ? last.dirDeg : null;
+    var temp = last ? last.tempC : null;
+    var hum = last ? last.humidityPct : null;
+    var time = (last && last.instantUTC) ? (last.time || '—') : '—';
 
     panel.innerHTML =
       '<h3>' + station.name + '</h3>' +
@@ -1119,8 +1239,23 @@
         '<div><span class="wdg-label">Lufttemperatur</span><span class="wdg-value">' + (temp !== null && temp !== undefined ? temp.toFixed(1) + ' °C' : '—') + '</span></div>' +
         '<div><span class="wdg-label">Luftfeuchte</span><span class="wdg-value">' + (hum !== null && hum !== undefined ? hum.toFixed(0) + ' %' : '—') + '</span></div>' +
         '<div><span class="wdg-label">Letztes Update</span><span class="wdg-value">' + time + '</span></div>' +
+      '</div>' +
+      '<div class="wind-charts-row">' +
+        '<div class="wind-chart-box">' +
+          '<div class="wind-chart-title">Windgeschwindigkeit &amp; Böe (letzte 6h)</div>' +
+          '<div style="height:200px;"><canvas id="wind-speed-chart"></canvas></div>' +
+        '</div>' +
+        '<div class="wind-chart-box wind-compass-box">' +
+          '<div class="wind-chart-title">Windrichtung (letzte 6h)</div>' +
+          '<div id="wind-compass-container"></div>' +
+        '</div>' +
       '</div>';
     panel.classList.add('open');
+
+    if (rows && rows.length){
+      buildWindSpeedChart(rows.slice(-36));
+      document.getElementById('wind-compass-container').innerHTML = buildWindCompassSvg(rows);
+    }
   }
 
   window.initWindMap = function(){
@@ -1144,11 +1279,16 @@
       .then(function(payload){
         var stations = payload.stations || {};
         ALL_STATIONS.forEach(function(station){
-          var d = stations[station.code];
-          var dir = d ? d.dirDeg : null;
-          var icon = L.divIcon({ className: '', html: buildWindsockIcon(dir), iconSize: [38, 16], iconAnchor: [3.8, 8] });
+          var entry = stations[station.code];
+          var rows = (entry && entry.rows) ? entry.rows : [];
+          var last = rows.length ? rows[rows.length - 1] : null;
+
+          var dir = last ? last.dirDeg : null;
+          var avg = last ? last.avgKmh : null;
+          var gust = last ? last.gustKmh : null;
+          var icon = L.divIcon({ className: '', html: buildWindsockIcon(dir, avg, gust), iconSize: [90, 90], iconAnchor: [45, 45] });
           var marker = L.marker([station.lat, station.lon], { icon: icon }).addTo(windMapInstance);
-          marker.on('click', function(){ showWindDetail(station, d); });
+          marker.on('click', function(){ showWindDetail(station, rows); });
         });
       })
       .catch(function(){ /* Karte bleibt ohne Marker, still fehlschlagen */ });
