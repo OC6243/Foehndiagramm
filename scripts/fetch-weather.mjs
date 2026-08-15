@@ -367,12 +367,13 @@ async function fillPair(history, pairKey, stationCode, stationLabel, geosphereKe
   });
 }
 
-/******************** Live-Windwerte (Vinschgau-Stationskarte) ********************/
-// Wird separat vom Föhndiagramm-Verlauf gepflegt: hier reicht der jeweils
-// aktuellste Wert je Station (kein Verlauf), deshalb ein eigener, einfacherer
-// Abruf ohne Backfill-Logik. Läuft serverseitig, weil die Bürgernetz-API keine
-// CORS-Header setzt und Browser-seitige Abrufe deshalb blockiert werden.
+/******************** Live-Windwerte (Südtirol-Stationskarte) ********************/
+// Jetzt mit rollierendem Verlauf pro Station (nicht mehr nur der letzte Wert),
+// damit Geschwindigkeits- und Richtungsverlauf der letzten 6h angezeigt werden
+// können. Läuft serverseitig, weil die Bürgernetz-API keine CORS-Header setzt
+// und Browser-seitige Abrufe deshalb blockiert werden.
 const WIND_STATION_PATH = path.join(__dirname, "..", "data", "wind.json");
+const MAX_WIND_ROWS = 40; // ~6,5h bei 10-Minuten-Takt (6h Anzeige + etwas Puffer)
 const WIND_STATION_CODES = [
   "85600MS", "82300MS", "52150MS", "86100MS", "70200MS", "83200MS", "86200MS", "68200MS",
   "57300MS", "24200MS", "63600MS", "85120MS", "83800MS", "69200MS", "34100MS", "25200MS",
@@ -389,8 +390,18 @@ const WIND_STATION_CODES = [
   "24170WS", "04400MS", "33200WS"
 ];
 
-async function fetchWindStations() {
-  const result = {};
+async function loadWindHistory() {
+  try {
+    const raw = await readFile(WIND_STATION_PATH, "utf-8");
+    const parsed = JSON.parse(raw);
+    if (!parsed.stations) parsed.stations = {};
+    return parsed;
+  } catch {
+    return { stations: {} };
+  }
+}
+
+async function fetchWindStations(windData) {
   await Promise.all(WIND_STATION_CODES.map(async (code) => {
     try {
       const url = `https://daten.buergernetz.bz.it/services/meteo/v1/sensors?station_code=${code}`;
@@ -404,35 +415,49 @@ async function fetchWindStations() {
         return e ? e.VALUE : null;
       };
       const dateEntry = Array.isArray(data) ? data.find((d) => d.DATE) : null;
-      result[code] = {
-        gustKmh: get("WG.BOE") !== null ? round1(get("WG.BOE") * 3.6) : null,
+      const instant = dateEntry ? parseBuergernetzDate(String(dateEntry.DATE)) : new Date();
+
+      const row = {
+        instantUTC: instant.toISOString(),
+        time: fmtTime(instant),
         avgKmh: get("WG") !== null ? round1(get("WG") * 3.6) : null,
+        gustKmh: get("WG.BOE") !== null ? round1(get("WG.BOE") * 3.6) : null,
         dirDeg: get("WR"),
         tempC: get("LT"),
-        humidityPct: get("LF"),
-        lastUpdated: dateEntry ? dateEntry.DATE : null
+        humidityPct: get("LF")
       };
+
+      if (!windData.stations[code]) windData.stations[code] = { rows: [] };
+      const pair = windData.stations[code];
+      const last = pair.rows[pair.rows.length - 1];
+      if (!last || last.instantUTC !== row.instantUTC) {
+        pair.rows.push(row);
+        pair.rows.sort((a, b) => new Date(a.instantUTC) - new Date(b.instantUTC));
+        if (pair.rows.length > MAX_WIND_ROWS) {
+          pair.rows = pair.rows.slice(pair.rows.length - MAX_WIND_ROWS);
+        }
+      }
     } catch (err) {
       console.warn(`Windstation ${code} fehlgeschlagen: ${err.message}`);
-      result[code] = null;
     }
   }));
-  return result;
+  return windData;
 }
 
 async function main() {
   const history = await loadHistory();
+  const windHistory = await loadWindHistory();
   const now = new Date();
   const geosphereCache = {}; // slotISO -> {innsbruck, imst} | null - vermeidet doppelte GeoSphere-Abrufe
 
   console.log(`Lauf gestartet um ${now.toISOString()} UTC.`);
 
-  const [, windStations] = await Promise.all([
+  const [, windData] = await Promise.all([
     Promise.all([
       fillPair(history, "bozenInnsbruck", "83200MS", "Bozen", "innsbruck", geosphereCache, now),
       fillPair(history, "imstMeran", "23200MS", "Meran", "imst", geosphereCache, now)
     ]),
-    fetchWindStations()
+    fetchWindStations(windHistory)
   ]);
 
   history.generatedAt = new Intl.DateTimeFormat("de-DE", {
@@ -443,7 +468,8 @@ async function main() {
   await writeFile(DATA_PATH, JSON.stringify(history, null, 2) + "\n", "utf-8");
   console.log("data/history.json aktualisiert.");
 
-  await writeFile(WIND_STATION_PATH, JSON.stringify({ stations: windStations, generatedAt: history.generatedAt }, null, 2) + "\n", "utf-8");
+  windData.generatedAt = history.generatedAt;
+  await writeFile(WIND_STATION_PATH, JSON.stringify(windData, null, 2) + "\n", "utf-8");
   console.log("data/wind.json aktualisiert.");
 }
 
