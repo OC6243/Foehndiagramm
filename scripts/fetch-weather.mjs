@@ -374,8 +374,19 @@ async function fillPair(history, pairKey, stationCode, stationLabel, geosphereKe
 // CORS-Header setzt und Browser-seitige Abrufe deshalb blockiert werden.
 const WIND_STATION_PATH = path.join(__dirname, "..", "data", "wind.json");
 const WIND_STATION_CODES = [
-  "02200MS", "01110MS", "02500MS", "09700MS", "08200MS", "11400MS",
-  "06400MS", "24400MS", "15800MS", "19300MS", "27100MS", "23200MS"
+  "85600MS", "82300MS", "52150MS", "86100MS", "70200MS", "83200MS", "86200MS", "68200MS",
+  "57300MS", "24200MS", "63600MS", "85120MS", "83800MS", "69200MS", "34100MS", "25200MS",
+  "58800MS", "60200MS", "84100MS", "74200MS", "56200MS", "70100MS", "83600MS", "08200MS",
+  "24400MS", "16100MS", "83400MS", "69100MS", "04600MS", "11200MS", "23200MS", "81200MS",
+  "86700MS", "82100MS", "19100MS", "86400MS", "59200MS", "57900MS", "21200MS", "21700MS",
+  "21500MS", "20910MS", "06600MS", "53200MS", "52100MS", "54500MS", "01100MS", "22200MS",
+  "88820MS", "54100MS", "80200MS", "80500MS", "62600MS", "24100MS", "09700MS", "07200MS",
+  "91510MS", "31200MS", "06100MS", "05100MS", "82200MS", "76200MS", "59500MS", "87200MS",
+  "68300MS", "65300MS", "75600MS", "58400MS", "85200MS", "64600MS",
+  "31900WS", "15050WS", "00390SF", "62800MS", "22600WS", "85800MS", "74400SF", "23600SF",
+  "31810SF", "85400WS", "06080WS", "02500MS", "23400MS", "20600MS", "69900MS", "01600MS",
+  "82500WS", "31400WS", "80800WS", "75400MS", "54800WS", "06000MS", "06040WS", "24300SF",
+  "24170WS", "04400MS", "33200WS"
 ];
 
 async function fetchWindStations() {
@@ -383,7 +394,11 @@ async function fetchWindStations() {
   await Promise.all(WIND_STATION_CODES.map(async (code) => {
     try {
       const url = `https://daten.buergernetz.bz.it/services/meteo/v1/sensors?station_code=${code}`;
-      const data = await fetchJson(url, { headers: { Accept: "application/json", "User-Agent": "foehndiagramm-web/1.0" } });
+      const data = await withRetry(
+        () => fetchJson(url, { headers: { Accept: "application/json", "User-Agent": "foehndiagramm-web/1.0" } }),
+        `Windstation ${code}`,
+        RETRY_COUNT
+      );
       const get = (type) => {
         const e = Array.isArray(data) ? data.find((d) => d.TYPE === type) : null;
         return e ? e.VALUE : null;
