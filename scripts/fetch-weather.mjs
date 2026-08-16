@@ -368,6 +368,9 @@ async function fillPair(history, pairKey, stationCode, stationLabel, geosphereKe
 }
 
 /******************** Live-Windwerte (Südtirol-Stationskarte) ********************/
+// Namen, Codes und Koordinaten verifiziert gegen die offizielle Quelle
+// (wetter.provinz.bz.it + daten.buergernetz.bz.it), Stand 15.08.2026.
+// Alle 97 Stationen Südtirols vollständig verifiziert (57 Tal + 40 Berg).
 // Jetzt mit rollierendem Verlauf pro Station (nicht mehr nur der letzte Wert),
 // damit Geschwindigkeits- und Richtungsverlauf der letzten 6h angezeigt werden
 // können. Läuft serverseitig, weil die Bürgernetz-API keine CORS-Header setzt
@@ -375,19 +378,19 @@ async function fillPair(history, pairKey, stationCode, stationLabel, geosphereKe
 const WIND_STATION_PATH = path.join(__dirname, "..", "data", "wind.json");
 const MAX_WIND_ROWS = 40; // ~6,5h bei 10-Minuten-Takt (6h Anzeige + etwas Puffer)
 const WIND_STATION_CODES = [
-  "85600MS", "82300MS", "52150MS", "86100MS", "70200MS", "83200MS", "86200MS", "68200MS",
-  "57300MS", "24200MS", "63600MS", "85120MS", "83800MS", "69200MS", "34100MS", "25200MS",
-  "58800MS", "60200MS", "84100MS", "74200MS", "56200MS", "70100MS", "83600MS", "08200MS",
-  "24400MS", "16100MS", "83400MS", "69100MS", "04600MS", "11200MS", "23200MS", "81200MS",
-  "86700MS", "82100MS", "19100MS", "86400MS", "59200MS", "57900MS", "21200MS", "21700MS",
-  "21500MS", "20910MS", "06600MS", "53200MS", "52100MS", "54500MS", "01100MS", "22200MS",
-  "88820MS", "54100MS", "80200MS", "80500MS", "62600MS", "24100MS", "09700MS", "07200MS",
-  "91510MS", "31200MS", "06100MS", "05100MS", "82200MS", "76200MS", "59500MS", "87200MS",
-  "68300MS", "65300MS", "75600MS", "58400MS", "85200MS", "64600MS",
-  "31900WS", "15050WS", "00390SF", "62800MS", "22600WS", "85800MS", "74400SF", "23600SF",
-  "31810SF", "85400WS", "06080WS", "02500MS", "23400MS", "20600MS", "69900MS", "01600MS",
-  "82500WS", "31400WS", "80800WS", "75400MS", "54800WS", "06000MS", "06040WS", "24300SF",
-  "24170WS", "04400MS", "33200WS"
+  "37100MS", "20500MS", "19300MS", "80300MS", "50500MS", "34500MS", "56900MS", "54500MS",
+  "09700MS", "82200MS", "88820MS", "59700MS", "85120MS", "83200MS", "86900MS", "39100MS",
+  "08200MS", "23200MS", "47400MS", "86600MS", "37700MS", "74900MS", "89190MS", "22210MS",
+  "25900MS", "73500MS", "68600MS", "02200MS", "41000MS", "75600MS", "62600MS", "11400MS",
+  "02500MS", "33500MS", "44500MS", "06400MS", "65600MS", "24400MS", "43200MS", "78305MS",
+  "56500MS", "42700MS", "15800MS", "65350MS", "82910MS", "27100MS", "85700MS", "87300MS",
+  "66500MS", "20910MS", "31410MS", "78110MS", "61300MS", "01110MS", "71510MS", "79300MS",
+  "91510MS", "82500WS", "00390SF", "31810SF", "69900MS", "06040WS", "24300SF", "24170WS",
+  "15050WS", "61690SF", "61720WS", "62270SF", "78480SF", "90200MS", "00700WS", "45200SF",
+  "45100WS", "35100WS", "01080SF", "80100SF", "20690SF", "20720WS", "66000WS", "66100SF",
+  "42830SF", "50400WS", "50360SF", "90005SF", "35205SF", "54100SF", "02700SF", "15590SF",
+  "15000SF", "74200MS", "91180SF", "34200WS", "06090SF", "20050SF", "91210WS", "07740WS",
+  "53200SF"
 ];
 
 async function loadWindHistory() {
