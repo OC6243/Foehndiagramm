@@ -135,6 +135,24 @@ async function withRetry(fn, label, maxAttempts) {
   throw lastErr;
 }
 
+// Verarbeitet eine Liste mit maximal `limit` gleichzeitigen Aufrufen von fn,
+// statt alle auf einmal loszuschicken (vermeidet HTTP 429 Ratenbegrenzung
+// bei APIs, die viele gleichzeitige Anfragen von derselben IP ablehnen).
+async function mapWithConcurrencyLimit(items, limit, fn) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  async function worker() {
+    while (nextIndex < items.length) {
+      const current = nextIndex++;
+      results[current] = await fn(items[current], current);
+    }
+  }
+  const workers = [];
+  for (let i = 0; i < Math.min(limit, items.length); i++) workers.push(worker());
+  await Promise.all(workers);
+  return results;
+}
+
 // Wählt aus einer Liste von {instant, value} den Eintrag, der zeitlich am
 // nächsten am Zielzeitpunkt liegt.
 function closestTo(entries, targetSlot) {
@@ -404,8 +422,10 @@ async function loadWindHistory() {
   }
 }
 
+const WIND_FETCH_CONCURRENCY = 6; // max. gleichzeitige Anfragen - verhindert HTTP 429 bei der API
+
 async function fetchWindStations(windData) {
-  await Promise.all(WIND_STATION_CODES.map(async (code) => {
+  await mapWithConcurrencyLimit(WIND_STATION_CODES, WIND_FETCH_CONCURRENCY, async (code) => {
     try {
       const url = `https://daten.buergernetz.bz.it/services/meteo/v1/sensors?station_code=${code}`;
       const data = await withRetry(
@@ -443,7 +463,7 @@ async function fetchWindStations(windData) {
     } catch (err) {
       console.warn(`Windstation ${code} fehlgeschlagen: ${err.message}`);
     }
-  }));
+  });
   return windData;
 }
 
