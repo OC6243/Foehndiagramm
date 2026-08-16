@@ -121,7 +121,8 @@ async function fetchJson(url, options) {
   return res.json();
 }
 
-async function withRetry(fn, label, maxAttempts) {
+async function withRetry(fn, label, maxAttempts, baseDelayMs) {
+  const delay = baseDelayMs || RETRY_DELAY_MS;
   let lastErr;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -129,21 +130,39 @@ async function withRetry(fn, label, maxAttempts) {
     } catch (err) {
       lastErr = err;
       console.warn(`${label}: Versuch ${attempt}/${maxAttempts} fehlgeschlagen (${err.message})`);
-      if (attempt < maxAttempts) await sleep(RETRY_DELAY_MS);
+      if (attempt < maxAttempts) {
+        // Bei Ratenbegrenzung (429) deutlich länger warten und mit jedem
+        // Versuch weiter erhöhen (exponentiell), statt der normalen Pause.
+        const isRateLimited = /HTTP 429/.test(err.message);
+        const wait = isRateLimited ? delay * Math.pow(2, attempt) : delay;
+        await sleep(wait);
+      }
     }
   }
   throw lastErr;
 }
 
+// Staffelt zusätzlich zur Konkurrenzbegrenzung auch den START jeder neuen
+// Anfrage zeitlich, damit nie mehrere Anfragen im selben Sekundenbruchteil
+// starten (manche APIs limitieren nicht nur gleichzeitige Verbindungen,
+// sondern auch die Anfragerate pro Zeitfenster).
+
 // Verarbeitet eine Liste mit maximal `limit` gleichzeitigen Aufrufen von fn,
 // statt alle auf einmal loszuschicken (vermeidet HTTP 429 Ratenbegrenzung
 // bei APIs, die viele gleichzeitige Anfragen von derselben IP ablehnen).
-async function mapWithConcurrencyLimit(items, limit, fn) {
+async function mapWithConcurrencyLimit(items, limit, fn, staggerMs) {
   const results = new Array(items.length);
   let nextIndex = 0;
+  let nextAllowedStart = Date.now(); // wird synchron reserviert, keine Wettlaufbedingung zwischen Workern
   async function worker() {
     while (nextIndex < items.length) {
       const current = nextIndex++;
+      if (staggerMs) {
+        const myStart = Math.max(Date.now(), nextAllowedStart);
+        nextAllowedStart = myStart + staggerMs; // sofort reserviert, bevor "await" die Kontrolle abgibt
+        const wait = myStart - Date.now();
+        if (wait > 0) await sleep(wait);
+      }
       results[current] = await fn(items[current], current);
     }
   }
@@ -422,7 +441,9 @@ async function loadWindHistory() {
   }
 }
 
-const WIND_FETCH_CONCURRENCY = 6; // max. gleichzeitige Anfragen - verhindert HTTP 429 bei der API
+const WIND_FETCH_CONCURRENCY = 3;   // max. gleichzeitige Anfragen - deutlich vorsichtiger, da 6 bei der API immer noch 429 auslöste
+const WIND_FETCH_STAGGER_MS = 350;  // Mindestabstand zwischen dem Start je zweier Anfragen (über alle Worker hinweg)
+const WIND_RETRY_BASE_DELAY_MS = 10 * 1000; // Basis-Wartezeit bei Fehlschlag, wird bei HTTP 429 zusätzlich exponentiell erhöht
 
 async function fetchWindStations(windData) {
   await mapWithConcurrencyLimit(WIND_STATION_CODES, WIND_FETCH_CONCURRENCY, async (code) => {
@@ -431,7 +452,8 @@ async function fetchWindStations(windData) {
       const data = await withRetry(
         () => fetchJson(url, { headers: { Accept: "application/json", "User-Agent": "foehndiagramm-web/1.0" } }),
         `Windstation ${code}`,
-        RETRY_COUNT
+        RETRY_COUNT,
+        WIND_RETRY_BASE_DELAY_MS
       );
       const get = (type) => {
         const e = Array.isArray(data) ? data.find((d) => d.TYPE === type) : null;
@@ -463,7 +485,7 @@ async function fetchWindStations(windData) {
     } catch (err) {
       console.warn(`Windstation ${code} fehlgeschlagen: ${err.message}`);
     }
-  });
+  }, WIND_FETCH_STAGGER_MS);
   return windData;
 }
 
