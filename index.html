@@ -178,7 +178,7 @@
 
   #windMap{ height:560px; width:100%; border-radius:14px; background:#EEF1F0; }
   @media (max-width:600px){ #windMap{ height:420px; } }
-  .windsock-icon{ cursor:pointer; }
+  .windsock-icon{ cursor:pointer; transform-origin:center center; transition:transform 0.15s ease-out; }
   .wind-note{ font-size:12px; color:var(--muted); margin-top:10px; line-height:1.6; }
   .wind-note a{ color:var(--cool); }
   .wind-detail-panel{
@@ -982,107 +982,108 @@
   load();
   setInterval(load, 3 * 60 * 1000);
 
-  /* ---------- Live-Windwerte Karte (ganz Südtirol) ---------- */
-  // Vollständige Liste aller Wetterstationen (Tal- und Bergstationen), vom
-  // Nutzer bereitgestellt - Koordinaten und API-Codes direkt übernommen.
+  /* ---------- Live-Windwerte Karte (Südtirol) ---------- */
+  // Namen, Codes und Koordinaten verifiziert gegen die offizielle Quelle
+  // (wetter.provinz.bz.it + daten.buergernetz.bz.it), Stand 15.08.2026.
+  // Alle 97 Stationen Südtirols vollständig verifiziert (57 Tal + 40 Berg).
   var ALL_STATIONS = [
-    { code: '85600MS', name: 'Altrei', lat: 46.297500, lon: 11.418200 },
-    { code: '82300MS', name: 'Andrian', lat: 46.512200, lon: 11.231500 },
-    { code: '52150MS', name: 'Antholz Niedertal', lat: 46.883100, lon: 12.186800 },
-    { code: '86100MS', name: 'Auer', lat: 46.347500, lon: 11.291700 },
-    { code: '70200MS', name: 'Barbian', lat: 46.641200, lon: 11.538500 },
-    { code: '83200MS', name: 'Bozen', lat: 46.497685, lon: 11.312831 },
-    { code: '86200MS', name: 'Branzoll', lat: 46.398000, lon: 11.271500 },
-    { code: '68200MS', name: 'Brixen', lat: 46.728500, lon: 11.649500 },
-    { code: '57300MS', name: 'Bruneck', lat: 46.791500, lon: 11.936200 },
-    { code: '24200MS', name: 'Burgstall', lat: 46.591200, lon: 11.178500 },
-    { code: '63600MS', name: 'Corvara', lat: 46.551800, lon: 11.874500 },
-    { code: '85120MS', name: 'Deutschnofen', lat: 46.420486, lon: 11.426858 },
-    { code: '83800MS', name: 'Eppan Girlan', lat: 46.458200, lon: 11.248200 },
-    { code: '69200MS', name: 'Feldthurns', lat: 46.702500, lon: 11.621500 },
-    { code: '34100MS', name: 'Franzensfeste', lat: 46.812500, lon: 11.558200 },
-    { code: '25200MS', name: 'Gargazon', lat: 46.581500, lon: 11.201400 },
-    { code: '58800MS', name: 'Gsies', lat: 46.758200, lon: 12.181500 },
-    { code: '60200MS', name: 'Innichen', lat: 46.732500, lon: 12.281500 },
-    { code: '84100MS', name: 'Kaltern', lat: 46.419200, lon: 11.248200 },
-    { code: '74200MS', name: 'Kastelruth', lat: 46.568200, lon: 11.561500 },
-    { code: '56200MS', name: 'Kiens', lat: 46.791500, lon: 11.831500 },
-    { code: '70100MS', name: 'Klausen', lat: 46.648200, lon: 11.591500 },
-    { code: '83600MS', name: 'Kohlern', lat: 46.461200, lon: 11.358200 },
-    { code: '08200MS', name: 'Laas', lat: 46.619500, lon: 10.684500 },
-    { code: '24400MS', name: 'Lana', lat: 46.612500, lon: 11.149200 },
-    { code: '16100MS', name: 'Latsch', lat: 46.628200, lon: 10.858200 },
-    { code: '83400MS', name: 'Leifers', lat: 46.421500, lon: 11.304200 },
-    { code: '69100MS', name: 'Lüsen', lat: 46.738200, lon: 11.731500 },
-    { code: '04600MS', name: 'Mals', lat: 46.688200, lon: 10.548500 },
-    { code: '11200MS', name: 'Martell Dorf', lat: 46.558200, lon: 10.781500 },
-    { code: '23200MS', name: 'Meran', lat: 46.688058, lon: 11.136560 },
-    { code: '81200MS', name: 'Mölten', lat: 46.581500, lon: 11.281500 },
-    { code: '86700MS', name: 'Montan', lat: 46.328200, lon: 11.321500 },
-    { code: '82100MS', name: 'Nals', lat: 46.542200, lon: 11.204500 },
-    { code: '19100MS', name: 'Naturns', lat: 46.648200, lon: 10.998500 },
-    { code: '86400MS', name: 'Neumarkt', lat: 46.311500, lon: 11.341500 },
-    { code: '59200MS', name: 'Niederdorf', lat: 46.738500, lon: 12.164200 },
-    { code: '57900MS', name: 'Olang', lat: 46.762200, lon: 12.034500 },
-    { code: '21200MS', name: 'Partschins', lat: 46.682500, lon: 11.064500 },
-    { code: '21700MS', name: 'Passeier St. Leonhard', lat: 46.812500, lon: 11.248200 },
-    { code: '21500MS', name: 'Passeier St. Martin', lat: 46.772500, lon: 11.231500 },
-    { code: '20910MS', name: 'Platt in Passeier', lat: 46.821466, lon: 11.176217 },
-    { code: '06600MS', name: 'Prad am Stilfserjoch', lat: 46.618500, lon: 10.591200 },
-    { code: '53200MS', name: 'Prettau', lat: 47.042500, lon: 12.112200 },
-    { code: '52100MS', name: 'Rasen-Antholz', lat: 46.791500, lon: 12.101500 },
-    { code: '54500MS', name: 'Rein in Taufers', lat: 46.942838, lon: 12.082499 },
-    { code: '01100MS', name: 'Reschen', lat: 46.828500, lon: 10.512200 },
-    { code: '22200MS', name: 'Riffian', lat: 46.702500, lon: 11.184500 },
-    { code: '88820MS', name: 'Salurn', lat: 46.236236, lon: 11.185487 },
-    { code: '54100MS', name: 'Sand in Taufers', lat: 46.918200, lon: 11.954200 },
-    { code: '80200MS', name: 'Sarnthein', lat: 46.642500, lon: 11.358200 },
-    { code: '80500MS', name: 'Sankt Felix', lat: 46.512500, lon: 11.138200 },
-    { code: '62600MS', name: 'Sankt Martin in Thurn', lat: 46.679181, lon: 11.897935 },
-    { code: '24100MS', name: 'Sankt Pankraz', lat: 46.581500, lon: 11.088500 },
-    { code: '09700MS', name: 'Schlanders', lat: 46.623755, lon: 10.780270 },
-    { code: '07200MS', name: 'Schluderns', lat: 46.668200, lon: 10.581500 },
-    { code: '91510MS', name: 'Sexten', lat: 46.702500, lon: 12.351200 },
-    { code: '31200MS', name: 'Sterzing', lat: 46.892500, lon: 11.431500 },
-    { code: '06100MS', name: 'Stilfs', lat: 46.598500, lon: 10.542200 },
-    { code: '05100MS', name: 'Taufers im Münstertal', lat: 46.642500, lon: 10.461500 },
-    { code: '82200MS', name: 'Terlan', lat: 46.531200, lon: 11.248500 },
-    { code: '76200MS', name: 'Tiers', lat: 46.468200, lon: 11.524500 },
-    { code: '59500MS', name: 'Toblach', lat: 46.721500, lon: 12.221500 },
-    { code: '87200MS', name: 'Tramin', lat: 46.341200, lon: 11.241500 },
-    { code: '68300MS', name: 'Vahrn', lat: 46.751500, lon: 11.651500 },
-    { code: '65300MS', name: 'Vintl', lat: 46.818500, lon: 11.714500 },
-    { code: '75600MS', name: 'Völs am Schlern', lat: 46.518200, lon: 11.504200 },
-    { code: '58400MS', name: 'Welsberg', lat: 46.758200, lon: 12.104500 },
-    { code: '85200MS', name: 'Welschnofen', lat: 46.418200, lon: 11.468200 },
-    { code: '64600MS', name: 'Wolkenstein', lat: 46.554200, lon: 11.758500 },
-    { code: '31900WS', name: 'Grubberg', lat: 46.918500, lon: 11.481500 },
-    { code: '15050WS', name: 'Grawand Schnals', lat: 46.770253, lon: 10.796645 },
-    { code: '00390SF', name: 'Graun Schöneben', lat: 46.806492, lon: 10.497973 },
-    { code: '62800MS', name: 'Heiligkreuz', lat: 46.608500, lon: 11.891200 },
-    { code: '22600WS', name: 'Hirzer', lat: 46.731500, lon: 11.264200 },
-    { code: '85800MS', name: 'Jochgrimm', lat: 46.342500, lon: 11.458200 },
-    { code: '74400SF', name: 'Kastelruth Marinzen', lat: 46.558200, lon: 11.551500 },
-    { code: '23600SF', name: 'Knottnkino Hafling', lat: 46.654200, lon: 11.218500 },
-    { code: '31810SF', name: 'Ladurns', lat: 46.934775, lon: 11.366330 },
-    { code: '85400WS', name: 'Latemar', lat: 46.371200, lon: 11.521500 },
-    { code: '06080WS', name: 'Madritsch Sulden', lat: 46.491500, lon: 10.651500 },
-    { code: '02500MS', name: 'Marienberg', lat: 46.702500, lon: 10.518500 },
-    { code: '23400MS', name: 'Meran 2000', lat: 46.671200, lon: 11.241500 },
-    { code: '20600MS', name: 'Pfelders Berg', lat: 46.792500, lon: 11.091200 },
-    { code: '69900MS', name: 'Plose Berg', lat: 46.698630, lon: 11.733841 },
-    { code: '01600MS', name: 'Raseis', lat: 46.811500, lon: 10.541200 },
+    { code: '37100MS', name: 'Sterzing', lat: 46.8850, lon: 11.4386 },
+    { code: '20500MS', name: 'Pfelders', lat: 46.7965, lon: 11.0883 },
+    { code: '19300MS', name: 'Naturns', lat: 46.6477, lon: 10.9912 },
+    { code: '80300MS', name: 'Pens', lat: 46.78078, lon: 11.4166 },
+    { code: '50500MS', name: 'Prettau', lat: 47.0366, lon: 12.0991 },
+    { code: '34500MS', name: 'Ridnaun', lat: 46.9091, lon: 11.3068 },
+    { code: '56900MS', name: 'Sand i.T. Mühlen', lat: 46.9003, lon: 11.9474 },
+    { code: '54500MS', name: 'Rein in Taufers', lat: 46.9428, lon: 12.0825 },
+    { code: '09700MS', name: 'Schlanders', lat: 46.6238, lon: 10.7803 },
+    { code: '82200MS', name: 'Sarnthein', lat: 46.6406, lon: 11.3551 },
+    { code: '88820MS', name: 'Salurn', lat: 46.2362, lon: 11.1855 },
+    { code: '59700MS', name: 'Bruneck', lat: 46.8043, lon: 11.9315 },
+    { code: '85120MS', name: 'Deutschnofen', lat: 46.4205, lon: 11.4269 },
+    { code: '83200MS', name: 'Bozen', lat: 46.4977, lon: 11.3128 },
+    { code: '86900MS', name: 'Auer', lat: 46.3469, lon: 11.3050 },
+    { code: '39100MS', name: 'Brixen - Vahrn', lat: 46.7310, lon: 11.6451 },
+    { code: '08200MS', name: 'Laas Eyrs', lat: 46.6249, lon: 10.6496 },
+    { code: '23200MS', name: 'Meran', lat: 46.6880, lon: 11.1366 },
+    { code: '47400MS', name: 'Antholz Obertal', lat: 46.8704, lon: 12.1166 },
+    { code: '86600MS', name: 'Laimburg', lat: 46.3825, lon: 11.2887 },
+    { code: '37700MS', name: 'Franzensfeste Grasstein', lat: 46.8125, lon: 11.5488 },
+    { code: '74900MS', name: 'Barbian Kollmann', lat: 46.5951, lon: 11.5291 },
+    { code: '89190MS', name: 'Kaltern Oberplanitzing', lat: 46.4423, lon: 11.2525 },
+    { code: '22210MS', name: 'St. Martin in Passeier', lat: 46.7822, lon: 11.2294 },
+    { code: '25900MS', name: 'St. Walburg', lat: 46.5417, lon: 10.9898 },
+    { code: '73500MS', name: 'Wolkenstein', lat: 46.5456, lon: 11.7684 },
+    { code: '68600MS', name: 'Vals', lat: 46.8483, lon: 11.6272 },
+    { code: '02200MS', name: 'St. Valentin a.d. Haide', lat: 46.7759, lon: 10.5289 },
+    { code: '41000MS', name: 'Toblach', lat: 46.7299, lon: 12.2191 },
+    { code: '75600MS', name: 'Völs am Schlern', lat: 46.5134, lon: 11.5060 },
+    { code: '62600MS', name: 'St. Martin in Thurn', lat: 46.6792, lon: 11.8979 },
+    { code: '11400MS', name: 'Hintermartell', lat: 46.5169, lon: 10.7269 },
+    { code: '02500MS', name: 'Marienberg', lat: 46.7057, lon: 10.5213 },
+    { code: '33500MS', name: 'Pfitsch St. Jakob', lat: 46.9656, lon: 11.5981 },
+    { code: '44500MS', name: 'St. Magdalena in Gsies', lat: 46.8353, lon: 12.2427 },
+    { code: '06400MS', name: 'Sulden', lat: 46.5159, lon: 10.5953 },
+    { code: '65600MS', name: 'Terenten', lat: 46.8345, lon: 11.7856 },
+    { code: '24400MS', name: 'Ulten Weißbrunn', lat: 46.4868, lon: 10.8318 },
+    { code: '43200MS', name: 'Welsberg', lat: 46.7431, lon: 12.1289 },
+    { code: '78305MS', name: 'Welschnofen', lat: 46.4289, lon: 11.5366 },
+    { code: '56500MS', name: 'Mühlwald', lat: 46.8901, lon: 11.8744 },
+    { code: '42700MS', name: 'St. Veit in Prags', lat: 46.7119, lon: 12.1000 },
+    { code: '15800MS', name: 'Schnals Vernagt', lat: 46.7357, lon: 10.8493 },
+    { code: '65350MS', name: 'Obervintl', lat: 46.8111, lon: 11.7534 },
+    { code: '82910MS', name: 'Jenesien', lat: 46.5304, lon: 11.3319 },
+    { code: '27100MS', name: 'Gargazon', lat: 46.5767, lon: 11.2008 },
+    { code: '85700MS', name: 'Branzoll', lat: 46.4065, lon: 11.3111 },
+    { code: '87300MS', name: 'Radein', lat: 46.3465, lon: 11.3968 },
+    { code: '66500MS', name: 'Pfunders', lat: 46.8872, lon: 11.7029 },
+    { code: '20910MS', name: 'Platt in Passeier', lat: 46.8215, lon: 11.1762 },
+    { code: '31410MS', name: 'Pflersch', lat: 46.9557, lon: 11.3793 },
+    { code: '78110MS', name: 'Karerpass', lat: 46.4092, lon: 11.6017 },
+    { code: '61300MS', name: 'Corvara', lat: 46.5504, lon: 11.8733 },
+    { code: '01110MS', name: 'Langtaufers Grub', lat: 46.8365, lon: 10.6330 },
+    { code: '71510MS', name: 'Villnöss', lat: 46.6479, lon: 11.6894 },
+    { code: '79300MS', name: 'Ritten Siffian', lat: 46.5290, lon: 11.4638 },
+    { code: '91510MS', name: 'Sexten', lat: 46.6915, lon: 12.3577 },
     { code: '82500WS', name: 'Rittner Horn', lat: 46.615564, lon: 11.460353 },
-    { code: '31400WS', name: 'Rosskopf', lat: 46.901500, lon: 11.401500 },
-    { code: '80800WS', name: 'Sarner Weißhorn', lat: 46.702500, lon: 11.391200 },
-    { code: '75400MS', name: 'Seiser Alm', lat: 46.542500, lon: 11.621500 },
-    { code: '54800WS', name: 'Speikboden', lat: 46.918500, lon: 11.884200 },
-    { code: '06000MS', name: 'Stilfserjoch', lat: 46.528500, lon: 10.458500 },
+    { code: '00390SF', name: 'Graun Schöneben', lat: 46.806492, lon: 10.497973 },
+    { code: '31810SF', name: 'Ladurns', lat: 46.934775, lon: 11.366330 },
+    { code: '69900MS', name: 'Plose', lat: 46.698630, lon: 11.733841 },
     { code: '06040WS', name: 'Sulden Schöntaufspitze', lat: 46.502882, lon: 10.628586 },
     { code: '24300SF', name: 'Ulten Rossbänke', lat: 46.469351, lon: 10.819436 },
     { code: '24170WS', name: 'Ulten Weißbrunnspitz', lat: 46.493978, lon: 10.773983 },
-    { code: '04400MS', name: 'Watles / Marienberg', lat: 46.691500, lon: 10.501200 },
-    { code: '33200WS', name: 'Zinseler', lat: 46.842500, lon: 11.461500 }
+    { code: '15050WS', name: 'Schnals Grawand', lat: 46.770253, lon: 10.796645 },
+    { code: '61690SF', name: 'Abtei Piz La Ila', lat: 46.5650, lon: 11.9036 },
+    { code: '61720WS', name: 'Abtei Piz Pisciadù', lat: 46.5314, lon: 11.8250 },
+    { code: '62270SF', name: 'Campill Kreuzkofeljoch', lat: 46.637689, lon: 11.812249 },
+    { code: '78480SF', name: 'Deutschnofen Obereggen', lat: 46.363591, lon: 11.546658 },
+    { code: '90200MS', name: 'Gantkofel', lat: 46.493928, lon: 11.209039 },
+    { code: '00700WS', name: 'Graun Elferspitze', lat: 46.776711, lon: 10.48782 },
+    { code: '45200SF', name: 'Gsies Pfinnalm', lat: 46.841694, lon: 12.209582 },
+    { code: '45100WS', name: 'Gsies Regelspitze', lat: 46.856083, lon: 12.200338 },
+    { code: '35100WS', name: 'Jaufenkamm', lat: 46.840776, lon: 11.318418 },
+    { code: '01080SF', name: 'Melag Pratznerberg', lat: 46.846816, lon: 10.624749 },
+    { code: '80100SF', name: 'Pens Tramintal', lat: 46.795037, lon: 11.477397 },
+    { code: '20690SF', name: 'Pfelders Grünboden', lat: 46.791993, lon: 11.101611 },
+    { code: '20720WS', name: 'Pfelders Rauhjoch', lat: 46.828627, lon: 11.113961 },
+    { code: '66000WS', name: 'Pfunders Dannelspitz', lat: 46.943359, lon: 11.687125 },
+    { code: '66100SF', name: 'Pfunders Stutzenalm', lat: 46.925397, lon: 11.688222 },
+    { code: '42830SF', name: 'Prags Rossalm', lat: 46.671192, lon: 12.111498 },
+    { code: '50400WS', name: 'Prettau Lengspitze', lat: 47.015929, lon: 12.131038 },
+    { code: '50360SF', name: 'Prettau Merbalm', lat: 47.036179, lon: 12.122127 },
+    { code: '90005SF', name: 'Proveis Samerberg', lat: 46.495779, lon: 10.99867 },
+    { code: '35205SF', name: 'Ratschings Wasserfaller Alm', lat: 46.84561, lon: 11.298729 },
+    { code: '54100SF', name: 'Rein i.T. Tristenboden', lat: 46.920859, lon: 12.106939 },
+    { code: '02700SF', name: 'Schleis Kloangruebes', lat: 46.700401, lon: 10.432431 },
+    { code: '15590SF', name: 'Schnals Finail', lat: 46.741173, lon: 10.822462 },
+    { code: '15000SF', name: 'Schnals Teufelsegg', lat: 46.7847, lon: 10.76466 },
+    { code: '74200MS', name: 'Seiser Alm Zallinger', lat: 46.511879, lon: 11.688789 },
+    { code: '91180SF', name: 'Sexten Rotwandwiesen', lat: 46.663555, lon: 12.370372 },
+    { code: '34200WS', name: 'Signalgipfel Wilder Freiger', lat: 46.968378, lon: 11.19286 },
+    { code: '06090SF', name: 'Sulden Madritsch', lat: 46.49375, lon: 10.614383 },
+    { code: '20050SF', name: 'Timmelsalm', lat: 46.913574, lon: 11.148675 },
+    { code: '91210WS', name: 'Toblach Hochebenkofel', lat: 46.680173, lon: 12.257258 },
+    { code: '07740WS', name: 'Trafoi Zaufenkofel', lat: 46.555582, lon: 10.539728 },
+    { code: '53200SF', name: 'Weissenbach Fadner Alm', lat: 46.92556, lon: 11.861432 }
   ];
 
   var windMapInstance = null;
@@ -1258,6 +1259,22 @@
     }
   }
 
+  // Icons sind in der Startansicht kleiner (weniger Gedränge bei 97 Stationen)
+  // und wachsen erst beim Heranzoomen auf die volle Größe.
+  var ICON_MIN_SCALE = 0.55;
+  var ICON_MIN_ZOOM = 8;   // bei diesem Zoom (oder darunter) kleinste Größe
+  var ICON_FULL_ZOOM = 12; // ab diesem Zoom (oder darüber) volle Größe
+
+  function updateIconScale(){
+    if (!windMapInstance) return;
+    var zoom = windMapInstance.getZoom();
+    var t = Math.max(0, Math.min(1, (zoom - ICON_MIN_ZOOM) / (ICON_FULL_ZOOM - ICON_MIN_ZOOM)));
+    var scale = ICON_MIN_SCALE + t * (1 - ICON_MIN_SCALE);
+    document.querySelectorAll('.windsock-icon').forEach(function(el){
+      el.style.transform = 'scale(' + scale.toFixed(3) + ')';
+    });
+  }
+
   window.initWindMap = function(){
     if (windMapInstance) {
       setTimeout(function(){ windMapInstance.invalidateSize(); }, 50);
@@ -1269,6 +1286,7 @@
     // um den Rest zu sehen.
     windMapInstance = L.map('windMap', { scrollWheelZoom: true });
     windMapInstance.fitBounds([[46.44, 10.35], [46.92, 11.25]]);
+    windMapInstance.on('zoomend', updateIconScale);
     L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       attribution: 'Karte: © OpenTopoMap (CC-BY-SA) · Daten: Autonome Provinz Bozen – Südtirol',
       maxZoom: 16
@@ -1290,6 +1308,7 @@
           var marker = L.marker([station.lat, station.lon], { icon: icon }).addTo(windMapInstance);
           marker.on('click', function(){ showWindDetail(station, rows); });
         });
+        updateIconScale();
       })
       .catch(function(){ /* Karte bleibt ohne Marker, still fehlschlagen */ });
   };
