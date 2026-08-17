@@ -202,7 +202,10 @@
     display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
     gap:10px 18px; font-family:'IBM Plex Mono', monospace; font-size:13px;
   }
-  .wind-detail-grid .wdg-label{ font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted); display:block; }
+  .wind-detail-grid .wdg-label{
+    font-family:'IBM Plex Sans', sans-serif; font-size:11px; line-height:14px; color:var(--muted);
+    display:flex; flex-direction:column; justify-content:flex-end; min-height:28px; margin-bottom:2px;
+  }
   .wind-detail-grid .wdg-value{ font-weight:700; color:var(--ink); }
 
   .wind-charts-row{
@@ -240,7 +243,7 @@
   .ssc-values .ssc-label{ display:block; font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted); margin-bottom:2px; }
   .ssc-values .ssc-value{ font-family:'IBM Plex Mono', monospace; font-size:28px; font-weight:700; color:var(--ink); line-height:1; }
   .ssc-values .ssc-value.ssc-gust{ color:#C1443C; }
-  .ssc-sock{ flex:0 0 auto; width:60px; height:60px; display:flex; align-items:center; justify-content:center; }
+  .ssc-sock{ flex:0 0 auto; width:60px; height:60px; position:relative; }
 
   .section-grid{
     display:flex;
@@ -1156,7 +1159,7 @@
     var cx = 45, cy = 45, radius = 24;
     var rx = cx + radius * Math.sin(rad);
     var ry = cy - radius * Math.cos(rad);
-    var rectW = 32, rectH = 32;
+    var rectW = 34, rectH = 44;
     var avgTxt = (avgKmh !== null && avgKmh !== undefined) ? Math.round(avgKmh) : '–';
     var gustTxt = (gustKmh !== null && gustKmh !== undefined) ? Math.round(gustKmh) : '–';
 
@@ -1190,13 +1193,13 @@
         '<polygon points="45,9 45,15 58,13.5 58,10.5" fill="' + sockColor + '"/>' +
         '<circle cx="6" cy="12" r="5" fill="#2B2B2B"/>' +
       '</svg>' +
-      '<div class="' + blinkClass + '" style="position:absolute;left:' + (rx - rectW / 2) + 'px;top:' + (ry - rectH / 2) + 'px;width:' + rectW + 'px;height:' + rectH + 'px;' +
-        'background:rgba(255,255,255,0.96);border:1px solid #C9CFCD;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,0.18);' +
-        'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-        'font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#1C2B3A;font-weight:700;">' +
-        '<span style="padding:4px 0;">' + avgTxt + '</span>' +
-        '<span style="width:68%;border-top:1px solid #D5D9D8;"></span>' +
-        '<span style="padding:4px 0;color:#C1443C;">' + gustTxt + '</span>' +
+      '<div class="' + blinkClass + '" style="position:absolute;left:' + (rx - rectW / 2) + 'px;top:' + (ry - rectH / 2) + 'px;width:' + rectW + 'px;height:' + rectH + 'px;box-sizing:border-box;padding:6px 0;' +
+        'background:rgba(255,255,255,0.96);border:1px solid #C9CFCD;border-radius:5px;box-shadow:0 1px 4px rgba(0,0,0,0.18);' +
+        'display:flex;flex-direction:column;align-items:center;justify-content:space-between;' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:#1C2B3A;font-weight:700;">' +
+        '<span>' + avgTxt + '</span>' +
+        '<span style="width:70%;border-top:1px solid #D5D9D8;"></span>' +
+        '<span style="color:#C1443C;">' + gustTxt + '</span>' +
       '</div>' +
     '</div>';
   }
@@ -1224,7 +1227,7 @@
         plugins: {
           legend: {
             display: true, position: 'top',
-            labels: { usePointStyle: true, pointStyle: 'line', boxWidth: 22, boxHeight: 2, font: { size: 11, family: "'IBM Plex Sans', sans-serif" } }
+            labels: { usePointStyle: true, pointStyle: 'line', boxWidth: 88, boxHeight: 2, font: { size: 11, family: "'IBM Plex Sans', sans-serif" } }
           },
           tooltip: { mode: 'index', intersect: false, callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + (ctx.parsed.y === null ? '—' : ctx.parsed.y) + ' km/h'; } } }
         },
@@ -1237,29 +1240,31 @@
   }
 
   // ---- Windrichtungs-Kompass der letzten 6h ----
-  // Radius = wie lange her (innerster Ring = 10 Min., je weiter außen desto
-  // älter, ganz außen = 6h). Winkel = Windrichtung. Ringe: ein dunkelgrauer
-  // Ring pro 10-Minuten-Schritt. Punktfarbe in diskreten Stundenstufen von
-  // Grün (aktuellste Stunde) zu Hellgrau (älteste Stunde), aktuellster Punkt
-  // blinkt grün.
+  // Radius = Minute innerhalb der Stunde, zu der der Wert aufgenommen wurde
+  // (:10 -> innerster Ring, :20 -> zweiter, ... :00 -> äußerster von 6 Ringen).
+  // Winkel = Windrichtung. Farbe = Stunden-Zugehörigkeit (wie viele Stunden
+  // her), unabhängig vom Ring. Neuere Punkte werden über älteren gezeichnet.
+  // Aktuellster Punkt blinkt grün.
   var COMPASS_BUCKET_COLORS = ['#22C55E', '#1B7A3D', '#1C2B3A', '#6B7573', '#A8B0AE', '#D5D9D8'];
-  var COMPASS_BUCKET_LABELS = ['0h – 1h (aktuell)', '1h – 2h', '2h – 3h', '3h – 4h', '4h – 5h', '5h – 6h'];
+  var COMPASS_RING_MINUTE_ORDER = [10, 20, 30, 40, 50, 0]; // Ring 1..6
 
   function buildWindCompassSvg(rows){
-    var totalRings = 36; // 6h bei 10-Minuten-Takt
+    var totalRings = 6;
     var size = 240, center = 120, rMax = 92;
-    var ordered = rows.slice().reverse().slice(0, totalRings); // neueste zuerst
     var ringColor = '#9AA3A1';
+    var now = new Date();
+    var nowHourStart = new Date(now); nowHourStart.setUTCMinutes(0, 0, 0);
 
     var svg = '<svg width="240" height="240" viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg">';
     for (var k = 1; k <= totalRings; k++){
       var r = (k / totalRings) * rMax;
-      svg += '<circle cx="' + center + '" cy="' + center + '" r="' + r.toFixed(1) + '" fill="none" stroke="' + ringColor + '" stroke-width="0.6"/>';
+      svg += '<circle cx="' + center + '" cy="' + center + '" r="' + r.toFixed(1) + '" fill="none" stroke="' + ringColor + '" stroke-width="0.8"/>';
     }
-    // Stunden-Beschriftung entlang der Nordachse (jeder 6. Ring = 1 Stunde)
-    for (var h = 1; h <= 6; h++){
-      var rh = (h * 6 / totalRings) * rMax;
-      svg += '<text x="' + center + '" y="' + (center - rh - 2).toFixed(1) + '" text-anchor="middle" font-family="\'IBM Plex Mono\', monospace" font-size="8" fill="#7C8683">' + h + 'h</text>';
+    // Ring-Beschriftung (Minutenmarken) entlang der Nordachse
+    for (var m = 0; m < totalRings; m++){
+      var rr = ((m + 1) / totalRings) * rMax;
+      var lbl = COMPASS_RING_MINUTE_ORDER[m] === 0 ? ':00' : ':' + COMPASS_RING_MINUTE_ORDER[m];
+      svg += '<text x="' + center + '" y="' + (center - rr - 2).toFixed(1) + '" text-anchor="middle" font-family="\'IBM Plex Mono\', monospace" font-size="8" fill="#7C8683">' + lbl + '</text>';
     }
 
     svg += '<line x1="' + center + '" y1="' + (center - rMax) + '" x2="' + center + '" y2="' + (center + rMax) + '" stroke="#D5D9D8" stroke-width="1"/>';
@@ -1271,28 +1276,36 @@
       svg += '<text x="' + lx.toFixed(1) + '" y="' + (ly + 4).toFixed(1) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-size="12" font-weight="700" fill="#5B6B72">' + l.t + '</text>';
     });
 
-    var points = [];
-    ordered.forEach(function(row, i){
+    // Punkte aufbereiten: Ring aus Minute-der-Stunde, Farbe aus Stunden-Differenz
+    var pts = [];
+    rows.forEach(function(row){
       var dir = row.dirDeg;
       if (dir === null || dir === undefined || isNaN(dir)) return;
-      var r = ((i + 1) / totalRings) * rMax;
-      var rad = dir * Math.PI / 180;
-      points.push({ x: center + r * Math.sin(rad), y: center - r * Math.cos(rad), i: i });
+      var instant = new Date(row.instantUTC);
+      var minutesAgo = (now - instant) / 60000;
+      if (minutesAgo < 0 || minutesAgo > 360) return; // außerhalb 6h-Fenster oder in der Zukunft
+      var minuteOfHour = instant.getUTCMinutes();
+      var ringIndex = COMPASS_RING_MINUTE_ORDER.indexOf(minuteOfHour) + 1; // 1-basiert
+      if (ringIndex <= 0) return; // nicht auf dem 10-Minuten-Raster (sollte nicht vorkommen)
+      var pointHourStart = new Date(instant); pointHourStart.setUTCMinutes(0, 0, 0);
+      var hourBucket = Math.round((nowHourStart - pointHourStart) / 3600000);
+      hourBucket = Math.max(0, Math.min(5, hourBucket));
+      pts.push({ dir: dir, ringIndex: ringIndex, hourBucket: hourBucket, minutesAgo: minutesAgo });
     });
 
-    if (points.length > 1){
-      var d = 'M' + points[points.length - 1].x.toFixed(1) + ',' + points[points.length - 1].y.toFixed(1);
-      for (var p = points.length - 2; p >= 0; p--){ d += ' L' + points[p].x.toFixed(1) + ',' + points[p].y.toFixed(1); }
-      svg += '<path d="' + d + '" fill="none" stroke="#8FA5B8" stroke-width="1" stroke-opacity="0.4"/>';
-    }
+    // Älteste zuerst zeichnen, damit neuere Punkte optisch darüberliegen
+    pts.sort(function(a, b){ return b.minutesAgo - a.minutesAgo; });
 
-    points.forEach(function(pt){
-      var isNewest = (pt.i === 0);
-      var bucket = Math.min(Math.floor(pt.i / 6), 5);
-      var fill = COMPASS_BUCKET_COLORS[bucket];
+    pts.forEach(function(pt, idx){
+      var r = (pt.ringIndex / totalRings) * rMax;
+      var rad = pt.dir * Math.PI / 180;
+      var x = center + r * Math.sin(rad);
+      var y = center - r * Math.cos(rad);
+      var isNewest = (idx === pts.length - 1);
+      var fill = COMPASS_BUCKET_COLORS[pt.hourBucket];
       var radius = isNewest ? 5.5 : 3.4;
       var cls = isNewest ? ' class="compass-newest-blink"' : '';
-      svg += '<circle' + cls + ' cx="' + pt.x.toFixed(1) + '" cy="' + pt.y.toFixed(1) + '" r="' + radius + '" fill="' + fill + '"' + (isNewest ? ' stroke="#fff" stroke-width="1.2"' : '') + '/>';
+      svg += '<circle' + cls + ' cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + radius + '" fill="' + fill + '"' + (isNewest ? ' stroke="#fff" stroke-width="1.2"' : '') + '/>';
     });
 
     svg += '</svg>';
@@ -1300,9 +1313,17 @@
   }
 
   function buildWindCompassLegend(){
-    return '<div class="wind-compass-legend">' + COMPASS_BUCKET_LABELS.map(function(label, i){
-      return '<div class="wcl-row"><span class="wcl-dot" style="background:' + COMPASS_BUCKET_COLORS[i] + '"></span><span>' + label + '</span></div>';
-    }).join('') + '</div>';
+    var fmt = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    var now = new Date();
+    var nowHourStart = new Date(now); nowHourStart.setUTCMinutes(0, 0, 0);
+    var rowsHtml = '';
+    for (var h = 0; h < 6; h++){
+      var rangeEnd = new Date(nowHourStart.getTime() - h * 3600000 + 3600000);
+      var rangeStart = new Date(nowHourStart.getTime() - h * 3600000);
+      var label = fmt.format(rangeStart) + ' – ' + fmt.format(rangeEnd);
+      rowsHtml += '<div class="wcl-row"><span class="wcl-dot" style="background:' + COMPASS_BUCKET_COLORS[h] + '"></span><span>' + label + '</span></div>';
+    }
+    return '<div class="wind-compass-legend">' + rowsHtml + '</div>';
   }
 
   function showWindDetail(station, rows){
@@ -1378,10 +1399,21 @@
       windMapInstance.fitBounds([[46.44, 10.35], [46.92, 11.25]]);
     }
     windMapInstance.on('zoomend', updateIconScale);
-    L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+
+    var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'Karte: © OpenStreetMap-Mitwirkende · Daten: Autonome Provinz Bozen – Südtirol',
+      maxZoom: 19
+    });
+    var topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       attribution: 'Karte: © OpenTopoMap (CC-BY-SA) · Daten: Autonome Provinz Bozen – Südtirol',
       maxZoom: 16
-    }).addTo(windMapInstance);
+    });
+    osmLayer.addTo(windMapInstance); // Standard-Ansicht
+    L.control.layers(
+      { 'Straßenkarte': osmLayer, 'Topografisch': topoLayer },
+      null,
+      { position: 'topright', collapsed: true }
+    ).addTo(windMapInstance);
 
     fetch('./data/wind.json?t=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.ok ? r.json() : { stations: {} }; })
@@ -1404,13 +1436,28 @@
   /* ---------- Ausgewählte Stationen (kompakte Übersicht) ---------- */
   var SELECTED_STATION_CODES = ['00700WS', '02200MS', '06040WS', '08200MS'];
 
+  function buildCompassBackgroundSvg(){
+    var size = 60, center = 30, r = 26;
+    return '<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;">' +
+      '<circle cx="' + center + '" cy="' + center + '" r="' + r + '" fill="none" stroke="#E4E7E6" stroke-width="1"/>' +
+      '<circle cx="' + center + '" cy="' + center + '" r="' + (r * 0.58).toFixed(1) + '" fill="none" stroke="#EDEFEE" stroke-width="1"/>' +
+      '<line x1="' + center + '" y1="' + (center - r) + '" x2="' + center + '" y2="' + (center + r) + '" stroke="#E4E7E6" stroke-width="1"/>' +
+      '<line x1="' + (center - r) + '" y1="' + center + '" x2="' + (center + r) + '" y2="' + center + '" stroke="#E4E7E6" stroke-width="1"/>' +
+      '<text x="' + center + '" y="8" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-size="7" font-weight="700" fill="#C3C9C7">N</text>' +
+      '<text x="' + center + '" y="57" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-size="7" font-weight="700" fill="#C3C9C7">S</text>' +
+      '<text x="55" y="' + (center + 2.5) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-size="7" font-weight="700" fill="#C3C9C7">O</text>' +
+      '<text x="5" y="' + (center + 2.5) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-size="7" font-weight="700" fill="#C3C9C7">W</text>' +
+    '</svg>';
+  }
+
   function buildCompactWindsockSvg(dirDeg, stationType){
     var hasDir = (dirDeg !== null && dirDeg !== undefined && !isNaN(dirDeg));
     var bearing = hasDir ? (dirDeg + 180) % 360 : 90;
     var rotation = bearing - 90;
     var sockColor = (stationType === 'tal') ? '#F2994A' : '#E5342A';
-    return '<svg width="56" height="24" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
-      'style="transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;opacity:' + (hasDir ? 1 : 0.4) + ';">' +
+    return buildCompassBackgroundSvg() +
+      '<svg width="56" height="24" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
+      'style="position:absolute;left:2px;top:18px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;opacity:' + (hasDir ? 1 : 0.4) + ';">' +
       '<line x1="6" y1="12" x2="18" y2="5" stroke="#3A4750" stroke-width="1.3"/>' +
       '<line x1="6" y1="12" x2="18" y2="19" stroke="#3A4750" stroke-width="1.3"/>' +
       '<polygon points="18,5 18,19 31,17 31,7" fill="' + sockColor + '"/>' +
