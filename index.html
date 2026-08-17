@@ -198,6 +198,9 @@
   }
   .wind-detail-panel.open{ display:block; }
   .wind-detail-panel h3{ margin:0 0 10px; font-size:16px; }
+  @keyframes staleTextBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.25; } }
+  .stale-warning-text{ color:#E5342A; font-weight:700; font-size:13px; animation:staleTextBlink 1s ease-in-out infinite; }
+  .wdg-date{ margin-left:8px; font-weight:400; color:var(--muted); }
   .wind-detail-grid{
     display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
     gap:10px 18px; font-family:'IBM Plex Mono', monospace; font-size:13px;
@@ -243,7 +246,7 @@
   .ssc-values .ssc-label{ display:block; font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted); margin-bottom:2px; }
   .ssc-values .ssc-value{ font-family:'IBM Plex Mono', monospace; font-size:28px; font-weight:700; color:var(--ink); line-height:1; }
   .ssc-values .ssc-value.ssc-gust{ color:#C1443C; }
-  .ssc-sock{ flex:0 0 auto; width:80px; height:64px; position:relative; }
+  .ssc-sock{ flex:0 0 auto; width:96px; height:77px; position:relative; }
 
   .section-grid{
     display:flex;
@@ -1227,7 +1230,7 @@
         plugins: {
           legend: {
             display: true, position: 'top',
-            labels: { usePointStyle: true, pointStyle: 'line', boxWidth: 88, boxHeight: 2, font: { size: 11, family: "'IBM Plex Sans', sans-serif" } }
+            labels: { usePointStyle: true, pointStyle: 'line', pointStyleWidth: 40, boxHeight: 2, font: { size: 11, family: "'IBM Plex Sans', sans-serif" } }
           },
           tooltip: { mode: 'index', intersect: false, callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + (ctx.parsed.y === null ? '—' : ctx.parsed.y) + ' km/h'; } } }
         },
@@ -1336,15 +1339,23 @@
     var hum = last ? last.humidityPct : null;
     var time = (last && last.instantUTC) ? (last.time || '—') : '—';
 
+    var isStale = false;
+    var dateStr = '';
+    if (last && last.instantUTC) {
+      var ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
+      isStale = ageMin > 60;
+      dateStr = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(last.instantUTC));
+    }
+
     panel.innerHTML =
-      '<h3>' + station.name + '</h3>' +
+      '<h3>' + station.name + (isStale ? ' <span class="stale-warning-text">Aktualisierung verzögert!</span>' : '') + '</h3>' +
       '<div class="wind-detail-grid">' +
         '<div><span class="wdg-label">Windböe</span><span class="wdg-value">' + (gust !== null && gust !== undefined ? gust + ' km/h' : '—') + '</span></div>' +
         '<div><span class="wdg-label">Mittlere Windgeschwindigkeit</span><span class="wdg-value">' + (avg !== null && avg !== undefined ? avg + ' km/h' : '—') + '</span></div>' +
         '<div><span class="wdg-label">Windrichtung</span><span class="wdg-value">' + windDirLabel(dir) + (dir !== null && dir !== undefined ? ' (' + Math.round(dir) + '°)' : '') + '</span></div>' +
         '<div><span class="wdg-label">Lufttemperatur</span><span class="wdg-value">' + (temp !== null && temp !== undefined ? temp.toFixed(1) + ' °C' : '—') + '</span></div>' +
         '<div><span class="wdg-label">Luftfeuchte</span><span class="wdg-value">' + (hum !== null && hum !== undefined ? hum.toFixed(0) + ' %' : '—') + '</span></div>' +
-        '<div><span class="wdg-label">Letztes Update</span><span class="wdg-value">' + time + '</span></div>' +
+        '<div><span class="wdg-label">Letztes Update</span><span class="wdg-value">' + time + (dateStr ? '<span class="wdg-date">' + dateStr + '</span>' : '') + '</span></div>' +
       '</div>' +
       '<div class="wind-charts-row">' +
         '<div class="wind-chart-box">' +
@@ -1394,7 +1405,7 @@
     windMapInstance = L.map('windMap', { scrollWheelZoom: true });
     var isMobileView = window.innerWidth <= 600;
     if (isMobileView) {
-      windMapInstance.fitBounds([[46.50, 10.35], [46.84, 10.66]]);
+      windMapInstance.fitBounds([[46.432, 10.226], [46.772, 10.536]]);
     } else {
       windMapInstance.fitBounds([[46.44, 10.35], [46.92, 11.25]]);
     }
@@ -1437,7 +1448,7 @@
   var SELECTED_STATION_CODES = ['00700WS', '02200MS', '06040WS', '08200MS'];
 
   function buildCompassBackgroundSvg(cx, cy, r){
-    return '<svg width="80" height="64" viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;">' +
+    return '<svg width="96" height="77" viewBox="0 0 96 77" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;">' +
       '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#E4E7E6" stroke-width="1"/>' +
       '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r * 0.58).toFixed(1) + '" fill="none" stroke="#EDEFEE" stroke-width="1"/>' +
       '<line x1="' + cx + '" y1="' + (cy - r) + '" x2="' + cx + '" y2="' + (cy + r) + '" stroke="#E4E7E6" stroke-width="1"/>' +
@@ -1455,12 +1466,14 @@
     var rotation = bearing - 90;
     var sockColor = (stationType === 'tal') ? '#F2994A' : '#E5342A';
     // Drehpunkt der Windfahne (Punkt bei lokal x=6,y=12 im 60x24-Viewbox) soll
-    // exakt mit der Mitte des Kompass-Hintergrunds zusammenfallen.
-    var pivotX = 26, pivotY = 32;
-    var svgLeft = pivotX - 6, svgTop = pivotY - 12;
-    return buildCompassBackgroundSvg(pivotX, pivotY, 22) +
-      '<svg width="60" height="24" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
-      'style="position:absolute;left:' + svgLeft + 'px;top:' + svgTop + 'px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;opacity:' + (hasDir ? 1 : 0.4) + ';">' +
+    // exakt mit der Mitte des Kompass-Hintergrunds zusammenfallen. Alles 20%
+    // größer als die ursprüngliche Version.
+    var pivotX = 31, pivotY = 38;
+    var sockRenderW = 72, sockRenderH = 28.8;
+    var svgLeft = pivotX - 6 * (sockRenderW / 60), svgTop = pivotY - 12 * (sockRenderH / 24);
+    return buildCompassBackgroundSvg(pivotX, pivotY, 26) +
+      '<svg width="' + sockRenderW + '" height="' + sockRenderH + '" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
+      'style="position:absolute;left:' + svgLeft.toFixed(1) + 'px;top:' + svgTop.toFixed(1) + 'px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;opacity:' + (hasDir ? 1 : 0.4) + ';">' +
       '<line x1="6" y1="12" x2="18" y2="5" stroke="#3A4750" stroke-width="1.3"/>' +
       '<line x1="6" y1="12" x2="18" y2="19" stroke="#3A4750" stroke-width="1.3"/>' +
       '<polygon points="18,5 18,19 31,17 31,7" fill="' + sockColor + '"/>' +
