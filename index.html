@@ -238,7 +238,9 @@
     border:1px solid var(--hairline); border-radius:12px; padding:12px 16px;
     background:var(--panel);
   }
-  .ssc-header{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
+  .ssc-header-col{ display:flex; flex-direction:column; margin-bottom:8px; }
+  .ssc-header{ display:flex; align-items:baseline; justify-content:space-between; }
+  .ssc-stale{ font-size:11px; margin-top:2px; }
   .ssc-name{ font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:16px; color:var(--ink); }
   .ssc-time{ font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--muted); }
   .ssc-body{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
@@ -246,7 +248,7 @@
   .ssc-values .ssc-label{ display:block; font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted); margin-bottom:1px; }
   .ssc-values .ssc-value{ font-family:'IBM Plex Mono', monospace; font-size:24px; font-weight:700; color:var(--ink); line-height:1; }
   .ssc-values .ssc-value.ssc-gust{ color:#C1443C; }
-  .ssc-sock{ flex:0 0 auto; width:77px; height:62px; position:relative; }
+  .ssc-sock{ flex:0 0 auto; width:80px; height:60px; position:relative; }
 
   .section-grid{
     display:flex;
@@ -1448,7 +1450,7 @@
   var SELECTED_STATION_CODES = ['00700WS', '02200MS', '06040WS', '08200MS'];
 
   function buildCompassBackgroundSvg(cx, cy, r){
-    return '<svg width="77" height="62" viewBox="0 0 77 62" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;">' +
+    return '<svg width="80" height="60" viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;">' +
       '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#E4E7E6" stroke-width="1"/>' +
       '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r * 0.58).toFixed(1) + '" fill="none" stroke="#EDEFEE" stroke-width="1"/>' +
       '<line x1="' + cx + '" y1="' + (cy - r) + '" x2="' + cx + '" y2="' + (cy + r) + '" stroke="#E4E7E6" stroke-width="1"/>' +
@@ -1466,12 +1468,12 @@
     var rotation = bearing - 90;
     var sockColor = (stationType === 'tal') ? '#F2994A' : '#E5342A';
     // Drehpunkt der Windfahne (Punkt bei lokal x=6,y=12 im 60x24-Viewbox) soll
-    // exakt mit der Mitte des Kompass-Hintergrunds zusammenfallen. Alles 20%
-    // größer als die ursprüngliche Version.
-    var pivotX = 25, pivotY = 30;
+    // exakt mit der Mitte des Kompass-Hintergrunds zusammenfallen. Nur der
+    // Kompass-Radius ist 30% größer - die Windsack-Größe bleibt unverändert.
+    var pivotX = 28, pivotY = 29;
     var sockRenderW = 57.6, sockRenderH = 23;
     var svgLeft = pivotX - 6 * (sockRenderW / 60), svgTop = pivotY - 12 * (sockRenderH / 24);
-    return buildCompassBackgroundSvg(pivotX, pivotY, 21) +
+    return buildCompassBackgroundSvg(pivotX, pivotY, 27) +
       '<svg width="' + sockRenderW + '" height="' + sockRenderH + '" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
       'style="position:absolute;left:' + svgLeft.toFixed(1) + 'px;top:' + svgTop.toFixed(1) + 'px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;opacity:' + (hasDir ? 1 : 0.4) + ';">' +
       '<line x1="6" y1="12" x2="18" y2="5" stroke="#3A4750" stroke-width="1.3"/>' +
@@ -1502,8 +1504,17 @@
           var avgTxt = (avg !== null && avg !== undefined) ? Math.round(avg) : '–';
           var gustTxt = (gust !== null && gust !== undefined) ? Math.round(gust) : '–';
 
+          var isStale = false;
+          if (last && last.instantUTC) {
+            var ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
+            isStale = ageMin > 60;
+          }
+
           return '<div class="selected-card">' +
-            '<div class="ssc-header"><span class="ssc-name">' + station.name + '</span><span class="ssc-time">' + time + '</span></div>' +
+            '<div class="ssc-header-col">' +
+              '<div class="ssc-header"><span class="ssc-name">' + station.name + '</span><span class="ssc-time">' + time + '</span></div>' +
+              (isStale ? '<div class="stale-warning-text ssc-stale">Aktualisierung verzögert!</div>' : '') +
+            '</div>' +
             '<div class="ssc-body">' +
               '<div class="ssc-values">' +
                 '<div><span class="ssc-label">Ø km/h</span><span class="ssc-value">' + avgTxt + '</span></div>' +
