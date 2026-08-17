@@ -1,13 +1,15 @@
-// Holt Luftdruckwerte für feste Zielzeitpunkte (TARGET_LAG_MINUTES in der
-// Vergangenheit, gerundet auf den 10-Minuten-Messtakt der Stationen) aus
+// Holt Luftdruckwerte für den aktuellsten verfügbaren Zeitpunkt (gerundet auf
+// den 10-Minuten-Messtakt der Stationen, kein künstlicher Verzug mehr) aus
 // beiden Quellen und aktualisiert die rollierende Historie (letzte MAX_ROWS
 // Messungen) in data/history.json.
 //
-// Warum ein fester Zielzeitpunkt statt "aktuell"?
+// Warum trotzdem ein fester Zielzeitpunkt statt einfach "die letzte Zeile"?
 // Bürgernetz und GeoSphere könnten zu leicht unterschiedlichen Momenten
 // "aktuell" sein - das würde die Druckdifferenz verfälschen. Stattdessen
-// fragen wir beide Quellen gezielt nach demselben Zeitstempel (z.B. bei
-// Trigger um 20:00 -> Zielzeitpunkt 19:40).
+// fragen wir beide Quellen gezielt nach demselben Zeitstempel (dem aktuell
+// spätestmöglichen :00/:20/:40-Raster-Zeitpunkt). Ist der allerneueste Wert
+// bei einer Quelle noch nicht veröffentlicht, greift automatisch das
+// Suchfenster (WINDOW_MINUTES) bzw. im nächsten Lauf die Nachhol-Logik.
 //
 // Warum eine Nachhol-Logik (Backfill)?
 // GitHub-Actions-Cron ist nicht exakt punktgenau - gerade um runde Uhrzeiten
@@ -38,8 +40,8 @@ const TIMEZONE = "Europe/Berlin"; // Bozen/Meran/Innsbruck/Imst liegen alle hier
 
 const SLOT_MINUTES = 10;             // Messtakt der Stationen (zum Runden)
 const SAMPLING_INTERVAL_MINUTES = 10; // wie oft ein neuer Wert erzeugt wird (= Trigger-Takt, jetzt über externen Cron alle 10 Min.)
-const TARGET_LAG_MINUTES = 20;       // wie weit der Zielzeitpunkt in der Vergangenheit liegt (unverändert)
-const WINDOW_MINUTES = 5;            // Suchfenster um den Zielzeitpunkt (± Minuten)
+const TARGET_LAG_MINUTES = 0;        // Zielzeitpunkt = jetzt (auf 10-Minuten-Raster abgerundet), nicht mehr fest verzögert
+const WINDOW_MINUTES = 10;           // Suchfenster um den Zielzeitpunkt (± Minuten) - fängt eine eventuelle Veröffentlichungsverzögerung der Quelle ab
 const MAX_BACKFILL_SLOTS = 12;       // Sicherheitsnetz: max. so viele fehlende Slots pro Lauf nachholen (= 2h, wie zuvor)
 
 // WICHTIG: Diese Werte bewusst klein halten. Frühere Version hatte hier
