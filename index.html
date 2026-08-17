@@ -179,6 +179,17 @@
   #windMap{ height:560px; width:100%; border-radius:14px; background:#EEF1F0; }
   @media (max-width:600px){ #windMap{ height:420px; } }
   .windsock-icon{ cursor:pointer; transform-origin:center center; transition:transform 0.15s ease-out; }
+
+  @keyframes blinkRed{ 0%,100%{ border-color:#E5342A; box-shadow:0 1px 4px rgba(0,0,0,0.18); } 50%{ border-color:#E5342A; box-shadow:0 0 0 3px rgba(229,52,42,0.55); } }
+  @keyframes blinkOrange{ 0%,100%{ border-color:#F2994A; box-shadow:0 1px 4px rgba(0,0,0,0.18); } 50%{ border-color:#F2994A; box-shadow:0 0 0 3px rgba(242,153,74,0.55); } }
+  .wr-blink-red{ animation:blinkRed 1s ease-in-out infinite; border-width:2px !important; }
+  .wr-blink-orange{ animation:blinkOrange 1s ease-in-out infinite; border-width:2px !important; }
+
+  @keyframes staleRingBlink{ 0%,100%{ opacity:0.9; } 50%{ opacity:0.15; } }
+  .stale-ring{ animation:staleRingBlink 1.1s ease-in-out infinite; }
+
+  @keyframes compassBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.25; } }
+  .compass-newest-blink{ animation:compassBlink 1s ease-in-out infinite; }
   .wind-note{ font-size:12px; color:var(--muted); margin-top:10px; line-height:1.6; }
   .wind-note a{ color:var(--cool); }
   .wind-detail-panel{
@@ -198,8 +209,8 @@
     display:flex; flex-wrap:wrap; gap:18px; margin-top:18px;
   }
   .wind-chart-box{
-    flex:1 1 320px; background:var(--panel); border:1px solid var(--hairline);
-    border-radius:10px; padding:12px 14px;
+    flex:1 1 320px; min-width:0; max-width:100%; background:var(--panel); border:1px solid var(--hairline);
+    border-radius:10px; padding:12px 14px; box-sizing:border-box; overflow:hidden;
   }
   .wind-chart-title{
     font-family:'IBM Plex Sans', sans-serif; font-size:12px; font-weight:700;
@@ -207,6 +218,29 @@
   }
   .wind-compass-box{ display:flex; flex-direction:column; align-items:center; }
   .wind-compass-box .wind-chart-title{ align-self:flex-start; }
+  .wind-compass-legend{
+    display:flex; flex-direction:column; gap:4px; margin-top:12px; width:100%;
+    font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted);
+  }
+  .wind-compass-legend .wcl-row{ display:flex; align-items:center; gap:8px; }
+  .wind-compass-legend .wcl-dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+
+  .selected-stations-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;
+  }
+  .selected-card{
+    border:1px solid var(--hairline); border-radius:12px; padding:16px 18px;
+    background:var(--panel);
+  }
+  .ssc-header{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px; }
+  .ssc-name{ font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:16px; color:var(--ink); }
+  .ssc-time{ font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--muted); }
+  .ssc-body{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .ssc-values{ display:flex; gap:22px; }
+  .ssc-values .ssc-label{ display:block; font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted); margin-bottom:2px; }
+  .ssc-values .ssc-value{ font-family:'IBM Plex Mono', monospace; font-size:28px; font-weight:700; color:var(--ink); line-height:1; }
+  .ssc-values .ssc-value.ssc-gust{ color:#C1443C; }
+  .ssc-sock{ flex:0 0 auto; width:60px; height:60px; display:flex; align-items:center; justify-content:center; }
 
   .section-grid{
     display:flex;
@@ -354,6 +388,7 @@
           <div class="menu-dropdown" id="menuDropdown">
             <button class="menu-item active" data-page="foehndiagramm">Föhndiagramm</button>
             <button class="menu-item" data-page="livewerte">Live-Windwerte</button>
+            <button class="menu-item" data-page="selected">Ausgewählte Stationen</button>
           </div>
         </div>
       </div>
@@ -384,9 +419,15 @@
 
     <div id="page-livewerte" style="display:none;">
       <div class="section">
-        <h2>Live-Windwerte Vinschgau</h2>
         <div id="windMap"></div>
         <div class="wind-detail-panel" id="windDetailPanel"></div>
+        <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
+      </div>
+    </div>
+
+    <div id="page-selected" style="display:none;">
+      <div class="section">
+        <div class="selected-stations-grid" id="selectedStationsGrid"></div>
         <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
       </div>
     </div>
@@ -397,8 +438,8 @@
     var toggle = document.getElementById('menuToggle');
     var dropdown = document.getElementById('menuDropdown');
     var items = dropdown.querySelectorAll('.menu-item');
-    var pages = { foehndiagramm: document.getElementById('page-foehndiagramm'), livewerte: document.getElementById('page-livewerte') };
-    var titles = { foehndiagramm: 'Föhndiagramm', livewerte: 'Live-Windwerte' };
+    var pages = { foehndiagramm: document.getElementById('page-foehndiagramm'), livewerte: document.getElementById('page-livewerte'), selected: document.getElementById('page-selected') };
+    var titles = { foehndiagramm: 'Föhndiagramm', livewerte: 'Live-Windwerte', selected: 'Ausgewählte Stationen' };
     var titleEl = document.getElementById('pageTitle');
 
     toggle.addEventListener('click', function(e){
@@ -417,6 +458,7 @@
         });
         titleEl.textContent = titles[page];
         if (page === 'livewerte' && window.initWindMap) window.initWindMap();
+        if (page === 'selected' && window.renderSelectedStations) window.renderSelectedStations();
         dropdown.classList.remove('open');
         toggle.setAttribute('aria-expanded', 'false');
       });
@@ -987,103 +1029,103 @@
   // (wetter.provinz.bz.it + daten.buergernetz.bz.it), Stand 15.08.2026.
   // Alle 97 Stationen Südtirols vollständig verifiziert (57 Tal + 40 Berg).
   var ALL_STATIONS = [
-    { code: '37100MS', name: 'Sterzing', lat: 46.8850, lon: 11.4386 },
-    { code: '20500MS', name: 'Pfelders', lat: 46.7965, lon: 11.0883 },
-    { code: '19300MS', name: 'Naturns', lat: 46.6477, lon: 10.9912 },
-    { code: '80300MS', name: 'Pens', lat: 46.78078, lon: 11.4166 },
-    { code: '50500MS', name: 'Prettau', lat: 47.0366, lon: 12.0991 },
-    { code: '34500MS', name: 'Ridnaun', lat: 46.9091, lon: 11.3068 },
-    { code: '56900MS', name: 'Sand i.T. Mühlen', lat: 46.9003, lon: 11.9474 },
-    { code: '54500MS', name: 'Rein in Taufers', lat: 46.9428, lon: 12.0825 },
-    { code: '09700MS', name: 'Schlanders', lat: 46.6238, lon: 10.7803 },
-    { code: '82200MS', name: 'Sarnthein', lat: 46.6406, lon: 11.3551 },
-    { code: '88820MS', name: 'Salurn', lat: 46.2362, lon: 11.1855 },
-    { code: '59700MS', name: 'Bruneck', lat: 46.8043, lon: 11.9315 },
-    { code: '85120MS', name: 'Deutschnofen', lat: 46.4205, lon: 11.4269 },
-    { code: '83200MS', name: 'Bozen', lat: 46.4977, lon: 11.3128 },
-    { code: '86900MS', name: 'Auer', lat: 46.3469, lon: 11.3050 },
-    { code: '39100MS', name: 'Brixen - Vahrn', lat: 46.7310, lon: 11.6451 },
-    { code: '08200MS', name: 'Laas Eyrs', lat: 46.6249, lon: 10.6496 },
-    { code: '23200MS', name: 'Meran', lat: 46.6880, lon: 11.1366 },
-    { code: '47400MS', name: 'Antholz Obertal', lat: 46.8704, lon: 12.1166 },
-    { code: '86600MS', name: 'Laimburg', lat: 46.3825, lon: 11.2887 },
-    { code: '37700MS', name: 'Franzensfeste Grasstein', lat: 46.8125, lon: 11.5488 },
-    { code: '74900MS', name: 'Barbian Kollmann', lat: 46.5951, lon: 11.5291 },
-    { code: '89190MS', name: 'Kaltern Oberplanitzing', lat: 46.4423, lon: 11.2525 },
-    { code: '22210MS', name: 'St. Martin in Passeier', lat: 46.7822, lon: 11.2294 },
-    { code: '25900MS', name: 'St. Walburg', lat: 46.5417, lon: 10.9898 },
-    { code: '73500MS', name: 'Wolkenstein', lat: 46.5456, lon: 11.7684 },
-    { code: '68600MS', name: 'Vals', lat: 46.8483, lon: 11.6272 },
-    { code: '02200MS', name: 'St. Valentin a.d. Haide', lat: 46.7759, lon: 10.5289 },
-    { code: '41000MS', name: 'Toblach', lat: 46.7299, lon: 12.2191 },
-    { code: '75600MS', name: 'Völs am Schlern', lat: 46.5134, lon: 11.5060 },
-    { code: '62600MS', name: 'St. Martin in Thurn', lat: 46.6792, lon: 11.8979 },
-    { code: '11400MS', name: 'Hintermartell', lat: 46.5169, lon: 10.7269 },
-    { code: '02500MS', name: 'Marienberg', lat: 46.7057, lon: 10.5213 },
-    { code: '33500MS', name: 'Pfitsch St. Jakob', lat: 46.9656, lon: 11.5981 },
-    { code: '44500MS', name: 'St. Magdalena in Gsies', lat: 46.8353, lon: 12.2427 },
-    { code: '06400MS', name: 'Sulden', lat: 46.5159, lon: 10.5953 },
-    { code: '65600MS', name: 'Terenten', lat: 46.8345, lon: 11.7856 },
-    { code: '24400MS', name: 'Ulten Weißbrunn', lat: 46.4868, lon: 10.8318 },
-    { code: '43200MS', name: 'Welsberg', lat: 46.7431, lon: 12.1289 },
-    { code: '78305MS', name: 'Welschnofen', lat: 46.4289, lon: 11.5366 },
-    { code: '56500MS', name: 'Mühlwald', lat: 46.8901, lon: 11.8744 },
-    { code: '42700MS', name: 'St. Veit in Prags', lat: 46.7119, lon: 12.1000 },
-    { code: '15800MS', name: 'Schnals Vernagt', lat: 46.7357, lon: 10.8493 },
-    { code: '65350MS', name: 'Obervintl', lat: 46.8111, lon: 11.7534 },
-    { code: '82910MS', name: 'Jenesien', lat: 46.5304, lon: 11.3319 },
-    { code: '27100MS', name: 'Gargazon', lat: 46.5767, lon: 11.2008 },
-    { code: '85700MS', name: 'Branzoll', lat: 46.4065, lon: 11.3111 },
-    { code: '87300MS', name: 'Radein', lat: 46.3465, lon: 11.3968 },
-    { code: '66500MS', name: 'Pfunders', lat: 46.8872, lon: 11.7029 },
-    { code: '20910MS', name: 'Platt in Passeier', lat: 46.8215, lon: 11.1762 },
-    { code: '31410MS', name: 'Pflersch', lat: 46.9557, lon: 11.3793 },
-    { code: '78110MS', name: 'Karerpass', lat: 46.4092, lon: 11.6017 },
-    { code: '61300MS', name: 'Corvara', lat: 46.5504, lon: 11.8733 },
-    { code: '01110MS', name: 'Langtaufers Grub', lat: 46.8365, lon: 10.6330 },
-    { code: '71510MS', name: 'Villnöss', lat: 46.6479, lon: 11.6894 },
-    { code: '79300MS', name: 'Ritten Siffian', lat: 46.5290, lon: 11.4638 },
-    { code: '91510MS', name: 'Sexten', lat: 46.6915, lon: 12.3577 },
-    { code: '82500WS', name: 'Rittner Horn', lat: 46.615564, lon: 11.460353 },
-    { code: '00390SF', name: 'Graun Schöneben', lat: 46.806492, lon: 10.497973 },
-    { code: '31810SF', name: 'Ladurns', lat: 46.934775, lon: 11.366330 },
-    { code: '69900MS', name: 'Plose', lat: 46.698630, lon: 11.733841 },
-    { code: '06040WS', name: 'Sulden Schöntaufspitze', lat: 46.502882, lon: 10.628586 },
-    { code: '24300SF', name: 'Ulten Rossbänke', lat: 46.469351, lon: 10.819436 },
-    { code: '24170WS', name: 'Ulten Weißbrunnspitz', lat: 46.493978, lon: 10.773983 },
-    { code: '15050WS', name: 'Schnals Grawand', lat: 46.770253, lon: 10.796645 },
-    { code: '61690SF', name: 'Abtei Piz La Ila', lat: 46.5650, lon: 11.9036 },
-    { code: '61720WS', name: 'Abtei Piz Pisciadù', lat: 46.5314, lon: 11.8250 },
-    { code: '62270SF', name: 'Campill Kreuzkofeljoch', lat: 46.637689, lon: 11.812249 },
-    { code: '78480SF', name: 'Deutschnofen Obereggen', lat: 46.363591, lon: 11.546658 },
-    { code: '90200MS', name: 'Gantkofel', lat: 46.493928, lon: 11.209039 },
-    { code: '00700WS', name: 'Graun Elferspitze', lat: 46.776711, lon: 10.48782 },
-    { code: '45200SF', name: 'Gsies Pfinnalm', lat: 46.841694, lon: 12.209582 },
-    { code: '45100WS', name: 'Gsies Regelspitze', lat: 46.856083, lon: 12.200338 },
-    { code: '35100WS', name: 'Jaufenkamm', lat: 46.840776, lon: 11.318418 },
-    { code: '01080SF', name: 'Melag Pratznerberg', lat: 46.846816, lon: 10.624749 },
-    { code: '80100SF', name: 'Pens Tramintal', lat: 46.795037, lon: 11.477397 },
-    { code: '20690SF', name: 'Pfelders Grünboden', lat: 46.791993, lon: 11.101611 },
-    { code: '20720WS', name: 'Pfelders Rauhjoch', lat: 46.828627, lon: 11.113961 },
-    { code: '66000WS', name: 'Pfunders Dannelspitz', lat: 46.943359, lon: 11.687125 },
-    { code: '66100SF', name: 'Pfunders Stutzenalm', lat: 46.925397, lon: 11.688222 },
-    { code: '42830SF', name: 'Prags Rossalm', lat: 46.671192, lon: 12.111498 },
-    { code: '50400WS', name: 'Prettau Lengspitze', lat: 47.015929, lon: 12.131038 },
-    { code: '50360SF', name: 'Prettau Merbalm', lat: 47.036179, lon: 12.122127 },
-    { code: '90005SF', name: 'Proveis Samerberg', lat: 46.495779, lon: 10.99867 },
-    { code: '35205SF', name: 'Ratschings Wasserfaller Alm', lat: 46.84561, lon: 11.298729 },
-    { code: '54100SF', name: 'Rein i.T. Tristenboden', lat: 46.920859, lon: 12.106939 },
-    { code: '02700SF', name: 'Schleis Kloangruebes', lat: 46.700401, lon: 10.432431 },
-    { code: '15590SF', name: 'Schnals Finail', lat: 46.741173, lon: 10.822462 },
-    { code: '15000SF', name: 'Schnals Teufelsegg', lat: 46.7847, lon: 10.76466 },
-    { code: '74200MS', name: 'Seiser Alm Zallinger', lat: 46.511879, lon: 11.688789 },
-    { code: '91180SF', name: 'Sexten Rotwandwiesen', lat: 46.663555, lon: 12.370372 },
-    { code: '34200WS', name: 'Signalgipfel Wilder Freiger', lat: 46.968378, lon: 11.19286 },
-    { code: '06090SF', name: 'Sulden Madritsch', lat: 46.49375, lon: 10.614383 },
-    { code: '20050SF', name: 'Timmelsalm', lat: 46.913574, lon: 11.148675 },
-    { code: '91210WS', name: 'Toblach Hochebenkofel', lat: 46.680173, lon: 12.257258 },
-    { code: '07740WS', name: 'Trafoi Zaufenkofel', lat: 46.555582, lon: 10.539728 },
-    { code: '53200SF', name: 'Weissenbach Fadner Alm', lat: 46.92556, lon: 11.861432 }
+    { code: '37100MS', name: 'Sterzing', lat: 46.8850, lon: 11.4386, type: 'tal' },
+    { code: '20500MS', name: 'Pfelders', lat: 46.7965, lon: 11.0883, type: 'tal' },
+    { code: '19300MS', name: 'Naturns', lat: 46.6477, lon: 10.9912, type: 'tal' },
+    { code: '80300MS', name: 'Pens', lat: 46.78078, lon: 11.4166, type: 'tal' },
+    { code: '50500MS', name: 'Prettau', lat: 47.0366, lon: 12.0991, type: 'tal' },
+    { code: '34500MS', name: 'Ridnaun', lat: 46.9091, lon: 11.3068, type: 'tal' },
+    { code: '56900MS', name: 'Sand i.T. Mühlen', lat: 46.9003, lon: 11.9474, type: 'tal' },
+    { code: '54500MS', name: 'Rein in Taufers', lat: 46.9428, lon: 12.0825, type: 'tal' },
+    { code: '09700MS', name: 'Schlanders', lat: 46.6238, lon: 10.7803, type: 'tal' },
+    { code: '82200MS', name: 'Sarnthein', lat: 46.6406, lon: 11.3551, type: 'tal' },
+    { code: '88820MS', name: 'Salurn', lat: 46.2362, lon: 11.1855, type: 'tal' },
+    { code: '59700MS', name: 'Bruneck', lat: 46.8043, lon: 11.9315, type: 'tal' },
+    { code: '85120MS', name: 'Deutschnofen', lat: 46.4205, lon: 11.4269, type: 'tal' },
+    { code: '83200MS', name: 'Bozen', lat: 46.4977, lon: 11.3128, type: 'tal' },
+    { code: '86900MS', name: 'Auer', lat: 46.3469, lon: 11.3050, type: 'tal' },
+    { code: '39100MS', name: 'Brixen - Vahrn', lat: 46.7310, lon: 11.6451, type: 'tal' },
+    { code: '08200MS', name: 'Laas Eyrs', lat: 46.6249, lon: 10.6496, type: 'tal' },
+    { code: '23200MS', name: 'Meran', lat: 46.6880, lon: 11.1366, type: 'tal' },
+    { code: '47400MS', name: 'Antholz Obertal', lat: 46.8704, lon: 12.1166, type: 'tal' },
+    { code: '86600MS', name: 'Laimburg', lat: 46.3825, lon: 11.2887, type: 'tal' },
+    { code: '37700MS', name: 'Franzensfeste Grasstein', lat: 46.8125, lon: 11.5488, type: 'tal' },
+    { code: '74900MS', name: 'Barbian Kollmann', lat: 46.5951, lon: 11.5291, type: 'tal' },
+    { code: '89190MS', name: 'Kaltern Oberplanitzing', lat: 46.4423, lon: 11.2525, type: 'tal' },
+    { code: '22210MS', name: 'St. Martin in Passeier', lat: 46.7822, lon: 11.2294, type: 'tal' },
+    { code: '25900MS', name: 'St. Walburg', lat: 46.5417, lon: 10.9898, type: 'tal' },
+    { code: '73500MS', name: 'Wolkenstein', lat: 46.5456, lon: 11.7684, type: 'tal' },
+    { code: '68600MS', name: 'Vals', lat: 46.8483, lon: 11.6272, type: 'tal' },
+    { code: '02200MS', name: 'St. Valentin a.d. Haide', lat: 46.7759, lon: 10.5289, type: 'tal' },
+    { code: '41000MS', name: 'Toblach', lat: 46.7299, lon: 12.2191, type: 'tal' },
+    { code: '75600MS', name: 'Völs am Schlern', lat: 46.5134, lon: 11.5060, type: 'tal' },
+    { code: '62600MS', name: 'St. Martin in Thurn', lat: 46.6792, lon: 11.8979, type: 'tal' },
+    { code: '11400MS', name: 'Hintermartell', lat: 46.5169, lon: 10.7269, type: 'tal' },
+    { code: '02500MS', name: 'Marienberg', lat: 46.7057, lon: 10.5213, type: 'tal' },
+    { code: '33500MS', name: 'Pfitsch St. Jakob', lat: 46.9656, lon: 11.5981, type: 'tal' },
+    { code: '44500MS', name: 'St. Magdalena in Gsies', lat: 46.8353, lon: 12.2427, type: 'tal' },
+    { code: '06400MS', name: 'Sulden', lat: 46.5159, lon: 10.5953, type: 'tal' },
+    { code: '65600MS', name: 'Terenten', lat: 46.8345, lon: 11.7856, type: 'tal' },
+    { code: '24400MS', name: 'Ulten Weißbrunn', lat: 46.4868, lon: 10.8318, type: 'tal' },
+    { code: '43200MS', name: 'Welsberg', lat: 46.7431, lon: 12.1289, type: 'tal' },
+    { code: '78305MS', name: 'Welschnofen', lat: 46.4289, lon: 11.5366, type: 'tal' },
+    { code: '56500MS', name: 'Mühlwald', lat: 46.8901, lon: 11.8744, type: 'tal' },
+    { code: '42700MS', name: 'St. Veit in Prags', lat: 46.7119, lon: 12.1000, type: 'tal' },
+    { code: '15800MS', name: 'Schnals Vernagt', lat: 46.7357, lon: 10.8493, type: 'tal' },
+    { code: '65350MS', name: 'Obervintl', lat: 46.8111, lon: 11.7534, type: 'tal' },
+    { code: '82910MS', name: 'Jenesien', lat: 46.5304, lon: 11.3319, type: 'tal' },
+    { code: '27100MS', name: 'Gargazon', lat: 46.5767, lon: 11.2008, type: 'tal' },
+    { code: '85700MS', name: 'Branzoll', lat: 46.4065, lon: 11.3111, type: 'tal' },
+    { code: '87300MS', name: 'Radein', lat: 46.3465, lon: 11.3968, type: 'tal' },
+    { code: '66500MS', name: 'Pfunders', lat: 46.8872, lon: 11.7029, type: 'tal' },
+    { code: '20910MS', name: 'Platt in Passeier', lat: 46.8215, lon: 11.1762, type: 'tal' },
+    { code: '31410MS', name: 'Pflersch', lat: 46.9557, lon: 11.3793, type: 'tal' },
+    { code: '78110MS', name: 'Karerpass', lat: 46.4092, lon: 11.6017, type: 'tal' },
+    { code: '61300MS', name: 'Corvara', lat: 46.5504, lon: 11.8733, type: 'tal' },
+    { code: '01110MS', name: 'Langtaufers Grub', lat: 46.8365, lon: 10.6330, type: 'tal' },
+    { code: '71510MS', name: 'Villnöss', lat: 46.6479, lon: 11.6894, type: 'tal' },
+    { code: '79300MS', name: 'Ritten Siffian', lat: 46.5290, lon: 11.4638, type: 'tal' },
+    { code: '91510MS', name: 'Sexten', lat: 46.6915, lon: 12.3577, type: 'tal' },
+    { code: '82500WS', name: 'Rittner Horn', lat: 46.615564, lon: 11.460353, type: 'berg' },
+    { code: '00390SF', name: 'Graun Schöneben', lat: 46.806492, lon: 10.497973, type: 'berg' },
+    { code: '31810SF', name: 'Ladurns', lat: 46.934775, lon: 11.366330, type: 'berg' },
+    { code: '69900MS', name: 'Plose', lat: 46.698630, lon: 11.733841, type: 'berg' },
+    { code: '06040WS', name: 'Sulden Schöntaufspitze', lat: 46.502882, lon: 10.628586, type: 'berg' },
+    { code: '24300SF', name: 'Ulten Rossbänke', lat: 46.469351, lon: 10.819436, type: 'berg' },
+    { code: '24170WS', name: 'Ulten Weißbrunnspitz', lat: 46.493978, lon: 10.773983, type: 'berg' },
+    { code: '15050WS', name: 'Schnals Grawand', lat: 46.770253, lon: 10.796645, type: 'berg' },
+    { code: '61690SF', name: 'Abtei Piz La Ila', lat: 46.5650, lon: 11.9036, type: 'berg' },
+    { code: '61720WS', name: 'Abtei Piz Pisciadù', lat: 46.5314, lon: 11.8250, type: 'berg' },
+    { code: '62270SF', name: 'Campill Kreuzkofeljoch', lat: 46.637689, lon: 11.812249, type: 'berg' },
+    { code: '78480SF', name: 'Deutschnofen Obereggen', lat: 46.363591, lon: 11.546658, type: 'berg' },
+    { code: '90200MS', name: 'Gantkofel', lat: 46.493928, lon: 11.209039, type: 'berg' },
+    { code: '00700WS', name: 'Graun Elferspitze', lat: 46.776711, lon: 10.48782, type: 'berg' },
+    { code: '45200SF', name: 'Gsies Pfinnalm', lat: 46.841694, lon: 12.209582, type: 'berg' },
+    { code: '45100WS', name: 'Gsies Regelspitze', lat: 46.856083, lon: 12.200338, type: 'berg' },
+    { code: '35100WS', name: 'Jaufenkamm', lat: 46.840776, lon: 11.318418, type: 'berg' },
+    { code: '01080SF', name: 'Melag Pratznerberg', lat: 46.846816, lon: 10.624749, type: 'berg' },
+    { code: '80100SF', name: 'Pens Tramintal', lat: 46.795037, lon: 11.477397, type: 'berg' },
+    { code: '20690SF', name: 'Pfelders Grünboden', lat: 46.791993, lon: 11.101611, type: 'berg' },
+    { code: '20720WS', name: 'Pfelders Rauhjoch', lat: 46.828627, lon: 11.113961, type: 'berg' },
+    { code: '66000WS', name: 'Pfunders Dannelspitz', lat: 46.943359, lon: 11.687125, type: 'berg' },
+    { code: '66100SF', name: 'Pfunders Stutzenalm', lat: 46.925397, lon: 11.688222, type: 'berg' },
+    { code: '42830SF', name: 'Prags Rossalm', lat: 46.671192, lon: 12.111498, type: 'berg' },
+    { code: '50400WS', name: 'Prettau Lengspitze', lat: 47.015929, lon: 12.131038, type: 'berg' },
+    { code: '50360SF', name: 'Prettau Merbalm', lat: 47.036179, lon: 12.122127, type: 'berg' },
+    { code: '90005SF', name: 'Proveis Samerberg', lat: 46.495779, lon: 10.99867, type: 'berg' },
+    { code: '35205SF', name: 'Ratschings Wasserfaller Alm', lat: 46.84561, lon: 11.298729, type: 'berg' },
+    { code: '54100SF', name: 'Rein i.T. Tristenboden', lat: 46.920859, lon: 12.106939, type: 'berg' },
+    { code: '02700SF', name: 'Schleis Kloangruebes', lat: 46.700401, lon: 10.432431, type: 'berg' },
+    { code: '15590SF', name: 'Schnals Finail', lat: 46.741173, lon: 10.822462, type: 'berg' },
+    { code: '15000SF', name: 'Schnals Teufelsegg', lat: 46.7847, lon: 10.76466, type: 'berg' },
+    { code: '74200MS', name: 'Seiser Alm Zallinger', lat: 46.511879, lon: 11.688789, type: 'berg' },
+    { code: '91180SF', name: 'Sexten Rotwandwiesen', lat: 46.663555, lon: 12.370372, type: 'berg' },
+    { code: '34200WS', name: 'Signalgipfel Wilder Freiger', lat: 46.968378, lon: 11.19286, type: 'berg' },
+    { code: '06090SF', name: 'Sulden Madritsch', lat: 46.49375, lon: 10.614383, type: 'berg' },
+    { code: '20050SF', name: 'Timmelsalm', lat: 46.913574, lon: 11.148675, type: 'berg' },
+    { code: '91210WS', name: 'Toblach Hochebenkofel', lat: 46.680173, lon: 12.257258, type: 'berg' },
+    { code: '07740WS', name: 'Trafoi Zaufenkofel', lat: 46.555582, lon: 10.539728, type: 'berg' },
+    { code: '53200SF', name: 'Weissenbach Fadner Alm', lat: 46.92556, lon: 11.861432, type: 'berg' }
   ];
 
   var windMapInstance = null;
@@ -1099,34 +1141,62 @@
   // gegenüber der meteorologischen "Windrichtung", die angibt, WOHER der Wind
   // kommt). Auf der gegenüberliegenden Seite (also dort, WOHER der Wind kommt)
   // steht ein kleines Rechteck mit Geschwindigkeit (oben) und Böe (unten).
-  function buildWindsockIcon(dirDeg, avgKmh, gustKmh){
-    var hasData = (dirDeg !== null && dirDeg !== undefined && !isNaN(dirDeg));
-    var bearing = hasData ? (dirDeg + 180) % 360 : 90;
+  // Farbe: Bergstationen rot/weiß, Talstationen orange/weiß.
+  function buildWindsockIcon(station, last){
+    var dirDeg = last ? last.dirDeg : null;
+    var avgKmh = last ? last.avgKmh : null;
+    var gustKmh = last ? last.gustKmh : null;
+    var hasData = (avgKmh !== null && avgKmh !== undefined) || (gustKmh !== null && gustKmh !== undefined);
+    var hasDir = (dirDeg !== null && dirDeg !== undefined && !isNaN(dirDeg));
+
+    var bearing = hasDir ? (dirDeg + 180) % 360 : 90;
     var rotation = bearing - 90; // 0° im SVG zeigt nach rechts = Osten (90°) -> Differenz ausgleichen
-    var rectAngle = hasData ? dirDeg : 270; // Gegenüberliegende Seite = woher der Wind kommt
+    var rectAngle = hasDir ? dirDeg : 270; // Gegenüberliegende Seite = woher der Wind kommt
     var rad = rectAngle * Math.PI / 180;
     var cx = 45, cy = 45, radius = 24;
     var rx = cx + radius * Math.sin(rad);
     var ry = cy - radius * Math.cos(rad);
-    var rectW = 30, rectH = 22;
+    var rectW = 32, rectH = 32;
     var avgTxt = (avgKmh !== null && avgKmh !== undefined) ? Math.round(avgKmh) : '–';
     var gustTxt = (gustKmh !== null && gustKmh !== undefined) ? Math.round(gustKmh) : '–';
 
-    return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;">' +
+    var blinkClass = '';
+    var overThreshold = (avgKmh !== null && avgKmh > 30) || (gustKmh !== null && gustKmh > 30);
+    var deviates = (avgKmh !== null && gustKmh !== null && Math.abs(gustKmh - avgKmh) > 10);
+    if (overThreshold) blinkClass = 'wr-blink-red';
+    else if (deviates) blinkClass = 'wr-blink-orange';
+
+    var sockColor = (station.type === 'tal') ? '#F2994A' : '#E5342A';
+
+    var isStale = false;
+    if (last && last.instantUTC) {
+      var ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
+      isStale = ageMin > 60;
+    }
+
+    var opacity = hasData ? 1 : 0.5;
+    var staleRingSvg = isStale
+      ? '<circle class="stale-ring" cx="' + cx + '" cy="' + cy + '" r="9" fill="none" stroke="#E5342A" stroke-width="1.6"></circle>'
+      : '';
+
+    return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;opacity:' + opacity + ';">' +
+      (staleRingSvg ? '<svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;pointer-events:none;">' + staleRingSvg + '</svg>' : '') +
       '<svg width="38" height="16" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
         'style="position:absolute;left:' + (cx - 3.8) + 'px;top:' + (cy - 8) + 'px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;">' +
         '<line x1="6" y1="12" x2="18" y2="5" stroke="#3A4750" stroke-width="1.3"/>' +
         '<line x1="6" y1="12" x2="18" y2="19" stroke="#3A4750" stroke-width="1.3"/>' +
-        '<polygon points="18,5 18,19 31,17 31,7" fill="#E5342A"/>' +
+        '<polygon points="18,5 18,19 31,17 31,7" fill="' + sockColor + '"/>' +
         '<polygon points="31,7 31,17 45,15 45,9" fill="#ffffff" stroke="#cfd3d2" stroke-width="0.4"/>' +
-        '<polygon points="45,9 45,15 58,13.5 58,10.5" fill="#E5342A"/>' +
+        '<polygon points="45,9 45,15 58,13.5 58,10.5" fill="' + sockColor + '"/>' +
         '<circle cx="6" cy="12" r="5" fill="#2B2B2B"/>' +
       '</svg>' +
-      '<div style="position:absolute;left:' + (rx - rectW / 2) + 'px;top:' + (ry - rectH / 2) + 'px;width:' + rectW + 'px;height:' + rectH + 'px;' +
+      '<div class="' + blinkClass + '" style="position:absolute;left:' + (rx - rectW / 2) + 'px;top:' + (ry - rectH / 2) + 'px;width:' + rectW + 'px;height:' + rectH + 'px;' +
         'background:rgba(255,255,255,0.96);border:1px solid #C9CFCD;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,0.18);' +
         'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-        'font-family:\'IBM Plex Mono\',monospace;font-size:10px;line-height:1.25;color:#1C2B3A;font-weight:700;">' +
-        '<span>' + avgTxt + '</span><span style="color:#C1443C;">' + gustTxt + '</span>' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#1C2B3A;font-weight:700;">' +
+        '<span style="padding:4px 0;">' + avgTxt + '</span>' +
+        '<span style="width:68%;border-top:1px solid #D5D9D8;"></span>' +
+        '<span style="padding:4px 0;color:#C1443C;">' + gustTxt + '</span>' +
       '</div>' +
     '</div>';
   }
@@ -1149,13 +1219,17 @@
       },
       options: {
         responsive: true, maintainAspectRatio: false,
+        layout: { padding: { right: 4 } },
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11, family: "'IBM Plex Sans', sans-serif" } } },
+          legend: {
+            display: true, position: 'top',
+            labels: { usePointStyle: true, pointStyle: 'line', boxWidth: 22, boxHeight: 2, font: { size: 11, family: "'IBM Plex Sans', sans-serif" } }
+          },
           tooltip: { mode: 'index', intersect: false, callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + (ctx.parsed.y === null ? '—' : ctx.parsed.y) + ' km/h'; } } }
         },
         scales: {
-          x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 7, font: { size: 9, family: "'IBM Plex Mono', monospace" } } },
+          x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 6, font: { size: 9, family: "'IBM Plex Mono', monospace" } } },
           y: { beginAtZero: true, title: { display: true, text: 'km/h', font: { size: 10 } }, ticks: { font: { size: 9, family: "'IBM Plex Mono', monospace" } } }
         }
       }
@@ -1164,26 +1238,36 @@
 
   // ---- Windrichtungs-Kompass der letzten 6h ----
   // Radius = wie lange her (innerster Ring = 10 Min., je weiter außen desto
-  // älter, ganz außen = 6h). Winkel = Windrichtung. Farbe je Stunde von
-  // dunkel (aktuell) zu hellgrau (älter), aktuellster Punkt grün.
+  // älter, ganz außen = 6h). Winkel = Windrichtung. Ringe: ein dunkelgrauer
+  // Ring pro 10-Minuten-Schritt. Punktfarbe in diskreten Stundenstufen von
+  // Grün (aktuellste Stunde) zu Hellgrau (älteste Stunde), aktuellster Punkt
+  // blinkt grün.
+  var COMPASS_BUCKET_COLORS = ['#22C55E', '#1B7A3D', '#1C2B3A', '#6B7573', '#A8B0AE', '#D5D9D8'];
+  var COMPASS_BUCKET_LABELS = ['0h – 1h (aktuell)', '1h – 2h', '2h – 3h', '3h – 4h', '4h – 5h', '5h – 6h'];
+
   function buildWindCompassSvg(rows){
     var totalRings = 36; // 6h bei 10-Minuten-Takt
-    var size = 220, center = 110, rMax = 88;
+    var size = 240, center = 120, rMax = 92;
     var ordered = rows.slice().reverse().slice(0, totalRings); // neueste zuerst
+    var ringColor = '#9AA3A1';
 
-    var svg = '<svg width="220" height="220" viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg">';
+    var svg = '<svg width="240" height="240" viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg">';
     for (var k = 1; k <= totalRings; k++){
       var r = (k / totalRings) * rMax;
-      var isHourRing = (k % 6 === 0);
-      svg += '<circle cx="' + center + '" cy="' + center + '" r="' + r.toFixed(1) + '" fill="none" stroke="' +
-        (isHourRing ? '#B9C2C0' : '#E9EDEC') + '" stroke-width="' + (isHourRing ? 1 : 0.6) + '"/>';
+      svg += '<circle cx="' + center + '" cy="' + center + '" r="' + r.toFixed(1) + '" fill="none" stroke="' + ringColor + '" stroke-width="0.6"/>';
     }
+    // Stunden-Beschriftung entlang der Nordachse (jeder 6. Ring = 1 Stunde)
+    for (var h = 1; h <= 6; h++){
+      var rh = (h * 6 / totalRings) * rMax;
+      svg += '<text x="' + center + '" y="' + (center - rh - 2).toFixed(1) + '" text-anchor="middle" font-family="\'IBM Plex Mono\', monospace" font-size="8" fill="#7C8683">' + h + 'h</text>';
+    }
+
     svg += '<line x1="' + center + '" y1="' + (center - rMax) + '" x2="' + center + '" y2="' + (center + rMax) + '" stroke="#D5D9D8" stroke-width="1"/>';
     svg += '<line x1="' + (center - rMax) + '" y1="' + center + '" x2="' + (center + rMax) + '" y2="' + center + '" stroke="#D5D9D8" stroke-width="1"/>';
     [{ t: 'N', a: 0 }, { t: 'O', a: 90 }, { t: 'S', a: 180 }, { t: 'W', a: 270 }].forEach(function(l){
       var rad = l.a * Math.PI / 180;
-      var lx = center + (rMax + 13) * Math.sin(rad);
-      var ly = center - (rMax + 13) * Math.cos(rad);
+      var lx = center + (rMax + 14) * Math.sin(rad);
+      var ly = center - (rMax + 14) * Math.cos(rad);
       svg += '<text x="' + lx.toFixed(1) + '" y="' + (ly + 4).toFixed(1) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-size="12" font-weight="700" fill="#5B6B72">' + l.t + '</text>';
     });
 
@@ -1199,26 +1283,26 @@
     if (points.length > 1){
       var d = 'M' + points[points.length - 1].x.toFixed(1) + ',' + points[points.length - 1].y.toFixed(1);
       for (var p = points.length - 2; p >= 0; p--){ d += ' L' + points[p].x.toFixed(1) + ',' + points[p].y.toFixed(1); }
-      svg += '<path d="' + d + '" fill="none" stroke="#8FA5B8" stroke-width="1" stroke-opacity="0.5"/>';
+      svg += '<path d="' + d + '" fill="none" stroke="#8FA5B8" stroke-width="1" stroke-opacity="0.4"/>';
     }
 
     points.forEach(function(pt){
       var isNewest = (pt.i === 0);
-      var fill;
-      if (isNewest) {
-        fill = '#22C55E';
-      } else {
-        var hourBucket = Math.min(Math.floor(pt.i / 6), 5);
-        var t = hourBucket / 5; // 0 = aktuellste Stunde (dunkel) .. 1 = älteste (hellgrau)
-        var gray = Math.round(40 + t * 170);
-        fill = 'rgb(' + gray + ',' + gray + ',' + gray + ')';
-      }
-      var radius = isNewest ? 5 : 3.2;
-      svg += '<circle cx="' + pt.x.toFixed(1) + '" cy="' + pt.y.toFixed(1) + '" r="' + radius + '" fill="' + fill + '"' + (isNewest ? ' stroke="#fff" stroke-width="1.2"' : '') + '/>';
+      var bucket = Math.min(Math.floor(pt.i / 6), 5);
+      var fill = COMPASS_BUCKET_COLORS[bucket];
+      var radius = isNewest ? 5.5 : 3.4;
+      var cls = isNewest ? ' class="compass-newest-blink"' : '';
+      svg += '<circle' + cls + ' cx="' + pt.x.toFixed(1) + '" cy="' + pt.y.toFixed(1) + '" r="' + radius + '" fill="' + fill + '"' + (isNewest ? ' stroke="#fff" stroke-width="1.2"' : '') + '/>';
     });
 
     svg += '</svg>';
     return svg;
+  }
+
+  function buildWindCompassLegend(){
+    return '<div class="wind-compass-legend">' + COMPASS_BUCKET_LABELS.map(function(label, i){
+      return '<div class="wcl-row"><span class="wcl-dot" style="background:' + COMPASS_BUCKET_COLORS[i] + '"></span><span>' + label + '</span></div>';
+    }).join('') + '</div>';
   }
 
   function showWindDetail(station, rows){
@@ -1243,12 +1327,13 @@
       '</div>' +
       '<div class="wind-charts-row">' +
         '<div class="wind-chart-box">' +
-          '<div class="wind-chart-title">Windgeschwindigkeit &amp; Böe (letzte 6h)</div>' +
+          '<div class="wind-chart-title">Windgeschwindigkeit</div>' +
           '<div style="height:200px;"><canvas id="wind-speed-chart"></canvas></div>' +
         '</div>' +
         '<div class="wind-chart-box wind-compass-box">' +
-          '<div class="wind-chart-title">Windrichtung (letzte 6h)</div>' +
+          '<div class="wind-chart-title">Windrichtung</div>' +
           '<div id="wind-compass-container"></div>' +
+          buildWindCompassLegend() +
         '</div>' +
       '</div>';
     panel.classList.add('open');
@@ -1260,16 +1345,17 @@
   }
 
   // Icons sind in der Startansicht kleiner (weniger Gedränge bei 97 Stationen)
-  // und wachsen erst beim Heranzoomen auf die volle Größe.
+  // und wachsen erst beim Heranzoomen auf 120% der Basisgröße.
   var ICON_MIN_SCALE = 0.55;
+  var ICON_MAX_SCALE = 1.2;
   var ICON_MIN_ZOOM = 8;   // bei diesem Zoom (oder darunter) kleinste Größe
-  var ICON_FULL_ZOOM = 12; // ab diesem Zoom (oder darüber) volle Größe
+  var ICON_FULL_ZOOM = 12; // ab diesem Zoom (oder darüber) volle (120%) Größe
 
   function updateIconScale(){
     if (!windMapInstance) return;
     var zoom = windMapInstance.getZoom();
     var t = Math.max(0, Math.min(1, (zoom - ICON_MIN_ZOOM) / (ICON_FULL_ZOOM - ICON_MIN_ZOOM)));
-    var scale = ICON_MIN_SCALE + t * (1 - ICON_MIN_SCALE);
+    var scale = ICON_MIN_SCALE + t * (ICON_MAX_SCALE - ICON_MIN_SCALE);
     document.querySelectorAll('.windsock-icon').forEach(function(el){
       el.style.transform = 'scale(' + scale.toFixed(3) + ')';
     });
@@ -1281,11 +1367,16 @@
       return; // schon initialisiert - Tab war nur unsichtbar, Größe neu berechnen reicht
     }
 
-    // Startansicht: gezielt auf den Vinschgau zugeschnitten (wie im Referenzbild),
-    // auch wenn Marker für ganz Südtirol geladen werden - man kann rauszoomen,
-    // um den Rest zu sehen.
+    // Startansicht: am Handy enger auf den Obervinschgau zugeschnitten (wie im
+    // Referenzbild), am Desktop weiterhin der ganze Vinschgau. Marker für ganz
+    // Südtirol werden trotzdem geladen - man kann jederzeit rauszoomen.
     windMapInstance = L.map('windMap', { scrollWheelZoom: true });
-    windMapInstance.fitBounds([[46.44, 10.35], [46.92, 11.25]]);
+    var isMobileView = window.innerWidth <= 600;
+    if (isMobileView) {
+      windMapInstance.fitBounds([[46.65, 10.35], [46.88, 10.68]]);
+    } else {
+      windMapInstance.fitBounds([[46.44, 10.35], [46.92, 11.25]]);
+    }
     windMapInstance.on('zoomend', updateIconScale);
     L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       attribution: 'Karte: © OpenTopoMap (CC-BY-SA) · Daten: Autonome Provinz Bozen – Südtirol',
@@ -1301,16 +1392,66 @@
           var rows = (entry && entry.rows) ? entry.rows : [];
           var last = rows.length ? rows[rows.length - 1] : null;
 
-          var dir = last ? last.dirDeg : null;
-          var avg = last ? last.avgKmh : null;
-          var gust = last ? last.gustKmh : null;
-          var icon = L.divIcon({ className: '', html: buildWindsockIcon(dir, avg, gust), iconSize: [90, 90], iconAnchor: [45, 45] });
+          var icon = L.divIcon({ className: '', html: buildWindsockIcon(station, last), iconSize: [90, 90], iconAnchor: [45, 45] });
           var marker = L.marker([station.lat, station.lon], { icon: icon }).addTo(windMapInstance);
           marker.on('click', function(){ showWindDetail(station, rows); });
         });
         updateIconScale();
       })
       .catch(function(){ /* Karte bleibt ohne Marker, still fehlschlagen */ });
+  };
+
+  /* ---------- Ausgewählte Stationen (kompakte Übersicht) ---------- */
+  var SELECTED_STATION_CODES = ['00700WS', '02200MS', '06040WS', '08200MS'];
+
+  function buildCompactWindsockSvg(dirDeg, stationType){
+    var hasDir = (dirDeg !== null && dirDeg !== undefined && !isNaN(dirDeg));
+    var bearing = hasDir ? (dirDeg + 180) % 360 : 90;
+    var rotation = bearing - 90;
+    var sockColor = (stationType === 'tal') ? '#F2994A' : '#E5342A';
+    return '<svg width="56" height="24" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
+      'style="transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;opacity:' + (hasDir ? 1 : 0.4) + ';">' +
+      '<line x1="6" y1="12" x2="18" y2="5" stroke="#3A4750" stroke-width="1.3"/>' +
+      '<line x1="6" y1="12" x2="18" y2="19" stroke="#3A4750" stroke-width="1.3"/>' +
+      '<polygon points="18,5 18,19 31,17 31,7" fill="' + sockColor + '"/>' +
+      '<polygon points="31,7 31,17 45,15 45,9" fill="#ffffff" stroke="#cfd3d2" stroke-width="0.4"/>' +
+      '<polygon points="45,9 45,15 58,13.5 58,10.5" fill="' + sockColor + '"/>' +
+      '<circle cx="6" cy="12" r="5" fill="#2B2B2B"/>' +
+    '</svg>';
+  }
+
+  window.renderSelectedStations = function(){
+    var grid = document.getElementById('selectedStationsGrid');
+    fetch('./data/wind.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.json() : { stations: {} }; })
+      .then(function(payload){
+        var stations = payload.stations || {};
+        grid.innerHTML = SELECTED_STATION_CODES.map(function(code){
+          var station = ALL_STATIONS.filter(function(s){ return s.code === code; })[0];
+          if (!station) return '';
+          var entry = stations[code];
+          var rows = (entry && entry.rows) ? entry.rows : [];
+          var last = rows.length ? rows[rows.length - 1] : null;
+          var avg = last ? last.avgKmh : null;
+          var gust = last ? last.gustKmh : null;
+          var dir = last ? last.dirDeg : null;
+          var time = last ? last.time : '—';
+          var avgTxt = (avg !== null && avg !== undefined) ? Math.round(avg) : '–';
+          var gustTxt = (gust !== null && gust !== undefined) ? Math.round(gust) : '–';
+
+          return '<div class="selected-card">' +
+            '<div class="ssc-header"><span class="ssc-name">' + station.name + '</span><span class="ssc-time">' + time + '</span></div>' +
+            '<div class="ssc-body">' +
+              '<div class="ssc-values">' +
+                '<div><span class="ssc-label">Ø km/h</span><span class="ssc-value">' + avgTxt + '</span></div>' +
+                '<div><span class="ssc-label">Böe km/h</span><span class="ssc-value ssc-gust">' + gustTxt + '</span></div>' +
+              '</div>' +
+              '<div class="ssc-sock">' + buildCompactWindsockSvg(dir, station.type) + '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      })
+      .catch(function(){ grid.innerHTML = '<p class="wind-note">Daten konnten nicht geladen werden.</p>'; });
   };
 </script>
 </body>
