@@ -5,14 +5,16 @@ on:
     # Fauler Fallback (Primär-Steuerung läuft jetzt über einen externen
     # Cron-Dienst - cron-job.org -, der alle 10 Minuten workflow_dispatch
     # auslöst, da GitHub's eigener schedule-Trigger nachweislich unzuverlässig
-    # ist). Alle 10 Minuten (UTC), exakt zu :00,:10,:20,:30,:40,:50. Das
-    # Skript fragt dabei gezielt Messwerte von 20 Minuten VOR dem Trigger ab
-    # (fixer, auf das 10-Minuten-Raster gerundeter Zielzeitpunkt statt
-    # "aktuell") - z.B. beim 22:00-Lauf werden die Werte von 21:40
-    # eingetragen. Eine Nachhol-Logik im Skript selbst holt automatisch
+    # ist). Bewusst 2 Minuten NACH dem Raster (:02,:12,:22,...) statt exakt
+    # darauf: kleiner Sicherheitspuffer, falls die Bürgernetz-API um Sekunden
+    # zu spät veröffentlicht. Das Skript zielt dabei auf den aktuellsten
+    # verfügbaren Wert (kein künstlicher Verzug mehr), mit großzügigem
+    # Suchfenster (±25 Min., siehe WINDOW_MINUTES in fetch-weather.mjs) gegen
+    # die empirisch bestätigte ~20-Minuten-Veröffentlichungsverzögerung der
+    # Quelle. Eine Nachhol-Logik im Skript selbst holt zusätzlich automatisch
     # fehlende Slots nach, falls ein Lauf verzögert startet oder ausfällt.
     # Siehe scripts/fetch-weather.mjs für Details.
-    - cron: "*/10 * * * *"
+    - cron: "2,12,22,32,42,52 * * * *"
   workflow_dispatch: {} # erlaubt manuelles Auslösen (auch durch den externen Cron-Dienst)
 
 permissions:
