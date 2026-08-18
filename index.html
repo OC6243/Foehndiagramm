@@ -105,6 +105,7 @@
     margin:0;
     font-weight:700;
     letter-spacing:-0.01em;
+    flex:0 1 auto;
   }
 
   .legend-note{
@@ -195,7 +196,7 @@
 
   @keyframes compassBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.25; } }
   .compass-newest-blink{ animation:compassBlink 1s ease-in-out infinite; }
-  .wind-note{ font-size:12px; color:var(--muted); margin-top:10px; line-height:1.6; }
+  .wind-note{ font-size:12px; color:var(--muted); margin-top:10px; margin-bottom:0; line-height:1.6; }
   .wind-note a{ color:var(--cool); }
   .wind-detail-panel{
     display:none; margin-top:16px; padding:16px 18px;
@@ -1431,7 +1432,7 @@
     windMapInstance.on('zoomend', updateIconScale);
 
     var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: 'Karte: © OpenStreetMap-Mitwirkende · Daten: Autonome Provinz Bozen – Südtirol',
+      attribution: 'Karte: © OpenStreetMap · Daten: Autonome Provinz Bozen – Südtirol',
       maxZoom: 19
     });
     var topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
@@ -1488,7 +1489,7 @@
     // exakt mit der Mitte des Kompass-Hintergrunds zusammenfallen. Nur der
     // Kompass-Radius ist 30% größer - die Windsack-Größe bleibt unverändert.
     var pivotX = 28, pivotY = 29;
-    var sockRenderW = 49.0, sockRenderH = 19.6;
+    var sockRenderW = 44.1, sockRenderH = 17.6;
     var svgLeft = pivotX - 6 * (sockRenderW / 60), svgTop = pivotY - 12 * (sockRenderH / 24);
     return buildCompassBackgroundSvg(pivotX, pivotY, 27) +
       '<svg width="' + sockRenderW + '" height="' + sockRenderH + '" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
