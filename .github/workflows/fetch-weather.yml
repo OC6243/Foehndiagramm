@@ -3,18 +3,21 @@ name: Wetterdaten abrufen
 on:
   schedule:
     # Fauler Fallback (Primär-Steuerung läuft jetzt über einen externen
-    # Cron-Dienst - cron-job.org -, der alle 10 Minuten workflow_dispatch
+    # Cron-Dienst - cron-job.org -, der alle 5 Minuten workflow_dispatch
     # auslöst, da GitHub's eigener schedule-Trigger nachweislich unzuverlässig
-    # ist). Bewusst 2 Minuten NACH dem Raster (:02,:12,:22,...) statt exakt
-    # darauf: kleiner Sicherheitspuffer, falls die Bürgernetz-API um Sekunden
-    # zu spät veröffentlicht. Das Skript zielt dabei auf den aktuellsten
-    # verfügbaren Wert (kein künstlicher Verzug mehr), mit großzügigem
-    # Suchfenster (±25 Min., siehe WINDOW_MINUTES in fetch-weather.mjs) gegen
-    # die empirisch bestätigte ~20-Minuten-Veröffentlichungsverzögerung der
-    # Quelle. Eine Nachhol-Logik im Skript selbst holt zusätzlich automatisch
+    # ist). Bewusst 2 Minuten NACH dem 5-Minuten-Raster (:02,:07,:12,...)
+    # statt exakt darauf: kleiner Sicherheitspuffer, falls die Bürgernetz-API
+    # um Sekunden zu spät veröffentlicht. Das Skript zielt dabei auf den
+    # aktuellsten verfügbaren Wert (kein künstlicher Verzug mehr), mit
+    # großzügigem Suchfenster (±25 Min., siehe WINDOW_MINUTES in
+    # fetch-weather.mjs) gegen die empirisch bestätigte, zwischen 10 und
+    # 20+ Minuten schwankende Veröffentlichungsverzögerung der Quelle. 5
+    # statt 10 Minuten Takt verkürzt die maximale Wartezeit bis zum nächsten
+    # Abholversuch, ändert aber nichts an der Verzögerung der Quelle selbst.
+    # Eine Nachhol-Logik im Skript selbst holt zusätzlich automatisch
     # fehlende Slots nach, falls ein Lauf verzögert startet oder ausfällt.
     # Siehe scripts/fetch-weather.mjs für Details.
-    - cron: "2,12,22,32,42,52 * * * *"
+    - cron: "2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
   workflow_dispatch: {} # erlaubt manuelles Auslösen (auch durch den externen Cron-Dienst)
 
 permissions:
