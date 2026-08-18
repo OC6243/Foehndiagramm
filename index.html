@@ -3,7 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Föhndiagramm Tirol / Südtirol</title>
+<title>Wia schaugs aus?</title>
+<link rel="icon" type="image/x-icon" href="./favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="./favicon-48.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -38,7 +43,7 @@
   .wrap{max-width:1320px;margin:0 auto;}
 
   header{margin-bottom:22px;}
-  .title-row{ display:flex; align-items:center; gap:14px; }
+  .title-row{ display:flex; align-items:flex-start; gap:14px; }
 
   .top-bar{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .menu-wrap{ position:relative; }
@@ -200,6 +205,9 @@
   .wind-detail-panel h3{ margin:0 0 10px; font-size:16px; }
   @keyframes staleTextBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.25; } }
   .stale-warning-text{ color:#E5342A; font-weight:700; font-size:13px; animation:staleTextBlink 1s ease-in-out infinite; }
+  .stale-warning-block{ margin:-6px 0 12px; }
+  @keyframes trafficBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
+  .update-traffic-dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:middle; animation:trafficBlink 1.1s ease-in-out infinite; }
   .wdg-date{ margin-left:8px; font-weight:400; color:var(--muted); }
   .wind-detail-grid{
     display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
@@ -1341,23 +1349,31 @@
     var hum = last ? last.humidityPct : null;
     var time = (last && last.instantUTC) ? (last.time || '—') : '—';
 
-    var isStale = false;
+    var ageMin = null;
     var dateStr = '';
     if (last && last.instantUTC) {
-      var ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
-      isStale = ageMin > 60;
+      ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
       dateStr = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(last.instantUTC));
     }
+    var isStale = (ageMin !== null && ageMin > 60);
+    var trafficColor = '#B9C2C0';
+    if (ageMin !== null) {
+      if (ageMin <= 30) trafficColor = '#22C55E';
+      else if (ageMin <= 60) trafficColor = '#F2C94C';
+      else trafficColor = '#E5342A';
+    }
+    var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
 
     panel.innerHTML =
-      '<h3>' + station.name + (isStale ? ' <span class="stale-warning-text">Aktualisierung verzögert!</span>' : '') + '</h3>' +
+      '<h3>' + station.name + '</h3>' +
+      (isStale ? '<div class="stale-warning-text stale-warning-block">Aktualisierung verzögert!</div>' : '') +
       '<div class="wind-detail-grid">' +
-        '<div><span class="wdg-label">Windböe</span><span class="wdg-value">' + (gust !== null && gust !== undefined ? gust + ' km/h' : '—') + '</span></div>' +
         '<div><span class="wdg-label">Mittlere Windgeschwindigkeit</span><span class="wdg-value">' + (avg !== null && avg !== undefined ? avg + ' km/h' : '—') + '</span></div>' +
+        '<div><span class="wdg-label">Windböe</span><span class="wdg-value">' + (gust !== null && gust !== undefined ? gust + ' km/h' : '—') + '</span></div>' +
         '<div><span class="wdg-label">Windrichtung</span><span class="wdg-value">' + windDirLabel(dir) + (dir !== null && dir !== undefined ? ' (' + Math.round(dir) + '°)' : '') + '</span></div>' +
         '<div><span class="wdg-label">Lufttemperatur</span><span class="wdg-value">' + (temp !== null && temp !== undefined ? temp.toFixed(1) + ' °C' : '—') + '</span></div>' +
         '<div><span class="wdg-label">Luftfeuchte</span><span class="wdg-value">' + (hum !== null && hum !== undefined ? hum.toFixed(0) + ' %' : '—') + '</span></div>' +
-        '<div><span class="wdg-label">Letztes Update</span><span class="wdg-value">' + time + (dateStr ? '<span class="wdg-date">' + dateStr + '</span>' : '') + '</span></div>' +
+        '<div><span class="wdg-label">Letztes Update</span><span class="wdg-value">' + trafficDot + time + (dateStr ? '<span class="wdg-date">' + dateStr + '</span>' : '') + '</span></div>' +
       '</div>' +
       '<div class="wind-charts-row">' +
         '<div class="wind-chart-box">' +
@@ -1407,9 +1423,9 @@
     windMapInstance = L.map('windMap', { scrollWheelZoom: true });
     var isMobileView = window.innerWidth <= 600;
     if (isMobileView) {
-      windMapInstance.fitBounds([[46.449, 10.257], [46.789, 10.567]]);
+      windMapInstance.setView([46.657391, 10.588955], 11); // Schluderns
     } else {
-      windMapInstance.fitBounds([[46.44, 10.35], [46.92, 11.25]]);
+      windMapInstance.setView([46.670971, 11.210294], 10); // Meran 2000 Talstation
     }
     windMapInstance.on('zoomend', updateIconScale);
 
@@ -1471,7 +1487,7 @@
     // exakt mit der Mitte des Kompass-Hintergrunds zusammenfallen. Nur der
     // Kompass-Radius ist 30% größer - die Windsack-Größe bleibt unverändert.
     var pivotX = 28, pivotY = 29;
-    var sockRenderW = 57.6, sockRenderH = 23;
+    var sockRenderW = 49.0, sockRenderH = 19.6;
     var svgLeft = pivotX - 6 * (sockRenderW / 60), svgTop = pivotY - 12 * (sockRenderH / 24);
     return buildCompassBackgroundSvg(pivotX, pivotY, 27) +
       '<svg width="' + sockRenderW + '" height="' + sockRenderH + '" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
@@ -1505,14 +1521,19 @@
           var gustTxt = (gust !== null && gust !== undefined) ? Math.round(gust) : '–';
 
           var isStale = false;
+          var trafficColor = '#B9C2C0';
           if (last && last.instantUTC) {
             var ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
             isStale = ageMin > 60;
+            if (ageMin <= 30) trafficColor = '#22C55E';
+            else if (ageMin <= 60) trafficColor = '#F2C94C';
+            else trafficColor = '#E5342A';
           }
+          var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
 
           return '<div class="selected-card">' +
             '<div class="ssc-header-col">' +
-              '<div class="ssc-header"><span class="ssc-name">' + station.name + '</span><span class="ssc-time">' + time + '</span></div>' +
+              '<div class="ssc-header"><span class="ssc-name">' + station.name + '</span><span class="ssc-time">' + trafficDot + time + '</span></div>' +
               (isStale ? '<div class="stale-warning-text ssc-stale">Aktualisierung verzögert!</div>' : '') +
             '</div>' +
             '<div class="ssc-body">' +
