@@ -43,7 +43,7 @@
   .wrap{max-width:1320px;margin:0 auto;}
 
   header{margin-bottom:22px;}
-  .title-row{ display:flex; align-items:center; gap:14px; }
+  .title-row{ position:relative; padding-right:70px; }
 
   .top-bar{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .menu-wrap{ position:relative; }
@@ -73,7 +73,7 @@
   .menu-item + .menu-item{ margin-top:2px; }
   .menu-item:hover{ background:#F1F3F2; }
   .menu-item.active{ background:rgba(62,110,142,0.12); color:var(--cool); font-weight:700; }
-  .title-row img.logo{ width:56px; height:56px; border-radius:50%; flex-shrink:0; }
+  .title-row img.logo{ position:absolute; top:0; right:0; width:56px; height:56px; border-radius:50%; }
   .eyebrow{
     font-family:'IBM Plex Mono', monospace;
     font-size:12px;
@@ -105,8 +105,6 @@
     margin:0;
     font-weight:700;
     letter-spacing:-0.01em;
-    flex:0 1 auto;
-    max-width:calc(100% - 70px); /* 56px Logo + 14px Abstand - garantiert denselben Abstand unabhängig von Zeilenumbruch/Schriftart-Metriken */
   }
 
   .legend-note{
@@ -498,13 +496,16 @@
       }
     });
 
-    // Beim Start (auch nach manuellem Neuladen der Seite) den zuletzt
-    // gewählten Reiter wiederherstellen, statt immer beim Föhndiagramm zu
-    // beginnen. Automatisches Aktualisieren der Daten (alle 3 Min.) lädt die
-    // Seite selbst nicht neu, betrifft das also ohnehin nicht.
-    var savedPage = 'foehndiagramm';
-    try { savedPage = localStorage.getItem('foehn-active-page') || 'foehndiagramm'; } catch (e) { /* ignorieren */ }
-    if (savedPage !== 'foehndiagramm') activatePage(savedPage);
+    window.restoreActivePage = function(){
+      // Beim Start (auch nach manuellem Neuladen der Seite) den zuletzt
+      // gewählten Reiter wiederherstellen, statt immer beim Föhndiagramm zu
+      // beginnen. Bewusst erst ganz am Ende des Skripts aufgerufen (siehe
+      // unten) - hier in initMenu() wären initWindMap/renderSelectedStations
+      // noch gar nicht definiert, der jeweilige Reiter bliebe dann leer.
+      var savedPage = 'foehndiagramm';
+      try { savedPage = localStorage.getItem('foehn-active-page') || 'foehndiagramm'; } catch (e) { /* ignorieren */ }
+      if (savedPage !== 'foehndiagramm') activatePage(savedPage);
+    };
   }
   initMenu();
 
@@ -1189,17 +1190,21 @@
 
     // Stationen, die (soweit die vorhandene Historie zeigt) nie Windwerte
     // liefern: statisches Thermometer-Symbol statt drehendem Windsack, kein
-    // Werte-Rechteck (es gäbe ja nichts Passendes anzuzeigen).
+    // Werte-Rechteck (es gäbe ja nichts Passendes anzuzeigen). Punkt halb so
+    // groß wie beim Windsack, Thermometer immer rechts daneben (nicht
+    // darüber), transparent dargestellt wie Stationen ohne aktuelle Daten.
     if (!hasWindSensor) {
-      return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;">' +
+      var dotR = 2.5;
+      var tX = cx + dotR + 5;
+      return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;opacity:0.5;">' +
         '<svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;">' +
-          '<rect x="' + (cx - 4) + '" y="' + (cy - 30) + '" width="8" height="21" rx="4" fill="none" stroke="#3A4750" stroke-width="2"/>' +
-          '<rect x="' + (cx - 1.5) + '" y="' + (cy - 20) + '" width="3" height="12" fill="#3A4750"/>' +
-          '<line x1="' + (cx + 6) + '" y1="' + (cy - 26) + '" x2="' + (cx + 10) + '" y2="' + (cy - 26) + '" stroke="#3A4750" stroke-width="1.5" stroke-linecap="round"/>' +
-          '<line x1="' + (cx + 6) + '" y1="' + (cy - 21.5) + '" x2="' + (cx + 11.5) + '" y2="' + (cy - 21.5) + '" stroke="#3A4750" stroke-width="1.5" stroke-linecap="round"/>' +
-          '<line x1="' + (cx + 6) + '" y1="' + (cy - 17) + '" x2="' + (cx + 9.5) + '" y2="' + (cy - 17) + '" stroke="#3A4750" stroke-width="1.5" stroke-linecap="round"/>' +
-          '<circle cx="' + cx + '" cy="' + cy + '" r="6.5" fill="#3A4750"/>' +
-          '<circle cx="' + cx + '" cy="' + cy + '" r="5" fill="#2B2B2B"/>' +
+          '<circle cx="' + cx + '" cy="' + cy + '" r="' + dotR + '" fill="#2B2B2B"/>' +
+          '<rect x="' + tX + '" y="' + (cy - 15) + '" width="7" height="20" rx="3.5" fill="none" stroke="#3A4750" stroke-width="1.6"/>' +
+          '<rect x="' + (tX + 1.75) + '" y="' + (cy - 6) + '" width="3.5" height="11" fill="#3A4750"/>' +
+          '<circle cx="' + (tX + 3.5) + '" cy="' + (cy + 5) + '" r="6" fill="#3A4750"/>' +
+          '<line x1="' + (tX + 9) + '" y1="' + (cy - 11) + '" x2="' + (tX + 13) + '" y2="' + (cy - 11) + '" stroke="#3A4750" stroke-width="1.3" stroke-linecap="round"/>' +
+          '<line x1="' + (tX + 9) + '" y1="' + (cy - 7) + '" x2="' + (tX + 14) + '" y2="' + (cy - 7) + '" stroke="#3A4750" stroke-width="1.3" stroke-linecap="round"/>' +
+          '<line x1="' + (tX + 9) + '" y1="' + (cy - 3) + '" x2="' + (tX + 12.5) + '" y2="' + (cy - 3) + '" stroke="#3A4750" stroke-width="1.3" stroke-linecap="round"/>' +
         '</svg>' +
       '</div>';
     }
@@ -1527,8 +1532,29 @@
             return (r.avgKmh !== null && r.avgKmh !== undefined) || (r.gustKmh !== null && r.gustKmh !== undefined);
           });
 
+          // Für die Zeichenreihenfolge: dieselbe "transparent oder nicht"-Logik
+          // wie in buildWindsockIcon (Thermometer-Symbol, fehlende Daten oder
+          // seit >3 Tagen aufgegeben zählen alle als transparent).
+          var ageMin = (last && last.instantUTC) ? (Date.now() - new Date(last.instantUTC).getTime()) / 60000 : null;
+          var isAbandoned = hasWindSensor && ageMin !== null && ageMin > 3 * 24 * 60;
+          var hasCurrentData = hasWindSensor && !isAbandoned && last &&
+            ((last.avgKmh !== null && last.avgKmh !== undefined) || (last.gustKmh !== null && last.gustKmh !== undefined));
+          var isTransparent = !hasWindSensor || !hasCurrentData;
+
+          // Leaflet sortiert Marker standardmäßig nach geografischer Breite
+          // (weiter südlich = optisch "vorne") statt nach Erstellungsreihenfolge -
+          // deshalb hier ein expliziter zIndexOffset statt uns auf die
+          // forEach-Reihenfolge zu verlassen.
+          var priorityIdx = PRIORITY_CODES.indexOf(station.code);
+          var zIndexOffset;
+          if (priorityIdx !== -1) {
+            zIndexOffset = 4000 - priorityIdx * 1000; // 4000,3000,2000,1000 - garantiert ganz vorne
+          } else {
+            zIndexOffset = isTransparent ? 0 : 200; // nicht-transparent immer vor transparent
+          }
+
           var icon = L.divIcon({ className: '', html: buildWindsockIcon(station, last, hasWindSensor), iconSize: [90, 90], iconAnchor: [45, 45] });
-          var marker = L.marker([station.lat, station.lon], { icon: icon }).addTo(windMapInstance);
+          var marker = L.marker([station.lat, station.lon], { icon: icon, zIndexOffset: zIndexOffset }).addTo(windMapInstance);
           marker.on('click', function(){ showWindDetail(station, rows); });
         });
         updateIconScale();
@@ -1622,6 +1648,11 @@
       })
       .catch(function(){ grid.innerHTML = '<p class="wind-note">Daten konnten nicht geladen werden.</p>'; });
   };
+
+  // Erst jetzt, ganz am Ende - nachdem initWindMap und renderSelectedStations
+  // tatsächlich definiert sind - den beim letzten Besuch aktiven Reiter
+  // wiederherstellen (siehe restoreActivePage in initMenu()).
+  if (window.restoreActivePage) window.restoreActivePage();
 </script>
 </body>
 </html>
