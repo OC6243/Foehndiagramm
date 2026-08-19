@@ -181,8 +181,8 @@
   .empty-state h2{ margin:0 0 8px; font-size:19px; color:var(--ink); font-weight:700; }
   .empty-state p{ margin:0; color:var(--muted); font-size:14px; max-width:38ch; line-height:1.6; }
 
-  #windMap{ height:560px; width:100%; border-radius:14px; background:#EEF1F0; }
-  @media (max-width:600px){ #windMap{ height:420px; } }
+  #windMap{ height:644px; width:100%; border-radius:14px; background:#EEF1F0; }
+  @media (max-width:600px){ #windMap{ height:483px; } }
   .windsock-icon{ cursor:pointer; transform-origin:center center; transition:transform 0.15s ease-out; }
 
   @keyframes blinkRed{ 0%,100%{ border-color:#E5342A; box-shadow:0 1px 4px rgba(0,0,0,0.18); } 50%{ border-color:#E5342A; box-shadow:0 0 0 3px rgba(229,52,42,0.55); } }
@@ -243,6 +243,15 @@
   }
   .wind-compass-legend .wcl-row{ display:flex; align-items:center; gap:8px; }
   .wind-compass-legend .wcl-dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+
+  .foehn-forecast-card + .foehn-forecast-card{ margin-top:20px; }
+  .foehn-forecast-card h2{ font-size:18px; margin:0 0 4px; }
+  .foehn-forecast-img-wrap{
+    margin-top:14px; border-radius:10px; overflow:hidden; border:1px solid var(--hairline);
+    background:#F4F6F5; box-shadow:0 2px 10px rgba(28,43,58,0.06);
+    display:flex; align-items:center; justify-content:center; min-height:120px;
+  }
+  .foehn-forecast-img{ display:block; width:100%; height:auto; }
 
   .selected-stations-grid{
     display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;
@@ -410,6 +419,7 @@
             <button class="menu-item active" data-page="foehndiagramm">Föhndiagramm</button>
             <button class="menu-item" data-page="livewerte">Live-Windwerte</button>
             <button class="menu-item" data-page="selected">Ausgewählte Stationen</button>
+            <button class="menu-item" data-page="foehnprognose">Föhnprognose</button>
           </div>
         </div>
       </div>
@@ -452,6 +462,19 @@
         <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
       </div>
     </div>
+
+    <div id="page-foehnprognose" style="display:none;">
+      <div class="section foehn-forecast-card">
+        <h2>Provinz Bozen</h2>
+        <div class="foehn-forecast-img-wrap"><img id="foehnImgBz" class="foehn-forecast-img" alt="Föhnprognose Provinz Bozen - Luftdruckdifferenz Bozen/Innsbruck"></div>
+        <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/foehndiagramm" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
+      </div>
+      <div class="section foehn-forecast-card">
+        <h2>Wetterring AT</h2>
+        <div class="foehn-forecast-img-wrap"><img id="foehnImgWr" class="foehn-forecast-img" alt="Föhnprognose Wetterring - Druckdifferenz Bozen/Innsbruck"></div>
+        <p class="wind-note">Quelle: <a href="https://wetterring.at/profiwetter/foehndiagramm-tirol" target="_blank" rel="noopener">Wetterring</a></p>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -459,8 +482,8 @@
     var toggle = document.getElementById('menuToggle');
     var dropdown = document.getElementById('menuDropdown');
     var items = dropdown.querySelectorAll('.menu-item');
-    var pages = { foehndiagramm: document.getElementById('page-foehndiagramm'), livewerte: document.getElementById('page-livewerte'), selected: document.getElementById('page-selected') };
-    var titles = { foehndiagramm: 'Föhndiagramm', livewerte: 'Live-Windwerte', selected: 'Ausgewählte Stationen' };
+    var pages = { foehndiagramm: document.getElementById('page-foehndiagramm'), livewerte: document.getElementById('page-livewerte'), selected: document.getElementById('page-selected'), foehnprognose: document.getElementById('page-foehnprognose') };
+    var titles = { foehndiagramm: 'Föhndiagramm', livewerte: 'Live-Windwerte', selected: 'Ausgewählte Stationen', foehnprognose: 'Föhnprognose' };
     var titleEl = document.getElementById('pageTitle');
 
     function activatePage(page){
@@ -472,6 +495,7 @@
       titleEl.textContent = titles[page];
       if (page === 'livewerte' && window.initWindMap) window.initWindMap();
       if (page === 'selected' && window.renderSelectedStations) window.renderSelectedStations();
+      if (page === 'foehnprognose' && window.renderFoehnprognose) window.renderFoehnprognose();
       try { sessionStorage.setItem('foehn-active-page', page); } catch (e) { /* z.B. privater Modus - dann einfach nicht merken */ }
     }
 
@@ -1047,8 +1071,18 @@
     renderSection(data.bozenInnsbruck, data.imstMeran, 'table-bi', 'chart-bi', 'chart-bi', 'Druckdifferenz  ' + bi.leftLabel + ' - ' + bi.rightLabel + '  [hPa]');
     renderSection(data.imstMeran, data.bozenInnsbruck, 'table-im', 'chart-im', 'chart-im', 'Druckdifferenz  ' + im.leftLabel + ' - ' + im.rightLabel + '  [hPa]');
 
-    document.getElementById('pageFoot').textContent = data.generatedAt
-      ? ('Zuletzt aktualisiert: ' + data.generatedAt)
+    var ages = Object.keys(latestInstants).map(function(k){ return (Date.now() - latestInstants[k].getTime()) / 60000; });
+    var footAgeMin = ages.length ? Math.max.apply(null, ages) : null;
+    var footTrafficColor = '#B9C2C0';
+    if (footAgeMin !== null) {
+      if (footAgeMin <= 35) footTrafficColor = '#22C55E';
+      else if (footAgeMin <= 60) footTrafficColor = '#F2C94C';
+      else footTrafficColor = '#E5342A';
+    }
+    var footTrafficDot = '<span class="update-traffic-dot" style="background:' + footTrafficColor + ';"></span>';
+
+    document.getElementById('pageFoot').innerHTML = data.generatedAt
+      ? (footTrafficDot + 'Zuletzt aktualisiert: ' + data.generatedAt)
       : 'Noch kein Datenstand';
 
     checkDataFreshness();
@@ -1421,7 +1455,7 @@
     var isStale = (ageMin !== null && ageMin > 60);
     var trafficColor = '#B9C2C0';
     if (ageMin !== null) {
-      if (ageMin <= 30) trafficColor = '#22C55E';
+      if (ageMin <= 35) trafficColor = '#22C55E';
       else if (ageMin <= 60) trafficColor = '#F2C94C';
       else trafficColor = '#E5342A';
     }
@@ -1628,7 +1662,7 @@
           if (last && last.instantUTC) {
             var ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
             isStale = ageMin > 60;
-            if (ageMin <= 30) trafficColor = '#22C55E';
+            if (ageMin <= 35) trafficColor = '#22C55E';
             else if (ageMin <= 60) trafficColor = '#F2C94C';
             else trafficColor = '#E5342A';
           }
@@ -1650,6 +1684,15 @@
         }).join('');
       })
       .catch(function(){ grid.innerHTML = '<p class="wind-note">Daten konnten nicht geladen werden.</p>'; });
+  };
+  /* ---------- Föhnprognose (zwei externe Diagramme) ---------- */
+  var foehnprognoseLoaded = false;
+  window.renderFoehnprognose = function(){
+    if (foehnprognoseLoaded) return; // Bilder aktualisieren sich ohnehin nur 2x täglich, kein wiederholtes Neuladen nötig
+    foehnprognoseLoaded = true;
+    var cacheBuster = Date.now();
+    document.getElementById('foehnImgBz').src = 'https://static-weather.services.siag.it/sys/pgradient_de.png?t=' + cacheBuster;
+    document.getElementById('foehnImgWr').src = 'https://stations.wetterring.at/wetterkarten/foehndiagramm_ibk.png?t=' + cacheBuster;
   };
 
   // Erst jetzt, ganz am Ende - nachdem initWindMap und renderSelectedStations
