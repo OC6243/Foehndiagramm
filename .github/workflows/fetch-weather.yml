@@ -29,12 +29,15 @@ permissions:
 # die Ursache für die früher beobachteten großen Verzögerungen). Die
 # Nachhol-Logik im Skript holt einen dadurch übersprungenen Slot beim
 # nächsten erfolgreichen Lauf automatisch nach.
-# Eigene Concurrency-Gruppe pro Auslöse-Art (geplant vs. manuell) - so kann
-# ein manuell gestarteter Lauf (workflow_dispatch) niemals mit einem
-# planmäßigen Cron-Lauf um dieselbe "Warteschlange" konkurrieren oder ihn
-# versehentlich verdrängen.
+# EINE gemeinsame Concurrency-Gruppe für alle Auslöse-Arten (nicht mehr pro
+# event_name getrennt): geplanter Fallback und externer Cron-Trigger erledigen
+# inzwischen praktisch dieselbe Aufgabe im selben Takt - liefen sie in
+# getrennten Gruppen, konnten zwei Läufe gleichzeitig aktiv sein und sich beim
+# Commit/Push gegenseitig in die Quere kommen (führte zu Merge-Konflikten in
+# den Datendateien). Mit einer gemeinsamen Gruppe wird ein überlappender Lauf
+# sauber abgebrochen, statt in einen Konflikt zu laufen.
 concurrency:
-  group: fetch-weather-${{ github.event_name }}
+  group: fetch-weather
   cancel-in-progress: true
 
 jobs:
@@ -80,8 +83,20 @@ jobs:
               exit 0
             fi
             echo "Push fehlgeschlagen (Versuch $attempt), hole Änderungen und versuche erneut..."
-            git pull --rebase origin main
-            sleep 5
+            if git pull --rebase origin main; then
+              sleep 5
+              continue
+            fi
+            # Echter Inhaltskonflikt (z.B. durch einen fast zeitgleichen
+            # zweiten Lauf) - lässt sich nicht automatisch zusammenführen.
+            # Statt fehlzuschlagen: eigenen Commit verwerfen und den Stand des
+            # anderen, bereits erfolgreich gepushten Laufs übernehmen. Die
+            # Daten sind dadurch ohnehin schon aktuell, ein erneuter Push ist
+            # nicht nötig.
+            echo "Rebase-Konflikt (vermutlich zeitgleicher zweiter Lauf) - übernehme den Stand von origin/main, da die Daten dadurch bereits aktuell sind."
+            git rebase --abort 2>/dev/null || true
+            git reset --hard origin/main
+            exit 0
           done
 
           echo "Push nach mehreren Versuchen fehlgeschlagen."
