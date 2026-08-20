@@ -100,6 +100,27 @@
   @media (prefers-reduced-motion:reduce){ .eyebrow .dot{animation:none;} .eyebrow.stale .dot{animation:none;} .eyebrow-stale-text{animation:none;} }
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
 
+  #splashScreen{
+    position:fixed; inset:0; background:#ffffff; z-index:99999;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden; transition:opacity .45s ease;
+  }
+  #splashScreen.splash-hide{ opacity:0; pointer-events:none; }
+  #splashParaglider{
+    width:130px; height:130px; will-change:transform,opacity;
+    animation:splashFly 2s cubic-bezier(.45,0,.4,1) infinite;
+  }
+  @keyframes splashFly{
+    0%   { transform:translateY(62vh) translateX(-8px) rotate(-10deg) scale(0.82); opacity:0; }
+    14%  { opacity:1; }
+    50%  { transform:translateY(0) translateX(6px) rotate(4deg) scale(1); }
+    86%  { opacity:1; }
+    100% { transform:translateY(-68vh) translateX(-6px) rotate(-7deg) scale(1.06); opacity:0; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    #splashParaglider{ animation:none; opacity:1; transform:none; }
+  }
+
   h1{
     font-size:clamp(28px,4vw,40px);
     margin:0;
@@ -409,6 +430,9 @@
 </style>
 </head>
 <body>
+  <div id="splashScreen" aria-hidden="true">
+    <img id="splashParaglider" src="./splash-paraglider.png" alt="">
+  </div>
   <div class="wrap">
     <header>
       <div class="top-bar">
@@ -478,6 +502,38 @@
   </div>
 
 <script>
+  (function initSplashScreen(){
+    var splash = document.getElementById('splashScreen');
+    var paraglider = document.getElementById('splashParaglider');
+    if (!splash || !paraglider) return;
+    var minTimeDone = false;
+    var pageReady = false;
+    var hidden = false;
+
+    function tryHide(){
+      if (hidden || !minTimeDone || !pageReady) return;
+      hidden = true;
+      splash.classList.add('splash-hide');
+      setTimeout(function(){ if (splash.parentNode) splash.parentNode.removeChild(splash); }, 500);
+    }
+
+    // Mindestens eine volle Flugrunde (2s) abwarten, auch wenn die Seite
+    // schneller fertig ist - danach sofort ausblenden, sobald auch die Seite
+    // bereit ist.
+    setTimeout(function(){ minTimeDone = true; tryHide(); }, 2000);
+
+    // Dauert das Laden länger als 2s, fliegt die Figur einfach weiter (CSS
+    // animation ist "infinite") - am Ende jeder weiteren vollen Runde wird
+    // erneut geprüft, ob die Seite inzwischen bereit ist, damit sauber mit
+    // der Landung (statt mitten im Flug) ausgeblendet wird.
+    paraglider.addEventListener('animationiteration', tryHide);
+
+    window.markPageReady = function(){
+      pageReady = true;
+      tryHide();
+    };
+  })();
+
   function initMenu(){
     var toggle = document.getElementById('menuToggle');
     var dropdown = document.getElementById('menuDropdown');
@@ -1089,11 +1145,22 @@
     content.textContent = 'Fehler beim Laden der Daten: ' + (err && err.message ? err.message : err);
   }
 
+  var firstLoadDone = false;
   function load(){
     fetch('./data/history.json?t=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(render)
-      .catch(showError);
+      .catch(showError)
+      .then(function(){
+        // Nur beim allerersten Laden relevant für den Splash-Screen - egal ob
+        // erfolgreich oder fehlgeschlagen (sonst bliebe man bei einem Fehler
+        // für immer auf dem Splash-Screen hängen und würde die Fehlermeldung
+        // nie sehen).
+        if (!firstLoadDone) {
+          firstLoadDone = true;
+          if (window.markPageReady) window.markPageReady();
+        }
+      });
     if (window.refreshFoehnprognoseIfVisited) window.refreshFoehnprognoseIfVisited();
   }
 
