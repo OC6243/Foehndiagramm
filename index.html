@@ -266,7 +266,7 @@
   .wind-compass-legend .wcl-row{ display:flex; align-items:center; gap:8px; }
   .wind-compass-legend .wcl-dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
 
-  .foehn-forecast-card{ padding-top:16px; padding-bottom:16px; }
+  .foehn-forecast-card{ padding-top:16px; padding-bottom:14.4px; }
   .foehn-forecast-card + .foehn-forecast-card{ margin-top:13px; }
   .foehn-forecast-img-wrap{
     border-radius:10px; overflow:hidden; border:1px solid var(--hairline);
@@ -280,8 +280,10 @@
   }
   .selected-card{
     border:1px solid var(--hairline); border-radius:12px; padding:12px 16px;
-    background:var(--panel); cursor:pointer;
+    background:var(--panel);
   }
+  .ssc-clickable{ cursor:pointer; }
+  .selected-card .wind-detail-panel{ margin:14px -16px -12px; padding:14px 16px; border-top:1px solid var(--hairline); border-radius:0 0 12px 12px; }
   .ssc-header-col{ display:flex; flex-direction:column; margin-bottom:8px; position:relative; z-index:2; }
   .ssc-header{ display:flex; align-items:baseline; justify-content:space-between; }
   .ssc-stale{ font-size:11px; margin-top:2px; }
@@ -485,7 +487,6 @@
     <div id="page-selected" style="display:none;">
       <div class="section">
         <div class="selected-stations-grid" id="selectedStationsGrid"></div>
-        <div class="wind-detail-panel" id="windDetailPanelSelected"></div>
         <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
       </div>
     </div>
@@ -1507,7 +1508,7 @@
 
   function showWindDetail(station, rows, panelId){
     panelId = panelId || 'windDetailPanel';
-    var suffix = (panelId === 'windDetailPanel') ? '' : '-sel';
+    var suffix = (panelId === 'windDetailPanel') ? '' : ('-' + panelId);
     var panel = document.getElementById(panelId);
     var last = (rows && rows.length) ? rows[rows.length - 1] : null;
     var gust = last ? last.gustKmh : null;
@@ -1742,30 +1743,46 @@
           }
           var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
 
+          var panelId = 'windDetailPanelSel-' + code;
+
           return '<div class="selected-card" data-code="' + code + '">' +
-            '<div class="ssc-header-col">' +
-              '<div class="ssc-header"><span class="ssc-name">' + station.name + '</span><span class="ssc-time">' + trafficDot + time + '</span></div>' +
-              (isStale ? '<div class="stale-warning-text ssc-stale">Aktualisierung verzögert!</div>' : '') +
-            '</div>' +
-            '<div class="ssc-body">' +
-              '<div class="ssc-values">' +
-                '<div><span class="ssc-label">Ø km/h</span><span class="ssc-value">' + avgTxt + '</span></div>' +
-                '<div><span class="ssc-label">Böe km/h</span><span class="ssc-value ssc-gust">' + gustTxt + '</span></div>' +
+            '<div class="ssc-clickable">' +
+              '<div class="ssc-header-col">' +
+                '<div class="ssc-header"><span class="ssc-name">' + station.name + '</span><span class="ssc-time">' + trafficDot + time + '</span></div>' +
+                (isStale ? '<div class="stale-warning-text ssc-stale">Aktualisierung verzögert!</div>' : '') +
               '</div>' +
-              '<div class="ssc-sock">' + buildCompactWindsockSvg(dir, station.type) + '</div>' +
+              '<div class="ssc-body">' +
+                '<div class="ssc-values">' +
+                  '<div><span class="ssc-label">Ø km/h</span><span class="ssc-value">' + avgTxt + '</span></div>' +
+                  '<div><span class="ssc-label">Böe km/h</span><span class="ssc-value ssc-gust">' + gustTxt + '</span></div>' +
+                '</div>' +
+                '<div class="ssc-sock">' + buildCompactWindsockSvg(dir, station.type) + '</div>' +
+              '</div>' +
             '</div>' +
+            '<div class="wind-detail-panel" id="' + panelId + '"></div>' +
           '</div>';
         }).join('');
 
-        // Gleiche Detailansicht wie bei Live-Windwerte öffnen, nur in einem
-        // eigenen Panel auf dieser Seite (eigene Chart-IDs, siehe showWindDetail).
+        // Gleiche Detailansicht wie bei Live-Windwerte, aber direkt unter der
+        // jeweiligen Station eingebettet (eigenes Panel pro Karte) und als
+        // Auf-/Zuklapp-Akkordeon: erneutes Antippen klappt wieder ein. Der
+        // Klick-Bereich ist bewusst auf Kopf+Werte begrenzt (.ssc-clickable),
+        // damit ein Klick INNERHALB des bereits geöffneten Diagramms es nicht
+        // versehentlich wieder zuklappt.
         grid.querySelectorAll('.selected-card').forEach(function(card){
-          card.addEventListener('click', function(){
+          var clickable = card.querySelector('.ssc-clickable');
+          clickable.addEventListener('click', function(){
             var code = card.getAttribute('data-code');
+            var panelId = 'windDetailPanelSel-' + code;
+            var panel = document.getElementById(panelId);
+            if (panel.classList.contains('open')) {
+              panel.classList.remove('open');
+              return;
+            }
             var station = ALL_STATIONS.filter(function(s){ return s.code === code; })[0];
             var entry = stations[code];
             var rows = (entry && entry.rows) ? entry.rows : [];
-            if (station) showWindDetail(station, rows, 'windDetailPanelSelected');
+            if (station) showWindDetail(station, rows, panelId);
           });
         });
       })
