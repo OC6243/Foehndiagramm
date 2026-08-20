@@ -482,6 +482,8 @@
   .loading, .error{ text-align:center; padding:60px 20px; color:var(--muted); }
   .error{ color:var(--alert); }
 </style>
+<!-- Cloudflare Web Analytics: DEIN-TOKEN-HIER unten durch dein echtes Token ersetzen (siehe Anleitung) -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "DEIN-TOKEN-HIER"}'></script>
 </head>
 <body>
   <div id="splashScreen" aria-hidden="true">
@@ -616,10 +618,16 @@
 
       <h3>Datenschutz</h3>
       <p>
-        Diese Website verwendet keine Cookies und sammelt keine personenbezogenen Daten. Um sich zu merken, welcher
-        Reiter zuletzt geöffnet war, wird technisch notwendiger, rein lokaler Sitzungsspeicher (sessionStorage) im
-        Browser verwendet – dieser wird beim Schließen des Browsers automatisch gelöscht und nicht an einen Server
-        übertragen. Es findet kein Tracking und keine Auswertung des Nutzerverhaltens statt.
+        Diese Website verwendet keine Cookies. Um sich zu merken, welcher Reiter zuletzt geöffnet war, wird
+        technisch notwendiger, rein lokaler Sitzungsspeicher (sessionStorage) im Browser verwendet – dieser wird
+        beim Schließen des Browsers automatisch gelöscht und nicht an einen Server übertragen.
+      </p>
+      <p>
+        Zur anonymen Zählung der Seitenaufrufe (z.&nbsp;B. wie viele Besucher pro Tag) wird
+        <a href="https://www.cloudflare.com/web-analytics/" target="_blank" rel="noopener">Cloudflare Web Analytics</a>
+        eingesetzt. Dieser Dienst kommt ohne Cookies aus und erstellt kein Profil einzelner Besucher – es werden nur
+        anonyme, zusammengefasste Zugriffszahlen erhoben. Weitere Informationen dazu in der
+        <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Datenschutzrichtlinie von Cloudflare</a>.
       </p>
     </div>
   </div>
