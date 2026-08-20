@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wia schaugs aus?</title>
+<meta property="og:title" content="Wia schaugs aus?">
+<meta property="og:description" content="Föhndiagramm, Live-Windwerte und Föhnprognose für den Vinschgau">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://oc6243.github.io/Foehndiagramm/">
+<meta property="og:image" content="https://oc6243.github.io/Foehndiagramm/apple-touch-icon.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Wia schaugs aus?">
+<meta name="twitter:description" content="Föhndiagramm, Live-Windwerte und Föhnprognose für den Vinschgau">
+<meta name="twitter:image" content="https://oc6243.github.io/Foehndiagramm/apple-touch-icon.png">
 <link rel="icon" type="image/x-icon" href="./favicon.ico?v=2">
 <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png?v=2">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=2">
@@ -1617,8 +1626,22 @@
     // Marker haben ihren eigenen Klick-Handler und stoppen die Ausbreitung
     // zur Karte, daher feuert dieser Handler nur bei Klicks NEBEN einem
     // Symbol, nicht bei Klicks AUF ein Symbol.
+    // Kurze Verzögerung (250ms) vor dem Herauszoomen: ein Doppeltipp löst
+    // zwei einzelne 'click'-Ereignisse UND ein 'dblclick'-Ereignis aus - ohne
+    // diese Verzögerung würde das Herauszoomen jedes Mal dazwischenfunken und
+    // das Hineinzoomen per Doppeltipp verhindern. Kommt innerhalb der 250ms
+    // ein zweiter Tipp (= Doppeltipp), wird das Herauszoomen abgebrochen und
+    // stattdessen ganz normal per doubleClickZoom hineingezoomt.
+    var mapClickTimer = null;
     windMapInstance.on('click', function(){
-      windMapInstance.setZoom(windMapInstance.getZoom() - 1);
+      if (mapClickTimer) clearTimeout(mapClickTimer);
+      mapClickTimer = setTimeout(function(){
+        mapClickTimer = null;
+        windMapInstance.setZoom(windMapInstance.getZoom() - 1);
+      }, 250);
+    });
+    windMapInstance.on('dblclick', function(){
+      if (mapClickTimer) { clearTimeout(mapClickTimer); mapClickTimer = null; }
     });
 
     var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1688,7 +1711,7 @@
           marker.on('click', function(){
             showWindDetail(station, rows);
             setTimeout(function(){
-              window.scrollBy({ top: 160, left: 0, behavior: 'smooth' });
+              window.scrollBy({ top: 184, left: 0, behavior: 'smooth' });
             }, 80);
           });
         });
