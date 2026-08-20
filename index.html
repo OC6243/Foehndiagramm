@@ -207,7 +207,7 @@
   .stale-warning-text{ color:#E5342A; font-weight:700; font-size:13px; animation:staleTextBlink 1s ease-in-out infinite; }
   .stale-warning-block{ margin:-6px 0 12px; }
   @keyframes trafficBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
-  .update-traffic-dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin:0 6px; vertical-align:middle; animation:trafficBlink 1.1s ease-in-out infinite; }
+  .update-traffic-dot{ display:inline-block; width:7.2px; height:7.2px; border-radius:50%; margin:0 6px; vertical-align:middle; animation:trafficBlink 1.1s ease-in-out infinite; }
   .wdg-date{ margin-left:8px; font-weight:400; color:var(--muted); }
   .wind-detail-grid{
     display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
@@ -218,6 +218,7 @@
     display:flex; flex-direction:column; justify-content:flex-end; min-height:28px; margin-bottom:2px;
   }
   .wdg-label-inner{ display:inline-flex; align-items:center; }
+  .station-elev-label{ font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted); margin-left:8px; }
   .wind-detail-grid .wdg-value{ font-weight:700; color:var(--ink); }
 
   .wind-charts-row{
@@ -245,7 +246,7 @@
   .wind-compass-legend .wcl-dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
 
   .foehn-forecast-card{ padding-top:16px; padding-bottom:16px; }
-  .foehn-forecast-card + .foehn-forecast-card{ margin-top:20px; }
+  .foehn-forecast-card + .foehn-forecast-card{ margin-top:16px; }
   .foehn-forecast-img-wrap{
     border-radius:10px; overflow:hidden; border:1px solid var(--hairline);
     background:#F4F6F5; box-shadow:0 2px 10px rgba(28,43,58,0.06);
@@ -899,11 +900,13 @@
               mode: 'x',
               onZoomComplete: handleZoomOrPan
             },
-            limits: { x: { min: 'original', max: 'original' } }
+            limits: { x: { min: 0, max: labels.length - 1 } }
           }
         },
         scales: {
           x: {
+            min: initialRange ? initialRange.min : undefined,
+            max: initialRange ? initialRange.max : undefined,
             grid: { display: false, drawTicks: false },
             afterBuildTicks: function(axis){
               var allTicks = axis.ticks;
@@ -936,15 +939,6 @@
         }
       }
     });
-
-    // Standardansicht (z.B. letzte 6h) wird bewusst NICHT beim Erstellen über
-    // scales.x.min/max gesetzt, sondern erst jetzt über die Zoom-Plugin-API
-    // angewendet. Sonst würde das Plugin diese verkürzte Ansicht selbst als
-    // "Original" merken - "Zoom zurücksetzen" und Herauszoomen kämen dann nie
-    // über die Standardansicht hinaus zu den wirklich vollen Daten.
-    if (initialRange) {
-      charts[canvasId].zoomScale('x', { min: initialRange.min, max: initialRange.max }, 'none');
-    }
   }
 
   var latestInstants = {}; // pairKey -> Date - für den On-Air-Verzögerungscheck
@@ -1018,11 +1012,15 @@
 
   function resetZoom(chartInstId){
     if (!charts[chartInstId]) return;
-    charts[chartInstId].resetZoom();
+    var full = { min: 0, max: charts[chartInstId].data.labels.length - 1 };
+    charts[chartInstId].zoomScale('x', full, 'default');
+    charts[chartInstId].update();
     delete savedZoomRange[chartInstId];
     var otherId = CHART_PAIR[chartInstId];
     if (charts[otherId]) {
-      charts[otherId].resetZoom();
+      var fullOther = { min: 0, max: charts[otherId].data.labels.length - 1 };
+      charts[otherId].zoomScale('x', fullOther, 'default');
+      charts[otherId].update();
       delete savedZoomRange[otherId];
     }
   }
@@ -1107,103 +1105,103 @@
   // (wetter.provinz.bz.it + daten.buergernetz.bz.it), Stand 15.08.2026.
   // Alle 97 Stationen Südtirols vollständig verifiziert (57 Tal + 40 Berg).
   var ALL_STATIONS = [
-    { code: '37100MS', name: 'Sterzing', lat: 46.8850, lon: 11.4386, type: 'tal' },
-    { code: '20500MS', name: 'Pfelders', lat: 46.7965, lon: 11.0883, type: 'tal' },
-    { code: '19300MS', name: 'Naturns', lat: 46.6477, lon: 10.9912, type: 'tal' },
-    { code: '80300MS', name: 'Pens', lat: 46.78078, lon: 11.4166, type: 'tal' },
-    { code: '50500MS', name: 'Prettau', lat: 47.0366, lon: 12.0991, type: 'tal' },
-    { code: '34500MS', name: 'Ridnaun', lat: 46.9091, lon: 11.3068, type: 'tal' },
-    { code: '56900MS', name: 'Sand i.T. Mühlen', lat: 46.9003, lon: 11.9474, type: 'tal' },
-    { code: '54500MS', name: 'Rein in Taufers', lat: 46.9428, lon: 12.0825, type: 'tal' },
-    { code: '09700MS', name: 'Schlanders', lat: 46.6238, lon: 10.7803, type: 'tal' },
-    { code: '82200MS', name: 'Sarnthein', lat: 46.6406, lon: 11.3551, type: 'tal' },
-    { code: '88820MS', name: 'Salurn', lat: 46.2362, lon: 11.1855, type: 'tal' },
-    { code: '59700MS', name: 'Bruneck', lat: 46.8043, lon: 11.9315, type: 'tal' },
-    { code: '85120MS', name: 'Deutschnofen', lat: 46.4205, lon: 11.4269, type: 'tal' },
-    { code: '83200MS', name: 'Bozen', lat: 46.4977, lon: 11.3128, type: 'tal' },
-    { code: '86900MS', name: 'Auer', lat: 46.3469, lon: 11.3050, type: 'tal' },
-    { code: '39100MS', name: 'Brixen - Vahrn', lat: 46.7310, lon: 11.6451, type: 'tal' },
-    { code: '08200MS', name: 'Laas Eyrs', lat: 46.6249, lon: 10.6496, type: 'tal' },
-    { code: '23200MS', name: 'Meran', lat: 46.6880, lon: 11.1366, type: 'tal' },
-    { code: '47400MS', name: 'Antholz Obertal', lat: 46.8704, lon: 12.1166, type: 'tal' },
-    { code: '86600MS', name: 'Laimburg', lat: 46.3825, lon: 11.2887, type: 'tal' },
-    { code: '37700MS', name: 'Franzensfeste Grasstein', lat: 46.8125, lon: 11.5488, type: 'tal' },
-    { code: '74900MS', name: 'Barbian Kollmann', lat: 46.5951, lon: 11.5291, type: 'tal' },
-    { code: '89190MS', name: 'Kaltern Oberplanitzing', lat: 46.4423, lon: 11.2525, type: 'tal' },
-    { code: '22210MS', name: 'St. Martin in Passeier', lat: 46.7822, lon: 11.2294, type: 'tal' },
-    { code: '25900MS', name: 'St. Walburg', lat: 46.5417, lon: 10.9898, type: 'tal' },
-    { code: '73500MS', name: 'Wolkenstein', lat: 46.5456, lon: 11.7684, type: 'tal' },
-    { code: '68600MS', name: 'Vals', lat: 46.8483, lon: 11.6272, type: 'tal' },
-    { code: '02200MS', name: 'St. Valentin a.d. Haide', lat: 46.7759, lon: 10.5289, type: 'tal' },
-    { code: '41000MS', name: 'Toblach', lat: 46.7299, lon: 12.2191, type: 'tal' },
-    { code: '75600MS', name: 'Völs am Schlern', lat: 46.5134, lon: 11.5060, type: 'tal' },
-    { code: '62600MS', name: 'St. Martin in Thurn', lat: 46.6792, lon: 11.8979, type: 'tal' },
-    { code: '11400MS', name: 'Hintermartell', lat: 46.5169, lon: 10.7269, type: 'tal' },
-    { code: '02500MS', name: 'Marienberg', lat: 46.7057, lon: 10.5213, type: 'tal' },
-    { code: '33500MS', name: 'Pfitsch St. Jakob', lat: 46.9656, lon: 11.5981, type: 'tal' },
-    { code: '44500MS', name: 'St. Magdalena in Gsies', lat: 46.8353, lon: 12.2427, type: 'tal' },
-    { code: '06400MS', name: 'Sulden', lat: 46.5159, lon: 10.5953, type: 'tal' },
-    { code: '65600MS', name: 'Terenten', lat: 46.8345, lon: 11.7856, type: 'tal' },
-    { code: '24400MS', name: 'Ulten Weißbrunn', lat: 46.4868, lon: 10.8318, type: 'tal' },
-    { code: '43200MS', name: 'Welsberg', lat: 46.7431, lon: 12.1289, type: 'tal' },
-    { code: '78305MS', name: 'Welschnofen', lat: 46.4289, lon: 11.5366, type: 'tal' },
-    { code: '56500MS', name: 'Mühlwald', lat: 46.8901, lon: 11.8744, type: 'tal' },
-    { code: '42700MS', name: 'St. Veit in Prags', lat: 46.7119, lon: 12.1000, type: 'tal' },
-    { code: '15800MS', name: 'Schnals Vernagt', lat: 46.7357, lon: 10.8493, type: 'tal' },
-    { code: '65350MS', name: 'Obervintl', lat: 46.8111, lon: 11.7534, type: 'tal' },
-    { code: '82910MS', name: 'Jenesien', lat: 46.5304, lon: 11.3319, type: 'tal' },
-    { code: '27100MS', name: 'Gargazon', lat: 46.5767, lon: 11.2008, type: 'tal' },
-    { code: '85700MS', name: 'Branzoll', lat: 46.4065, lon: 11.3111, type: 'tal' },
-    { code: '87300MS', name: 'Radein', lat: 46.3465, lon: 11.3968, type: 'tal' },
-    { code: '66500MS', name: 'Pfunders', lat: 46.8872, lon: 11.7029, type: 'tal' },
-    { code: '20910MS', name: 'Platt in Passeier', lat: 46.8215, lon: 11.1762, type: 'tal' },
-    { code: '31410MS', name: 'Pflersch', lat: 46.9557, lon: 11.3793, type: 'tal' },
-    { code: '78110MS', name: 'Karerpass', lat: 46.4092, lon: 11.6017, type: 'tal' },
-    { code: '61300MS', name: 'Corvara', lat: 46.5504, lon: 11.8733, type: 'tal' },
-    { code: '01110MS', name: 'Langtaufers Grub', lat: 46.8365, lon: 10.6330, type: 'tal' },
-    { code: '71510MS', name: 'Villnöss', lat: 46.6479, lon: 11.6894, type: 'tal' },
-    { code: '79300MS', name: 'Ritten Siffian', lat: 46.5290, lon: 11.4638, type: 'tal' },
-    { code: '91510MS', name: 'Sexten', lat: 46.6915, lon: 12.3577, type: 'tal' },
-    { code: '82500WS', name: 'Rittner Horn', lat: 46.615564, lon: 11.460353, type: 'berg' },
-    { code: '00390SF', name: 'Graun Schöneben', lat: 46.806492, lon: 10.497973, type: 'berg' },
-    { code: '31810SF', name: 'Ladurns', lat: 46.934775, lon: 11.366330, type: 'berg' },
-    { code: '69900MS', name: 'Plose', lat: 46.698630, lon: 11.733841, type: 'berg' },
-    { code: '06040WS', name: 'Sulden Schöntaufspitze', lat: 46.502882, lon: 10.628586, type: 'berg' },
-    { code: '24300SF', name: 'Ulten Rossbänke', lat: 46.469351, lon: 10.819436, type: 'berg' },
-    { code: '24170WS', name: 'Ulten Weißbrunnspitz', lat: 46.493978, lon: 10.773983, type: 'berg' },
-    { code: '15050WS', name: 'Schnals Grawand', lat: 46.770253, lon: 10.796645, type: 'berg' },
-    { code: '61690SF', name: 'Abtei Piz La Ila', lat: 46.5650, lon: 11.9036, type: 'berg' },
-    { code: '61720WS', name: 'Abtei Piz Pisciadù', lat: 46.5314, lon: 11.8250, type: 'berg' },
-    { code: '62270SF', name: 'Campill Kreuzkofeljoch', lat: 46.637689, lon: 11.812249, type: 'berg' },
-    { code: '78480SF', name: 'Deutschnofen Obereggen', lat: 46.363591, lon: 11.546658, type: 'berg' },
-    { code: '90200MS', name: 'Gantkofel', lat: 46.493928, lon: 11.209039, type: 'berg' },
-    { code: '00700WS', name: 'Graun Elferspitze', lat: 46.776711, lon: 10.48782, type: 'berg' },
-    { code: '45200SF', name: 'Gsies Pfinnalm', lat: 46.841694, lon: 12.209582, type: 'berg' },
-    { code: '45100WS', name: 'Gsies Regelspitze', lat: 46.856083, lon: 12.200338, type: 'berg' },
-    { code: '35100WS', name: 'Jaufenkamm', lat: 46.840776, lon: 11.318418, type: 'berg' },
-    { code: '01080SF', name: 'Melag Pratznerberg', lat: 46.846816, lon: 10.624749, type: 'berg' },
-    { code: '80100SF', name: 'Pens Tramintal', lat: 46.795037, lon: 11.477397, type: 'berg' },
-    { code: '20690SF', name: 'Pfelders Grünboden', lat: 46.791993, lon: 11.101611, type: 'berg' },
-    { code: '20720WS', name: 'Pfelders Rauhjoch', lat: 46.828627, lon: 11.113961, type: 'berg' },
-    { code: '66000WS', name: 'Pfunders Dannelspitz', lat: 46.943359, lon: 11.687125, type: 'berg' },
-    { code: '66100SF', name: 'Pfunders Stutzenalm', lat: 46.925397, lon: 11.688222, type: 'berg' },
-    { code: '42830SF', name: 'Prags Rossalm', lat: 46.671192, lon: 12.111498, type: 'berg' },
-    { code: '50400WS', name: 'Prettau Lengspitze', lat: 47.015929, lon: 12.131038, type: 'berg' },
-    { code: '50360SF', name: 'Prettau Merbalm', lat: 47.036179, lon: 12.122127, type: 'berg' },
-    { code: '90005SF', name: 'Proveis Samerberg', lat: 46.495779, lon: 10.99867, type: 'berg' },
-    { code: '35205SF', name: 'Ratschings Wasserfaller Alm', lat: 46.84561, lon: 11.298729, type: 'berg' },
-    { code: '54100SF', name: 'Rein i.T. Tristenboden', lat: 46.920859, lon: 12.106939, type: 'berg' },
-    { code: '02700SF', name: 'Schleis Kloangruebes', lat: 46.700401, lon: 10.432431, type: 'berg' },
-    { code: '15590SF', name: 'Schnals Finail', lat: 46.741173, lon: 10.822462, type: 'berg' },
-    { code: '15000SF', name: 'Schnals Teufelsegg', lat: 46.7847, lon: 10.76466, type: 'berg' },
-    { code: '74200MS', name: 'Seiser Alm Zallinger', lat: 46.511879, lon: 11.688789, type: 'berg' },
-    { code: '91180SF', name: 'Sexten Rotwandwiesen', lat: 46.663555, lon: 12.370372, type: 'berg' },
-    { code: '34200WS', name: 'Signalgipfel Wilder Freiger', lat: 46.968378, lon: 11.19286, type: 'berg' },
-    { code: '06090SF', name: 'Sulden Madritsch', lat: 46.49375, lon: 10.614383, type: 'berg' },
-    { code: '20050SF', name: 'Timmelsalm', lat: 46.913574, lon: 11.148675, type: 'berg' },
-    { code: '91210WS', name: 'Toblach Hochebenkofel', lat: 46.680173, lon: 12.257258, type: 'berg' },
-    { code: '07740WS', name: 'Trafoi Zaufenkofel', lat: 46.555582, lon: 10.539728, type: 'berg' },
-    { code: '53200SF', name: 'Weissenbach Fadner Alm', lat: 46.92556, lon: 11.861432, type: 'berg' }
+    { code: '37100MS', name: 'Sterzing', lat: 46.8850, lon: 11.4386, type: 'tal', elev: 939 },
+    { code: '20500MS', name: 'Pfelders', lat: 46.7965, lon: 11.0883, type: 'tal', elev: 1622 },
+    { code: '19300MS', name: 'Naturns', lat: 46.6477, lon: 10.9912, type: 'tal', elev: 537 },
+    { code: '80300MS', name: 'Pens', lat: 46.78078, lon: 11.4166, type: 'tal', elev: 1452 },
+    { code: '50500MS', name: 'Prettau', lat: 47.0366, lon: 12.0991, type: 'tal', elev: 1448 },
+    { code: '34500MS', name: 'Ridnaun', lat: 46.9091, lon: 11.3068, type: 'tal', elev: 1365 },
+    { code: '56900MS', name: 'Sand i.T. Mühlen', lat: 46.9003, lon: 11.9474, type: 'tal', elev: 850 },
+    { code: '54500MS', name: 'Rein in Taufers', lat: 46.9428, lon: 12.0825, type: 'tal', elev: 1562 },
+    { code: '09700MS', name: 'Schlanders', lat: 46.6238, lon: 10.7803, type: 'tal', elev: 698 },
+    { code: '82200MS', name: 'Sarnthein', lat: 46.6406, lon: 11.3551, type: 'tal', elev: 970 },
+    { code: '88820MS', name: 'Salurn', lat: 46.2362, lon: 11.1855, type: 'tal', elev: 214 },
+    { code: '59700MS', name: 'Bruneck', lat: 46.8043, lon: 11.9315, type: 'tal', elev: 831 },
+    { code: '85120MS', name: 'Deutschnofen', lat: 46.4205, lon: 11.4269, type: 'tal', elev: 1470 },
+    { code: '83200MS', name: 'Bozen', lat: 46.4977, lon: 11.3128, type: 'tal', elev: 245 },
+    { code: '86900MS', name: 'Auer', lat: 46.3469, lon: 11.3050, type: 'tal', elev: 254 },
+    { code: '39100MS', name: 'Brixen - Vahrn', lat: 46.7310, lon: 11.6451, type: 'tal', elev: 585 },
+    { code: '08200MS', name: 'Laas Eyrs', lat: 46.6249, lon: 10.6496, type: 'tal', elev: 874 },
+    { code: '23200MS', name: 'Meran', lat: 46.6880, lon: 11.1366, type: 'tal', elev: 333 },
+    { code: '47400MS', name: 'Antholz Obertal', lat: 46.8704, lon: 12.1166, type: 'tal', elev: 1327 },
+    { code: '86600MS', name: 'Laimburg', lat: 46.3825, lon: 11.2887, type: 'tal', elev: 224 },
+    { code: '37700MS', name: 'Franzensfeste Grasstein', lat: 46.8125, lon: 11.5488, type: 'tal', elev: 833 },
+    { code: '74900MS', name: 'Barbian Kollmann', lat: 46.5951, lon: 11.5291, type: 'tal', elev: 463 },
+    { code: '89190MS', name: 'Kaltern Oberplanitzing', lat: 46.4423, lon: 11.2525, type: 'tal', elev: 492 },
+    { code: '22210MS', name: 'St. Martin in Passeier', lat: 46.7822, lon: 11.2294, type: 'tal', elev: 588 },
+    { code: '25900MS', name: 'St. Walburg', lat: 46.5417, lon: 10.9898, type: 'tal', elev: 1142 },
+    { code: '73500MS', name: 'Wolkenstein', lat: 46.5456, lon: 11.7684, type: 'tal', elev: 1594 },
+    { code: '68600MS', name: 'Vals', lat: 46.8483, lon: 11.6272, type: 'tal', elev: 1409 },
+    { code: '02200MS', name: 'St. Valentin a.d. Haide', lat: 46.7759, lon: 10.5289, type: 'tal', elev: 1500 },
+    { code: '41000MS', name: 'Toblach', lat: 46.7299, lon: 12.2191, type: 'tal', elev: 1218 },
+    { code: '75600MS', name: 'Völs am Schlern', lat: 46.5134, lon: 11.5060, type: 'tal', elev: 840 },
+    { code: '62600MS', name: 'St. Martin in Thurn', lat: 46.6792, lon: 11.8979, type: 'tal', elev: 1151 },
+    { code: '11400MS', name: 'Hintermartell', lat: 46.5169, lon: 10.7269, type: 'tal', elev: 1714 },
+    { code: '02500MS', name: 'Marienberg', lat: 46.7057, lon: 10.5213, type: 'tal', elev: 1312 },
+    { code: '33500MS', name: 'Pfitsch St. Jakob', lat: 46.9656, lon: 11.5981, type: 'tal', elev: 1438 },
+    { code: '44500MS', name: 'St. Magdalena in Gsies', lat: 46.8353, lon: 12.2427, type: 'tal', elev: 1414 },
+    { code: '06400MS', name: 'Sulden', lat: 46.5159, lon: 10.5953, type: 'tal', elev: 1902 },
+    { code: '65600MS', name: 'Terenten', lat: 46.8345, lon: 11.7856, type: 'tal', elev: 1350 },
+    { code: '24400MS', name: 'Ulten Weißbrunn', lat: 46.4868, lon: 10.8318, type: 'tal', elev: 1883 },
+    { code: '43200MS', name: 'Welsberg', lat: 46.7431, lon: 12.1289, type: 'tal', elev: 1129 },
+    { code: '78305MS', name: 'Welschnofen', lat: 46.4289, lon: 11.5366, type: 'tal', elev: 1126 },
+    { code: '56500MS', name: 'Mühlwald', lat: 46.8901, lon: 11.8744, type: 'tal', elev: 1140 },
+    { code: '42700MS', name: 'St. Veit in Prags', lat: 46.7119, lon: 12.1000, type: 'tal', elev: 1350 },
+    { code: '15800MS', name: 'Schnals Vernagt', lat: 46.7357, lon: 10.8493, type: 'tal', elev: 1697 },
+    { code: '65350MS', name: 'Obervintl', lat: 46.8111, lon: 11.7534, type: 'tal', elev: 747 },
+    { code: '82910MS', name: 'Jenesien', lat: 46.5304, lon: 11.3319, type: 'tal', elev: 972 },
+    { code: '27100MS', name: 'Gargazon', lat: 46.5767, lon: 11.2008, type: 'tal', elev: 253 },
+    { code: '85700MS', name: 'Branzoll', lat: 46.4065, lon: 11.3111, type: 'tal', elev: 227 },
+    { code: '87300MS', name: 'Radein', lat: 46.3465, lon: 11.3968, type: 'tal', elev: 1550 },
+    { code: '66500MS', name: 'Pfunders', lat: 46.8872, lon: 11.7029, type: 'tal', elev: 1169 },
+    { code: '20910MS', name: 'Platt in Passeier', lat: 46.8215, lon: 11.1762, type: 'tal', elev: 1143 },
+    { code: '31410MS', name: 'Pflersch', lat: 46.9557, lon: 11.3793, type: 'tal', elev: 1152 },
+    { code: '78110MS', name: 'Karerpass', lat: 46.4092, lon: 11.6017, type: 'tal', elev: 1713 },
+    { code: '61300MS', name: 'Corvara', lat: 46.5504, lon: 11.8733, type: 'tal', elev: 1530 },
+    { code: '01110MS', name: 'Langtaufers Grub', lat: 46.8365, lon: 10.6330, type: 'tal', elev: 1844 },
+    { code: '71510MS', name: 'Villnöss', lat: 46.6479, lon: 11.6894, type: 'tal', elev: 1327 },
+    { code: '79300MS', name: 'Ritten Siffian', lat: 46.5290, lon: 11.4638, type: 'tal', elev: 989 },
+    { code: '91510MS', name: 'Sexten', lat: 46.6915, lon: 12.3577, type: 'tal', elev: 1322 },
+    { code: '82500WS', name: 'Rittner Horn', lat: 46.615564, lon: 11.460353, type: 'berg', elev: 2261 },
+    { code: '00390SF', name: 'Graun Schöneben', lat: 46.806492, lon: 10.497973, type: 'berg', elev: 2037 },
+    { code: '31810SF', name: 'Ladurns', lat: 46.934775, lon: 11.366330, type: 'berg', elev: 1959 },
+    { code: '69900MS', name: 'Plose', lat: 46.698630, lon: 11.733841, type: 'berg', elev: 2477 },
+    { code: '06040WS', name: 'Sulden Schöntaufspitze', lat: 46.502882, lon: 10.628586, type: 'berg', elev: 3326 },
+    { code: '24300SF', name: 'Ulten Rossbänke', lat: 46.469351, lon: 10.819436, type: 'berg', elev: 2299 },
+    { code: '24170WS', name: 'Ulten Weißbrunnspitz', lat: 46.493978, lon: 10.773983, type: 'berg', elev: 3252 },
+    { code: '15050WS', name: 'Schnals Grawand', lat: 46.770253, lon: 10.796645, type: 'berg', elev: 3192 },
+    { code: '61690SF', name: 'Abtei Piz La Ila', lat: 46.5650, lon: 11.9036, type: 'berg', elev: 1997 },
+    { code: '61720WS', name: 'Abtei Piz Pisciadù', lat: 46.5314, lon: 11.8250, type: 'berg', elev: 2981 },
+    { code: '62270SF', name: 'Campill Kreuzkofeljoch', lat: 46.637689, lon: 11.812249, type: 'berg', elev: 2295 },
+    { code: '78480SF', name: 'Deutschnofen Obereggen', lat: 46.363591, lon: 11.546658, type: 'berg', elev: 2123 },
+    { code: '90200MS', name: 'Gantkofel', lat: 46.493928, lon: 11.209039, type: 'berg', elev: 1860 },
+    { code: '00700WS', name: 'Graun Elferspitze', lat: 46.776711, lon: 10.48782, type: 'berg', elev: 2922 },
+    { code: '45200SF', name: 'Gsies Pfinnalm', lat: 46.841694, lon: 12.209582, type: 'berg', elev: 2152 },
+    { code: '45100WS', name: 'Gsies Regelspitze', lat: 46.856083, lon: 12.200338, type: 'berg', elev: 2741 },
+    { code: '35100WS', name: 'Jaufenkamm', lat: 46.840776, lon: 11.318418, type: 'berg', elev: 2145 },
+    { code: '01080SF', name: 'Melag Pratznerberg', lat: 46.846816, lon: 10.624749, type: 'berg', elev: 2420 },
+    { code: '80100SF', name: 'Pens Tramintal', lat: 46.795037, lon: 11.477397, type: 'berg', elev: 2127 },
+    { code: '20690SF', name: 'Pfelders Grünboden', lat: 46.791993, lon: 11.101611, type: 'berg', elev: 2011 },
+    { code: '20720WS', name: 'Pfelders Rauhjoch', lat: 46.828627, lon: 11.113961, type: 'berg', elev: 2911 },
+    { code: '66000WS', name: 'Pfunders Dannelspitz', lat: 46.943359, lon: 11.687125, type: 'berg', elev: 2804 },
+    { code: '66100SF', name: 'Pfunders Stutzenalm', lat: 46.925397, lon: 11.688222, type: 'berg', elev: 2045 },
+    { code: '42830SF', name: 'Prags Rossalm', lat: 46.671192, lon: 12.111498, type: 'berg', elev: 2345 },
+    { code: '50400WS', name: 'Prettau Lengspitze', lat: 47.015929, lon: 12.131038, type: 'berg', elev: 3104 },
+    { code: '50360SF', name: 'Prettau Merbalm', lat: 47.036179, lon: 12.122127, type: 'berg', elev: 2002 },
+    { code: '90005SF', name: 'Proveis Samerberg', lat: 46.495779, lon: 10.99867, type: 'berg', elev: 2144 },
+    { code: '35205SF', name: 'Ratschings Wasserfaller Alm', lat: 46.84561, lon: 11.298729, type: 'berg', elev: 1904 },
+    { code: '54100SF', name: 'Rein i.T. Tristenboden', lat: 46.920859, lon: 12.106939, type: 'berg', elev: 2445 },
+    { code: '02700SF', name: 'Schleis Kloangruebes', lat: 46.700401, lon: 10.432431, type: 'berg', elev: 2459 },
+    { code: '15590SF', name: 'Schnals Finail', lat: 46.741173, lon: 10.822462, type: 'berg', elev: 1950 },
+    { code: '15000SF', name: 'Schnals Teufelsegg', lat: 46.7847, lon: 10.76466, type: 'berg', elev: 3033 },
+    { code: '74200MS', name: 'Seiser Alm Zallinger', lat: 46.511879, lon: 11.688789, type: 'berg', elev: 2050 },
+    { code: '91180SF', name: 'Sexten Rotwandwiesen', lat: 46.663555, lon: 12.370372, type: 'berg', elev: 1906 },
+    { code: '34200WS', name: 'Signalgipfel Wilder Freiger', lat: 46.968378, lon: 11.19286, type: 'berg', elev: 3389 },
+    { code: '06090SF', name: 'Sulden Madritsch', lat: 46.49375, lon: 10.614383, type: 'berg', elev: 2825 },
+    { code: '20050SF', name: 'Timmelsalm', lat: 46.913574, lon: 11.148675, type: 'berg', elev: 2231 },
+    { code: '91210WS', name: 'Toblach Hochebenkofel', lat: 46.680173, lon: 12.257258, type: 'berg', elev: 2901 },
+    { code: '07740WS', name: 'Trafoi Zaufenkofel', lat: 46.555582, lon: 10.539728, type: 'berg', elev: 2485 },
+    { code: '53200SF', name: 'Weissenbach Fadner Alm', lat: 46.92556, lon: 11.861432, type: 'berg', elev: 2154 }
   ];
 
   var windMapInstance = null;
@@ -1287,7 +1285,7 @@
 
     var opacity = (hasData && !isAbandoned) ? 1 : 0.5;
     var staleRingSvg = isStale
-      ? '<circle class="stale-ring" cx="' + cx + '" cy="' + cy + '" r="9" fill="none" stroke="#E5342A" stroke-width="1.6"></circle>'
+      ? '<circle class="stale-ring" cx="' + cx + '" cy="' + cy + '" r="7.2" fill="none" stroke="#E5342A" stroke-width="1.28"></circle>'
       : '';
 
     return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;opacity:' + opacity + ';">' +
@@ -1395,7 +1393,11 @@
       var minuteOfHour = instant.getUTCMinutes();
       var ringIndex = COMPASS_RING_MINUTE_ORDER.indexOf(minuteOfHour) + 1; // 1-basiert
       if (ringIndex <= 0) return; // nicht auf dem 10-Minuten-Raster (sollte nicht vorkommen)
-      var pointHourStart = new Date(instant); pointHourStart.setUTCMinutes(0, 0, 0);
+      // 1ms abziehen vor dem Abrunden auf die volle Stunde: ein Wert exakt um
+      // :00 soll damit zur VORHERIGEN Stunde gehören (gleiche Farbe wie die
+      // Werte um :10 bis :50 davor), nicht zur gerade erst beginnenden neuen
+      // Stunde. Werte um :10-:50 sind davon unberührt.
+      var pointHourStart = new Date(instant.getTime() - 1); pointHourStart.setUTCMinutes(0, 0, 0);
       var hourBucket = Math.round((nowHourStart - pointHourStart) / 3600000);
       hourBucket = Math.max(0, Math.min(5, hourBucket));
       pts.push({ dir: dir, ringIndex: ringIndex, hourBucket: hourBucket, minutesAgo: minutesAgo });
@@ -1411,7 +1413,7 @@
       var y = center - r * Math.cos(rad);
       var isNewest = (idx === pts.length - 1);
       var fill = COMPASS_BUCKET_COLORS[pt.hourBucket];
-      var radius = isNewest ? 5.5 : 3.4;
+      var radius = isNewest ? 4.4 : 3.4;
       var cls = isNewest ? ' class="compass-newest-blink"' : '';
       svg += '<circle' + cls + ' cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + radius + '" fill="' + fill + '"' + (isNewest ? ' stroke="#fff" stroke-width="1.2"' : '') + '/>';
     });
@@ -1460,7 +1462,7 @@
     var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
 
     panel.innerHTML =
-      '<h3>' + station.name + '</h3>' +
+      '<h3>' + station.name + (station.elev ? ' <span class="station-elev-label">' + station.elev + ' m</span>' : '') + '</h3>' +
       (isStale ? '<div class="stale-warning-text stale-warning-block">Aktualisierung verzögert!</div>' : '') +
       '<div class="wind-detail-grid">' +
         '<div><span class="wdg-label">Mittlere Windgeschwindigkeit</span><span class="wdg-value">' + (avg !== null && avg !== undefined ? avg + ' km/h' : '—') + '</span></div>' +
