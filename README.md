@@ -1,4 +1,4 @@
-# Föhndiagramm Tirol / Südtirol
+# Wia schaugs aus?
 
 Statisches Dashboard, das stündlich Luftdruckwerte abruft und die Differenz
 zwischen Bozen↔Innsbruck sowie Meran↔Imst anzeigt (Föhn-Indikator).
