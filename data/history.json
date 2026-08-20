@@ -4,16 +4,6 @@
     "rightLabel": "Innsbruck",
     "rows": [
       {
-        "instantUTC": "2026-08-20T05:30:00.000Z",
-        "datumLeft": "20.08.2026",
-        "zeitLeft": "07:30",
-        "wertLeft": 1011.3,
-        "datumRight": "20.08.2026",
-        "zeitRight": "07:30",
-        "wertRight": 1011.2,
-        "delta": 0.1
-      },
-      {
         "instantUTC": "2026-08-20T05:40:00.000Z",
         "datumLeft": "20.08.2026",
         "zeitLeft": "07:40",
@@ -962,6 +952,16 @@
         "zeitRight": "23:20",
         "wertRight": 1014.4,
         "delta": -0.2
+      },
+      {
+        "instantUTC": "2026-08-20T21:30:00.000Z",
+        "datumLeft": "20.08.2026",
+        "zeitLeft": "23:30",
+        "wertLeft": 1014,
+        "datumRight": "20.08.2026",
+        "zeitRight": "23:30",
+        "wertRight": 1014.5,
+        "delta": -0.5
       }
     ]
   },
@@ -969,16 +969,6 @@
     "leftLabel": "Meran",
     "rightLabel": "Imst",
     "rows": [
-      {
-        "instantUTC": "2026-08-20T05:30:00.000Z",
-        "datumLeft": "20.08.2026",
-        "zeitLeft": "07:30",
-        "wertLeft": 1012.2,
-        "datumRight": "20.08.2026",
-        "zeitRight": "07:30",
-        "wertRight": 1011.9,
-        "delta": 0.3
-      },
       {
         "instantUTC": "2026-08-20T05:40:00.000Z",
         "datumLeft": "20.08.2026",
@@ -1928,8 +1918,18 @@
         "zeitRight": "23:20",
         "wertRight": 1014,
         "delta": 0.9
+      },
+      {
+        "instantUTC": "2026-08-20T21:30:00.000Z",
+        "datumLeft": "20.08.2026",
+        "zeitLeft": "23:30",
+        "wertLeft": 1014.6,
+        "datumRight": "20.08.2026",
+        "zeitRight": "23:30",
+        "wertRight": 1013.8,
+        "delta": 0.8
       }
     ]
   },
-  "generatedAt": "20.08.2026, 23:38"
+  "generatedAt": "20.08.2026, 23:42"
 }
