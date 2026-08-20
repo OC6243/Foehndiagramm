@@ -258,7 +258,7 @@
   .wind-compass-body{
     display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px; width:100%;
   }
-  #wind-compass-container{ width:100%; max-width:220px; min-width:130px; flex:1 1 150px; }
+  #wind-compass-container, #wind-compass-container-sel{ width:100%; max-width:220px; min-width:130px; flex:1 1 150px; }
   .wind-compass-legend{
     display:flex; flex-direction:column; gap:4px; flex:1 1 110px; min-width:110px; max-width:220px;
     font-family:'IBM Plex Sans', sans-serif; font-size:10.5px; color:var(--muted);
@@ -267,7 +267,7 @@
   .wind-compass-legend .wcl-dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
 
   .foehn-forecast-card{ padding-top:16px; padding-bottom:16px; }
-  .foehn-forecast-card + .foehn-forecast-card{ margin-top:16px; }
+  .foehn-forecast-card + .foehn-forecast-card{ margin-top:13px; }
   .foehn-forecast-img-wrap{
     border-radius:10px; overflow:hidden; border:1px solid var(--hairline);
     background:#F4F6F5; box-shadow:0 2px 10px rgba(28,43,58,0.06);
@@ -280,7 +280,7 @@
   }
   .selected-card{
     border:1px solid var(--hairline); border-radius:12px; padding:12px 16px;
-    background:var(--panel);
+    background:var(--panel); cursor:pointer;
   }
   .ssc-header-col{ display:flex; flex-direction:column; margin-bottom:8px; position:relative; z-index:2; }
   .ssc-header{ display:flex; align-items:baseline; justify-content:space-between; }
@@ -485,6 +485,7 @@
     <div id="page-selected" style="display:none;">
       <div class="section">
         <div class="selected-stations-grid" id="selectedStationsGrid"></div>
+        <div class="wind-detail-panel" id="windDetailPanelSelected"></div>
         <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
       </div>
     </div>
@@ -1378,13 +1379,14 @@
   }
 
   // ---- Geschwindigkeitsverlauf (Chart.js, wie Föhndiagramm) ----
-  function buildWindSpeedChart(rows){
+  function buildWindSpeedChart(rows, elId){
+    elId = elId || 'wind-speed-chart';
     var labels = rows.map(function(r){ return r.time; });
     var avgData = rows.map(function(r){ return r.avgKmh; });
     var gustData = rows.map(function(r){ return r.gustKmh; });
-    if (charts['wind-speed-chart']) charts['wind-speed-chart'].destroy();
-    var ctx = document.getElementById('wind-speed-chart').getContext('2d');
-    charts['wind-speed-chart'] = new Chart(ctx, {
+    if (charts[elId]) charts[elId].destroy();
+    var ctx = document.getElementById(elId).getContext('2d');
+    charts[elId] = new Chart(ctx, {
       type: 'line',
       data: {
         labels: labels,
@@ -1503,8 +1505,10 @@
     return '<div class="wind-compass-legend">' + rowsHtml + '</div>';
   }
 
-  function showWindDetail(station, rows){
-    var panel = document.getElementById('windDetailPanel');
+  function showWindDetail(station, rows, panelId){
+    panelId = panelId || 'windDetailPanel';
+    var suffix = (panelId === 'windDetailPanel') ? '' : '-sel';
+    var panel = document.getElementById(panelId);
     var last = (rows && rows.length) ? rows[rows.length - 1] : null;
     var gust = last ? last.gustKmh : null;
     var avg = last ? last.avgKmh : null;
@@ -1528,6 +1532,9 @@
     }
     var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
 
+    var speedChartId = 'wind-speed-chart' + suffix;
+    var compassContainerId = 'wind-compass-container' + suffix;
+
     panel.innerHTML =
       '<h3>' + station.name + (station.elev ? ' <span class="station-elev-label">' + station.elev + ' m</span>' : '') + '</h3>' +
       (isStale ? '<div class="stale-warning-text stale-warning-block">Aktualisierung verzögert!</div>' : '') +
@@ -1542,12 +1549,12 @@
       '<div class="wind-charts-row">' +
         '<div class="wind-chart-box">' +
           '<div class="wind-chart-title">Windgeschwindigkeit</div>' +
-          '<div style="height:200px;"><canvas id="wind-speed-chart"></canvas></div>' +
+          '<div style="height:200px;"><canvas id="' + speedChartId + '"></canvas></div>' +
         '</div>' +
         '<div class="wind-chart-box wind-compass-box">' +
           '<div class="wind-chart-title">Windrichtung</div>' +
           '<div class="wind-compass-body">' +
-            '<div id="wind-compass-container"></div>' +
+            '<div id="' + compassContainerId + '"></div>' +
             buildWindCompassLegend() +
           '</div>' +
         '</div>' +
@@ -1555,8 +1562,8 @@
     panel.classList.add('open');
 
     if (rows && rows.length){
-      buildWindSpeedChart(rows.slice(-36));
-      document.getElementById('wind-compass-container').innerHTML = buildWindCompassSvg(rows);
+      buildWindSpeedChart(rows.slice(-36), speedChartId);
+      document.getElementById(compassContainerId).innerHTML = buildWindCompassSvg(rows);
     }
   }
 
@@ -1735,7 +1742,7 @@
           }
           var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
 
-          return '<div class="selected-card">' +
+          return '<div class="selected-card" data-code="' + code + '">' +
             '<div class="ssc-header-col">' +
               '<div class="ssc-header"><span class="ssc-name">' + station.name + '</span><span class="ssc-time">' + trafficDot + time + '</span></div>' +
               (isStale ? '<div class="stale-warning-text ssc-stale">Aktualisierung verzögert!</div>' : '') +
@@ -1749,6 +1756,18 @@
             '</div>' +
           '</div>';
         }).join('');
+
+        // Gleiche Detailansicht wie bei Live-Windwerte öffnen, nur in einem
+        // eigenen Panel auf dieser Seite (eigene Chart-IDs, siehe showWindDetail).
+        grid.querySelectorAll('.selected-card').forEach(function(card){
+          card.addEventListener('click', function(){
+            var code = card.getAttribute('data-code');
+            var station = ALL_STATIONS.filter(function(s){ return s.code === code; })[0];
+            var entry = stations[code];
+            var rows = (entry && entry.rows) ? entry.rows : [];
+            if (station) showWindDetail(station, rows, 'windDetailPanelSelected');
+          });
+        });
       })
       .catch(function(){ grid.innerHTML = '<p class="wind-note">Daten konnten nicht geladen werden.</p>'; });
   };
