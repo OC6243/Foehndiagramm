@@ -47,7 +47,7 @@
     color:var(--ink);
     font-family:'IBM Plex Sans', sans-serif;
     min-height:100vh;
-    padding:32px 20px 64px;
+    padding:32px 20px 16px;
   }
   .wrap{max-width:1320px;margin:0 auto;}
 
@@ -131,7 +131,7 @@
   }
 
   .site-footer{
-    text-align:center; margin-top:40px; padding-top:16px;
+    text-align:center; margin-top:20px; padding-top:8px;
   }
   .impressum-link{
     background:none; border:none; cursor:pointer; padding:4px 8px;
@@ -155,8 +155,17 @@
   .impressum-box h2{ margin:0 0 4px; font-size:22px; }
   .impressum-box h3{ margin:20px 0 4px; font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
   .impressum-box p{ margin:4px 0; }
-  .impressum-sub{ color:var(--muted); font-size:12.5px; margin-bottom:8px; }
   .impressum-note{ font-size:12px; color:#C1443C; font-style:italic; }
+  .impressum-block{ margin-top:10px; }
+  .impressum-block-title{ font-weight:700; margin:0 0 2px; }
+  .impressum-emphasis{
+    margin-top:8px; padding:10px 12px; background:var(--paper); border-left:3px solid #C1443C;
+    border-radius:4px; font-weight:600;
+  }
+  .impressum-sources{ list-style:none; margin:4px 0 0; padding:0; }
+  .impressum-sources li{ margin:4px 0; }
+  .impressum-sources a{ color:var(--cool); text-decoration:underline; text-underline-offset:2px; }
+  .impressum-sources a:hover{ color:var(--ink); }
   .impressum-close{
     position:absolute; top:14px; right:14px; width:32px; height:32px;
     border-radius:50%; border:1px solid var(--hairline); background:var(--paper);
@@ -554,7 +563,6 @@
     <div class="impressum-box" role="dialog" aria-modal="true" aria-labelledby="impressumTitle">
       <button type="button" class="impressum-close" id="impressumClose" aria-label="Schließen">×</button>
       <h2 id="impressumTitle">Impressum</h2>
-      <p class="impressum-sub">Angaben gemäß § 5 ECG (Österreich) und Art. 7 des Gesetzesdekrets Nr. 70/2003 (Italien)</p>
 
       <h3>Betreiber</h3>
       <p>
@@ -574,22 +582,31 @@
       <p>Diese Website wird privat und nicht gewerblich betrieben.</p>
 
       <h3>Haftungsausschluss</h3>
-      <p>
-        <strong>Inhalte:</strong> Trotz sorgfältiger inhaltlicher Kontrolle wird keine Haftung für die Richtigkeit,
-        Vollständigkeit und Aktualität der dargestellten Wetter- und Winddaten übernommen. Diese Website dient
-        ausschließlich der unverbindlichen Information und ersetzt keine offizielle Wettervorhersage oder
-        Flugwetterberatung. Die Nutzung der Informationen erfolgt auf eigene Gefahr.
-      </p>
-      <p>
-        <strong>Links:</strong> Für Inhalte externer, verlinkter Websites (u.a. Autonome Provinz Bozen, GeoSphere
-        Austria, Wetterring.at) sind ausschließlich deren jeweilige Betreiber verantwortlich.
-      </p>
+      <div class="impressum-block">
+        <p class="impressum-block-title">Inhalte</p>
+        <p>
+          Trotz sorgfältiger inhaltlicher Kontrolle wird keine Haftung für die Richtigkeit, Vollständigkeit und
+          Aktualität der dargestellten Wetter- und Winddaten übernommen. Diese Website dient ausschließlich der
+          unverbindlichen Information und ersetzt keine offizielle Wettervorhersage oder Flugwetterberatung.
+        </p>
+        <p class="impressum-emphasis">
+          Eine ordentliche eigene Flugvorbereitung ist durch diese Seite nicht ersetzbar. Für die angezeigten
+          Daten wird keine Garantie übernommen. Die Nutzung erfolgt auf eigene Gefahr.
+        </p>
+      </div>
+      <div class="impressum-block">
+        <p class="impressum-block-title">Links</p>
+        <p>
+          Für Inhalte externer, verlinkter Websites sind ausschließlich deren jeweilige Betreiber verantwortlich.
+        </p>
+      </div>
 
       <h3>Datenquellen</h3>
-      <p>
-        Autonome Provinz Bozen – Südtirol, GeoSphere Austria, Wetterring.at / Deutscher Wetterdienst
-        (siehe jeweilige Quellenangabe auf den einzelnen Seiten).
-      </p>
+      <ul class="impressum-sources">
+        <li><a href="https://wetter.provinz.bz.it" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a></li>
+        <li><a href="https://www.geosphere.at" target="_blank" rel="noopener">GeoSphere Austria</a></li>
+        <li><a href="https://wetterring.at" target="_blank" rel="noopener">Wetterring.at</a></li>
+      </ul>
 
       <h3>Urheberrecht</h3>
       <p>
