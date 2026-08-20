@@ -855,7 +855,13 @@
     // Standardbereich berechnen (schmal -> 6h, breit -> 16h, links auf volle
     // Stunde ausgerichtet).
     var containerEl = document.getElementById(canvasId).parentElement;
-    var containerWidth = (containerEl && containerEl.clientWidth) || 800;
+    // Fällt bewusst auf window.innerWidth zurück (nicht auf einen festen
+    // Desktop-Wert), falls der Container gerade unsichtbar ist (clientWidth
+    // liefert dann 0) - z.B. wenn das automatische 3-Minuten-Update im
+    // Hintergrund läuft, während man gerade auf einem anderen Reiter ist.
+    // Sonst würde die Standardansicht fälschlich für einen breiten
+    // Desktop-Bildschirm berechnet, selbst am schmalen Handy-Display.
+    var containerWidth = (containerEl && containerEl.clientWidth) || window.innerWidth || 800;
     var initialRange = savedZoomRange[canvasId];
     if (!initialRange && labels.length) {
       initialRange = computeDefaultRange(labels, computeDefaultVisibleHours(containerWidth));
@@ -1594,7 +1600,11 @@
     // Startansicht: am Handy enger auf den Obervinschgau zugeschnitten (wie im
     // Referenzbild), am Desktop weiterhin der ganze Vinschgau. Marker für ganz
     // Südtirol werden trotzdem geladen - man kann jederzeit rauszoomen.
-    windMapInstance = L.map('windMap', { scrollWheelZoom: true });
+    // tap:false schaltet Leaflets eigene (ältere) Touch-Simulation ab und
+    // verlässt sich stattdessen auf native Browser-Touch-Events - behebt ein
+    // bekanntes Problem, bei dem Doppeltipp-zum-Zoomen auf iOS nicht
+    // zuverlässig funktioniert.
+    windMapInstance = L.map('windMap', { scrollWheelZoom: true, tap: false, doubleClickZoom: true });
     var isMobileView = window.innerWidth <= 600;
     if (isMobileView) {
       windMapInstance.setView([46.657391, 10.588955], 10); // Schluderns
@@ -1602,6 +1612,14 @@
       windMapInstance.setView([46.670971, 11.210294], 10); // Meran 2000 Talstation
     }
     windMapInstance.on('zoomend', updateIconScale);
+
+    // Einfacher Tipp auf eine leere Kartenfläche (kein Symbol) zoomt heraus.
+    // Marker haben ihren eigenen Klick-Handler und stoppen die Ausbreitung
+    // zur Karte, daher feuert dieser Handler nur bei Klicks NEBEN einem
+    // Symbol, nicht bei Klicks AUF ein Symbol.
+    windMapInstance.on('click', function(){
+      windMapInstance.setZoom(windMapInstance.getZoom() - 1);
+    });
 
     var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: 'Karte: © OpenStreetMap · Daten: Autonome Provinz Bozen – Südtirol',
@@ -1667,7 +1685,12 @@
 
           var icon = L.divIcon({ className: '', html: buildWindsockIcon(station, last, hasWindSensor), iconSize: [90, 90], iconAnchor: [45, 45] });
           var marker = L.marker([station.lat, station.lon], { icon: icon, zIndexOffset: zIndexOffset }).addTo(windMapInstance);
-          marker.on('click', function(){ showWindDetail(station, rows); });
+          marker.on('click', function(){
+            showWindDetail(station, rows);
+            setTimeout(function(){
+              window.scrollBy({ top: 160, left: 0, behavior: 'smooth' });
+            }, 80);
+          });
         });
         updateIconScale();
       })
