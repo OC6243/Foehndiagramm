@@ -130,6 +130,40 @@
     #splashParaglider{ animation:none; opacity:1; transform:none; }
   }
 
+  .site-footer{
+    text-align:center; margin-top:40px; padding-top:16px;
+  }
+  .impressum-link{
+    background:none; border:none; cursor:pointer; padding:4px 8px;
+    font-family:'IBM Plex Sans', sans-serif; font-size:12px; color:var(--muted);
+    text-decoration:underline; text-underline-offset:2px; opacity:0.75;
+  }
+  .impressum-link:hover{ opacity:1; color:var(--ink); }
+
+  .impressum-overlay{
+    display:none; position:fixed; inset:0; background:rgba(28,43,58,0.45);
+    z-index:9000; align-items:flex-start; justify-content:center;
+    padding:40px 16px; overflow-y:auto;
+  }
+  .impressum-overlay.open{ display:flex; }
+  .impressum-box{
+    position:relative; background:var(--panel); border-radius:14px;
+    max-width:640px; width:100%; padding:32px 28px 28px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.25);
+    font-family:'IBM Plex Sans', sans-serif; font-size:14px; line-height:1.6; color:var(--ink);
+  }
+  .impressum-box h2{ margin:0 0 4px; font-size:22px; }
+  .impressum-box h3{ margin:20px 0 4px; font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .impressum-box p{ margin:4px 0; }
+  .impressum-sub{ color:var(--muted); font-size:12.5px; margin-bottom:8px; }
+  .impressum-note{ font-size:12px; color:#C1443C; font-style:italic; }
+  .impressum-close{
+    position:absolute; top:14px; right:14px; width:32px; height:32px;
+    border-radius:50%; border:1px solid var(--hairline); background:var(--paper);
+    font-size:20px; line-height:1; cursor:pointer; color:var(--muted);
+  }
+  .impressum-close:hover{ color:var(--ink); }
+
   h1{
     font-size:clamp(28px,4vw,40px);
     margin:0;
@@ -509,6 +543,67 @@
         <div class="foehn-forecast-img-wrap"><img id="foehnImgWr" class="foehn-forecast-img" alt="Föhnprognose Wetterring - Druckdifferenz Bozen/Innsbruck"></div>
         <p class="wind-note">Quelle: <a href="https://wetterring.at/profiwetter/foehndiagramm-tirol" target="_blank" rel="noopener">Wetterring</a></p>
       </div>
+    </div>
+
+    <footer class="site-footer">
+      <button type="button" class="impressum-link" id="impressumOpen">Impressum</button>
+    </footer>
+  </div>
+
+  <div class="impressum-overlay" id="impressumOverlay" aria-hidden="true">
+    <div class="impressum-box" role="dialog" aria-modal="true" aria-labelledby="impressumTitle">
+      <button type="button" class="impressum-close" id="impressumClose" aria-label="Schließen">×</button>
+      <h2 id="impressumTitle">Impressum</h2>
+      <p class="impressum-sub">Angaben gemäß § 5 ECG (Österreich) und Art. 7 des Gesetzesdekrets Nr. 70/2003 (Italien)</p>
+
+      <h3>Betreiber</h3>
+      <p>
+        Max Mustermann<br>
+        Musterstraße 12<br>
+        6020 Innsbruck, Österreich
+      </p>
+      <p class="impressum-note">(Platzhalterangaben – bitte durch echte Daten ersetzen.)</p>
+
+      <h3>Kontakt</h3>
+      <p>E-Mail: max.mustermann@beispiel.at</p>
+
+      <h3>Verantwortlich für den Inhalt</h3>
+      <p>Max Mustermann (Anschrift wie oben)</p>
+
+      <h3>Hinweis</h3>
+      <p>Diese Website wird privat und nicht gewerblich betrieben.</p>
+
+      <h3>Haftungsausschluss</h3>
+      <p>
+        <strong>Inhalte:</strong> Trotz sorgfältiger inhaltlicher Kontrolle wird keine Haftung für die Richtigkeit,
+        Vollständigkeit und Aktualität der dargestellten Wetter- und Winddaten übernommen. Diese Website dient
+        ausschließlich der unverbindlichen Information und ersetzt keine offizielle Wettervorhersage oder
+        Flugwetterberatung. Die Nutzung der Informationen erfolgt auf eigene Gefahr.
+      </p>
+      <p>
+        <strong>Links:</strong> Für Inhalte externer, verlinkter Websites (u.a. Autonome Provinz Bozen, GeoSphere
+        Austria, Wetterring.at) sind ausschließlich deren jeweilige Betreiber verantwortlich.
+      </p>
+
+      <h3>Datenquellen</h3>
+      <p>
+        Autonome Provinz Bozen – Südtirol, GeoSphere Austria, Wetterring.at / Deutscher Wetterdienst
+        (siehe jeweilige Quellenangabe auf den einzelnen Seiten).
+      </p>
+
+      <h3>Urheberrecht</h3>
+      <p>
+        Struktur und Code dieser Website unterliegen dem Urheberrecht. Wetterdaten Dritter werden im Rahmen der
+        jeweiligen Lizenzbedingungen der genannten Datenquellen verwendet.
+      </p>
+
+      <h3>Datenschutz</h3>
+      <p>
+        Diese Website verwendet keine Cookies und sammelt keine personenbezogenen Daten. Um sich zu merken, welcher
+        Reiter zuletzt geöffnet war, wird technisch notwendiger, rein lokaler Sitzungsspeicher (sessionStorage) im
+        Browser verwendet – dieser wird beim Schließen des Browsers automatisch gelöscht und nicht an einen Server
+        übertragen. Es findet kein Tracking und keine Auswertung des Nutzerverhaltens statt.
+      </p>
     </div>
   </div>
 
@@ -1852,6 +1947,21 @@
   window.refreshFoehnprognoseIfVisited = function(){
     if (foehnprognoseVisited) refreshFoehnprognoseImages();
   };
+
+  (function initImpressum(){
+    var overlay = document.getElementById('impressumOverlay');
+    var openBtn = document.getElementById('impressumOpen');
+    var closeBtn = document.getElementById('impressumClose');
+    if (!overlay || !openBtn || !closeBtn) return;
+
+    function open(){ overlay.classList.add('open'); overlay.setAttribute('aria-hidden', 'false'); }
+    function close(){ overlay.classList.remove('open'); overlay.setAttribute('aria-hidden', 'true'); }
+
+    openBtn.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+  })();
 
   // Erst jetzt, ganz am Ende - nachdem initWindMap und renderSelectedStations
   // tatsächlich definiert sind - den beim letzten Besuch aktiven Reiter
