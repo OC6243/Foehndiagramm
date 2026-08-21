@@ -7,12 +7,12 @@
 <meta property="og:title" content="Wia schaugs aus?">
 <meta property="og:description" content="Föhndiagramm, Live-Windwerte und Föhnprognose für den Vinschgau">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://oc6243.github.io/Foehndiagramm/">
-<meta property="og:image" content="https://oc6243.github.io/Foehndiagramm/apple-touch-icon.png">
+<meta property="og:url" content="https://tolwind.bz.it/">
+<meta property="og:image" content="https://tolwind.bz.it/apple-touch-icon.png">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Wia schaugs aus?">
 <meta name="twitter:description" content="Föhndiagramm, Live-Windwerte und Föhnprognose für den Vinschgau">
-<meta name="twitter:image" content="https://oc6243.github.io/Foehndiagramm/apple-touch-icon.png">
+<meta name="twitter:image" content="https://tolwind.bz.it/apple-touch-icon.png">
 <link rel="icon" type="image/x-icon" href="./favicon.ico?v=2">
 <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png?v=2">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=2">
@@ -53,6 +53,7 @@
 
   header{margin-bottom:17.6px;}
   .title-row{ display:flex; align-items:center; gap:14px; }
+  .title-row.title-wrapped{ align-items:flex-start; }
 
   .top-bar{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .menu-wrap{ position:relative; }
@@ -431,6 +432,13 @@
     box-shadow:0 3px 10px rgba(28,43,58,0.08);
     pointer-events:none;
   }
+  @keyframes badgeBorderBlink{
+    0%,100%{ border-color:var(--hairline); }
+    50%{ border-color:var(--blink-c); box-shadow:0 3px 10px rgba(28,43,58,0.08), 0 0 0 2px var(--blink-c-soft); }
+  }
+  .badge-blink-yellow{ --blink-c:#E6B800; --blink-c-soft:rgba(230,184,0,0.25); animation:badgeBorderBlink 1.6s ease-in-out infinite; }
+  .badge-blink-orange{ --blink-c:#E8871E; --blink-c-soft:rgba(232,135,30,0.28); animation:badgeBorderBlink 1.4s ease-in-out infinite; }
+  .badge-blink-red{ --blink-c:#E5342A; --blink-c-soft:rgba(229,52,42,0.3); animation:badgeBorderBlink 1.1s ease-in-out infinite; }
   .cvb-label{
     font-family:'IBM Plex Sans', sans-serif;
     font-size:9.5px; text-transform:uppercase; letter-spacing:.05em;
@@ -568,17 +576,16 @@
 
       <h3>Betreiber</h3>
       <p>
-        Max Mustermann<br>
-        Musterstraße 12<br>
-        6020 Innsbruck, Österreich
+        Oswald Gunsch<br>
+        Schulgasse 8<br>
+        39024 Mals, Italien
       </p>
-      <p class="impressum-note">(Platzhalterangaben – bitte durch echte Daten ersetzen.)</p>
 
       <h3>Kontakt</h3>
-      <p>E-Mail: max.mustermann@beispiel.at</p>
+      <p>E-Mail: tolwind.bz.it@gmail.com</p>
 
       <h3>Verantwortlich für den Inhalt</h3>
-      <p>Max Mustermann (Anschrift wie oben)</p>
+      <p>Oswald Gunsch (Anschrift wie oben)</p>
 
       <h3>Hinweis</h3>
       <p>Diese Website wird privat und nicht gewerblich betrieben.</p>
@@ -618,16 +625,10 @@
 
       <h3>Datenschutz</h3>
       <p>
-        Diese Website verwendet keine Cookies. Um sich zu merken, welcher Reiter zuletzt geöffnet war, wird
-        technisch notwendiger, rein lokaler Sitzungsspeicher (sessionStorage) im Browser verwendet – dieser wird
-        beim Schließen des Browsers automatisch gelöscht und nicht an einen Server übertragen.
-      </p>
-      <p>
-        Zur anonymen Zählung der Seitenaufrufe (z.&nbsp;B. wie viele Besucher pro Tag) wird
+        Diese Website verwendet keine Cookies. Zur anonymen Reichweitenmessung kommt
         <a href="https://www.cloudflare.com/web-analytics/" target="_blank" rel="noopener">Cloudflare Web Analytics</a>
-        eingesetzt. Dieser Dienst kommt ohne Cookies aus und erstellt kein Profil einzelner Besucher – es werden nur
-        anonyme, zusammengefasste Zugriffszahlen erhoben. Weitere Informationen dazu in der
-        <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Datenschutzrichtlinie von Cloudflare</a>.
+        zum Einsatz, das ohne Cookies auskommt und keine personenbezogenen Nutzerprofile erstellt. Weitere
+        Informationen: <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Datenschutzrichtlinie von Cloudflare</a>.
       </p>
     </div>
   </div>
@@ -673,6 +674,16 @@
     var titles = { foehndiagramm: 'Föhndiagramm', livewerte: 'Live-Windwerte', selected: 'Ausgewählte Stationen', foehnprognose: 'Föhnprognose' };
     var titleEl = document.getElementById('pageTitle');
 
+    function updateTitleWrapState(){
+      var titleRow = document.querySelector('.title-row');
+      if (!titleEl || !titleRow) return;
+      // Eine Zeile IBM Plex Sans Bold bei der aktuellen clamp()-Schriftgröße ist
+      // ca. 1.15x die Schriftgröße hoch. Deutlich mehr als das = umgebrochen.
+      var oneLineHeight = parseFloat(getComputedStyle(titleEl).fontSize) * 1.25;
+      var isWrapped = titleEl.offsetHeight > oneLineHeight * 1.4;
+      titleRow.classList.toggle('title-wrapped', isWrapped);
+    }
+
     function activatePage(page){
       if (!pages[page]) page = 'foehndiagramm';
       items.forEach(function(i){ i.classList.toggle('active', i.getAttribute('data-page') === page); });
@@ -680,11 +691,13 @@
         pages[key].style.display = (key === page) ? '' : 'none';
       });
       titleEl.textContent = titles[page];
+      updateTitleWrapState();
       if (page === 'livewerte' && window.initWindMap) window.initWindMap();
       if (page === 'selected' && window.renderSelectedStations) window.renderSelectedStations();
       if (page === 'foehnprognose' && window.renderFoehnprognose) window.renderFoehnprognose();
       try { sessionStorage.setItem('foehn-active-page', page); } catch (e) { /* z.B. privater Modus - dann einfach nicht merken */ }
     }
+    window.addEventListener('resize', updateTitleWrapState);
 
     toggle.addEventListener('click', function(e){
       e.stopPropagation();
@@ -1172,7 +1185,19 @@
     }
     document.getElementById(tableElId).innerHTML = buildTable(primary);
     var badgeEl = document.getElementById('badge-' + chartElId);
-    if (badgeEl) badgeEl.innerHTML = buildCurrentValueBadge(primary);
+    if (badgeEl) {
+      badgeEl.innerHTML = buildCurrentValueBadge(primary);
+      var lastForBadge = primary.rows[primary.rows.length - 1];
+      var dForBadge = num(lastForBadge.delta);
+      var badgeBlinkClass = '';
+      if (dForBadge !== null) {
+        if (dForBadge <= -6) badgeBlinkClass = 'badge-blink-red';
+        else if (dForBadge <= -4.5) badgeBlinkClass = 'badge-blink-orange';
+        else if (dForBadge <= -3) badgeBlinkClass = 'badge-blink-yellow';
+      }
+      badgeEl.classList.remove('badge-blink-yellow', 'badge-blink-orange', 'badge-blink-red');
+      if (badgeBlinkClass) badgeEl.classList.add(badgeBlinkClass);
+    }
     var lastRow = primary.rows[primary.rows.length - 1];
     if (lastRow && lastRow.instantUTC) latestInstants[chartInstId] = new Date(lastRow.instantUTC);
     var primaryCode = shortCode(primary.leftLabel) + '-' + shortCode(primary.rightLabel);
@@ -1801,7 +1826,13 @@
           // Hat diese Station laut vorhandener Historie überhaupt je Windwerte
           // geliefert? Nur wenn mindestens eine Zeile existiert UND darunter
           // keine einzige echte Windangabe war, gilt sie als "kein Windsensor".
-          var hasWindSensor = rows.length === 0 || rows.some(function(r){
+          // Ausnahme: die 4 "Ausgewählte Stationen"-Stationen sind bekanntermaßen
+          // echte Windstationen - das gespeicherte Zeitfenster ist mit ca. 6,5h
+          // begrenzt, bei längerer Funkstille könnten darin zufällig nur
+          // Nullwerte stehen, was sonst fälschlich als "kein Windsensor" (=
+          // Thermometer-Symbol) interpretiert würde statt korrekt als
+          // "seit längerem keine Werte" (transparent, -/-).
+          var hasWindSensor = PRIORITY_CODES.indexOf(station.code) !== -1 || rows.length === 0 || rows.some(function(r){
             return (r.avgKmh !== null && r.avgKmh !== undefined) || (r.gustKmh !== null && r.gustKmh !== undefined);
           });
 
