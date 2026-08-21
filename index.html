@@ -179,6 +179,7 @@
     margin:0;
     font-weight:700;
     letter-spacing:-0.01em;
+    line-height:1.15;
   }
 
   .legend-note{
@@ -677,9 +678,13 @@
     function updateTitleWrapState(){
       var titleRow = document.querySelector('.title-row');
       if (!titleEl || !titleRow) return;
-      // Eine Zeile IBM Plex Sans Bold bei der aktuellen clamp()-Schriftgröße ist
-      // ca. 1.15x die Schriftgröße hoch. Deutlich mehr als das = umgebrochen.
-      var oneLineHeight = parseFloat(getComputedStyle(titleEl).fontSize) * 1.25;
+      // Der vom Browser tatsächlich berechnete line-height-Wert in Pixel (dank
+      // des jetzt expliziten line-height:1.15 in CSS liefert getComputedStyle
+      // hier einen konkreten Pixelwert, keine Schätzung mehr nötig - das war
+      // der Grund, warum die alte Schätzung bei der echten Schriftart daneben
+      // lag). Zwei Zeilen sind ungefähr doppelt so hoch wie eine - 1.4x als
+      // sichere Schwelle dazwischen.
+      var oneLineHeight = parseFloat(getComputedStyle(titleEl).lineHeight);
       var isWrapped = titleEl.offsetHeight > oneLineHeight * 1.4;
       titleRow.classList.toggle('title-wrapped', isWrapped);
     }
@@ -698,6 +703,13 @@
       try { sessionStorage.setItem('foehn-active-page', page); } catch (e) { /* z.B. privater Modus - dann einfach nicht merken */ }
     }
     window.addEventListener('resize', updateTitleWrapState);
+    // Falls Google Fonts beim ersten Aufruf noch nicht fertig geladen war
+    // (z.B. bei langsamer Verbindung), lief die Prüfung oben eventuell noch
+    // mit einer Ersatzschrift mit anderen Maßen. Sobald die echte Schrift
+    // bestätigt geladen ist, hier sicherheitshalber nochmal neu prüfen.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(updateTitleWrapState);
+    }
 
     toggle.addEventListener('click', function(e){
       e.stopPropagation();
@@ -1900,129 +1912,4 @@
     var svgLeft = pivotX - 6 * (sockRenderW / 60), svgTop = pivotY - 12 * (sockRenderH / 24);
     return buildCompassBackgroundSvg(pivotX, pivotY, 27) +
       '<svg width="' + sockRenderW + '" height="' + sockRenderH + '" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
-      'style="position:absolute;left:' + svgLeft.toFixed(1) + 'px;top:' + svgTop.toFixed(1) + 'px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;opacity:' + (hasDir ? 1 : 0.4) + ';">' +
-      '<line x1="6" y1="12" x2="18" y2="5" stroke="#3A4750" stroke-width="1.3"/>' +
-      '<line x1="6" y1="12" x2="18" y2="19" stroke="#3A4750" stroke-width="1.3"/>' +
-      '<polygon points="18,5 18,19 31,17 31,7" fill="' + sockColor + '"/>' +
-      '<polygon points="31,7 31,17 45,15 45,9" fill="#ffffff" stroke="#cfd3d2" stroke-width="0.4"/>' +
-      '<polygon points="45,9 45,15 58,13.5 58,10.5" fill="' + sockColor + '"/>' +
-      '<circle cx="6" cy="12" r="5" fill="#2B2B2B"/>' +
-    '</svg>';
-  }
-
-  window.renderSelectedStations = function(){
-    var grid = document.getElementById('selectedStationsGrid');
-    fetch('./data/wind.json?t=' + Date.now(), { cache: 'no-store' })
-      .then(function(r){ return r.ok ? r.json() : { stations: {} }; })
-      .then(function(payload){
-        var stations = payload.stations || {};
-        grid.innerHTML = SELECTED_STATION_CODES.map(function(code){
-          var station = ALL_STATIONS.filter(function(s){ return s.code === code; })[0];
-          if (!station) return '';
-          var entry = stations[code];
-          var rows = (entry && entry.rows) ? entry.rows : [];
-          var last = rows.length ? rows[rows.length - 1] : null;
-          var avg = last ? last.avgKmh : null;
-          var gust = last ? last.gustKmh : null;
-          var dir = last ? last.dirDeg : null;
-          var time = last ? last.time : '—';
-          var avgTxt = (avg !== null && avg !== undefined) ? Math.round(avg) : '–';
-          var gustTxt = (gust !== null && gust !== undefined) ? Math.round(gust) : '–';
-
-          var isStale = false;
-          var trafficColor = '#B9C2C0';
-          if (last && last.instantUTC) {
-            var ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
-            isStale = ageMin > 60;
-            if (ageMin <= 35) trafficColor = '#22C55E';
-            else if (ageMin <= 60) trafficColor = '#F2C94C';
-            else trafficColor = '#E5342A';
-          }
-          var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
-
-          var panelId = 'windDetailPanelSel-' + code;
-
-          return '<div class="selected-card" data-code="' + code + '">' +
-            '<div class="ssc-clickable">' +
-              '<div class="ssc-header-col">' +
-                '<div class="ssc-header"><span class="ssc-name">' + station.name + '</span><span class="ssc-time">' + trafficDot + time + '</span></div>' +
-                (isStale ? '<div class="stale-warning-text ssc-stale">Aktualisierung verzögert!</div>' : '') +
-              '</div>' +
-              '<div class="ssc-body">' +
-                '<div class="ssc-values">' +
-                  '<div><span class="ssc-label">Ø km/h</span><span class="ssc-value">' + avgTxt + '</span></div>' +
-                  '<div><span class="ssc-label">Böe km/h</span><span class="ssc-value ssc-gust">' + gustTxt + '</span></div>' +
-                '</div>' +
-                '<div class="ssc-sock">' + buildCompactWindsockSvg(dir, station.type) + '</div>' +
-              '</div>' +
-            '</div>' +
-            '<div class="wind-detail-panel" id="' + panelId + '"></div>' +
-          '</div>';
-        }).join('');
-
-        // Gleiche Detailansicht wie bei Live-Windwerte, aber direkt unter der
-        // jeweiligen Station eingebettet (eigenes Panel pro Karte) und als
-        // Auf-/Zuklapp-Akkordeon: erneutes Antippen klappt wieder ein. Der
-        // Klick-Bereich ist bewusst auf Kopf+Werte begrenzt (.ssc-clickable),
-        // damit ein Klick INNERHALB des bereits geöffneten Diagramms es nicht
-        // versehentlich wieder zuklappt.
-        grid.querySelectorAll('.selected-card').forEach(function(card){
-          var clickable = card.querySelector('.ssc-clickable');
-          clickable.addEventListener('click', function(){
-            var code = card.getAttribute('data-code');
-            var panelId = 'windDetailPanelSel-' + code;
-            var panel = document.getElementById(panelId);
-            if (panel.classList.contains('open')) {
-              panel.classList.remove('open');
-              return;
-            }
-            var station = ALL_STATIONS.filter(function(s){ return s.code === code; })[0];
-            var entry = stations[code];
-            var rows = (entry && entry.rows) ? entry.rows : [];
-            if (station) showWindDetail(station, rows, panelId);
-          });
-        });
-      })
-      .catch(function(){ grid.innerHTML = '<p class="wind-note">Daten konnten nicht geladen werden.</p>'; });
-  };
-  /* ---------- Föhnprognose (zwei externe Diagramme) ---------- */
-  var foehnprognoseVisited = false;
-  function refreshFoehnprognoseImages(){
-    var cacheBuster = Date.now();
-    document.getElementById('foehnImgBz').src = 'https://static-weather.services.siag.it/sys/pgradient_de.png?t=' + cacheBuster;
-    document.getElementById('foehnImgWr').src = 'https://stations.wetterring.at/wetterkarten/foehndiagramm_ibk.png?t=' + cacheBuster;
-  }
-  window.renderFoehnprognose = function(){
-    foehnprognoseVisited = true;
-    refreshFoehnprognoseImages();
-  };
-  // Zusätzlich bei jedem load()-Zyklus auffrischen (Start + alle 3 Min., deckt
-  // auch ein manuelles Neuladen der Seite ab) - aber nur, wenn der Reiter
-  // schon mindestens einmal besucht wurde, damit für Besucher, die ihn nie
-  // öffnen, keine unnötigen Anfragen an die externen Server gehen.
-  window.refreshFoehnprognoseIfVisited = function(){
-    if (foehnprognoseVisited) refreshFoehnprognoseImages();
-  };
-
-  (function initImpressum(){
-    var overlay = document.getElementById('impressumOverlay');
-    var openBtn = document.getElementById('impressumOpen');
-    var closeBtn = document.getElementById('impressumClose');
-    if (!overlay || !openBtn || !closeBtn) return;
-
-    function open(){ overlay.classList.add('open'); overlay.setAttribute('aria-hidden', 'false'); }
-    function close(){ overlay.classList.remove('open'); overlay.setAttribute('aria-hidden', 'true'); }
-
-    openBtn.addEventListener('click', open);
-    closeBtn.addEventListener('click', close);
-    overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
-    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
-  })();
-
-  // Erst jetzt, ganz am Ende - nachdem initWindMap und renderSelectedStations
-  // tatsächlich definiert sind - den beim letzten Besuch aktiven Reiter
-  // wiederherstellen (siehe restoreActivePage in initMenu()).
-  if (window.restoreActivePage) window.restoreActivePage();
-</script>
-</body>
-</html>
+      'style="position:absolute;left:' + svgLeft.toFixed(1) + 'px;top:' + svgTop.toFixed(1) + 'px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;opacity:' + (hasDir ? 1 : 0.4) +
