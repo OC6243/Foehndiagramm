@@ -185,17 +185,17 @@
     margin-top:18px; padding:14px 16px; background:var(--paper);
     border-left:3px solid #E8A93C; border-radius:4px; font-weight:600;
   }
-  .paypal-row{ display:flex; align-items:center; gap:16px; margin-top:16px; flex-wrap:wrap; }
+  .paypal-row{ display:flex; flex-direction:column; gap:10px; margin-top:16px; max-width:260px; }
   .paypal-button{
-    display:inline-flex; align-items:center; gap:8px;
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%;
     background:#0070BA; color:#fff; font-weight:700; font-size:14.5px;
-    padding:11px 20px; border-radius:24px; text-decoration:none;
+    padding:11px 20px; border-radius:24px; text-decoration:none; box-sizing:border-box;
     font-family:'IBM Plex Sans', sans-serif; transition:background .15s ease;
   }
   .paypal-button:hover{ background:#00558c; }
-  .paypal-qr-link{ display:block; flex-shrink:0; }
+  .paypal-qr-link{ display:block; }
   .paypal-qr{
-    width:68px; height:68px; border-radius:8px; border:1px solid var(--hairline);
+    width:100%; height:auto; aspect-ratio:1/1; border-radius:8px; border:1px solid var(--hairline);
     display:block;
   }
 
@@ -591,7 +591,7 @@
     </div>
 
     <footer class="site-footer">
-      <button type="button" class="impressum-link" id="whyOpen">Warum tolwind.bz.it</button>
+      <button type="button" class="impressum-link" id="whyOpen">Warum tolwind.bz.it?</button>
       <span class="footer-dot">·</span>
       <button type="button" class="impressum-link" id="impressumOpen">Impressum</button>
     </footer>
@@ -673,7 +673,7 @@
         bauen, das mir den aktuellen Föhn Ist-Stand und den der letzten Stunden anzeigt. Angefangen in Excel,
         wollte ich etwas bauen, auf das jeder zugreifen kann. Und so hat das angefangen. Das Ganze hat dann seinen
         Lauf genommen, und nun sind hier auf dieser Seite die wichtigsten Informationen zum Ist-Stand der
-        Situation dargestellt.
+        Situation dargestellt. Ich hoffe ich kann damit einiges erleichtern.
       </p>
       <p class="why-support-text">
         Falls du diese Webseite nun öfters nutzt bzw. du mich mit der Zahlung der Domain (36&nbsp;€/Jahr)
