@@ -178,20 +178,26 @@
   .impressum-close:hover{ color:var(--ink); }
 
   .why-box{ text-align:left; }
-  .why-emoji{ font-size:34px; line-height:1; margin-bottom:6px; }
+  .why-flieger{ width:64px; height:auto; margin-bottom:6px; display:block; }
   .why-box h2{ margin-bottom:14px; }
   .why-box p{ margin:12px 0; }
   .why-support-text{
     margin-top:18px; padding:14px 16px; background:var(--paper);
     border-left:3px solid #E8A93C; border-radius:4px; font-weight:600;
   }
+  .paypal-row{ display:flex; align-items:center; gap:16px; margin-top:16px; flex-wrap:wrap; }
   .paypal-button{
-    display:inline-flex; align-items:center; gap:8px; margin-top:16px;
+    display:inline-flex; align-items:center; gap:8px;
     background:#0070BA; color:#fff; font-weight:700; font-size:14.5px;
     padding:11px 20px; border-radius:24px; text-decoration:none;
     font-family:'IBM Plex Sans', sans-serif; transition:background .15s ease;
   }
   .paypal-button:hover{ background:#00558c; }
+  .paypal-qr-link{ display:block; flex-shrink:0; }
+  .paypal-qr{
+    width:68px; height:68px; border-radius:8px; border:1px solid var(--hairline);
+    display:block;
+  }
 
   h1{
     font-size:clamp(28px,4vw,40px);
@@ -658,8 +664,8 @@
   <div class="impressum-overlay" id="whyOverlay" aria-hidden="true">
     <div class="impressum-box why-box" role="dialog" aria-modal="true" aria-labelledby="whyTitle">
       <button type="button" class="impressum-close" id="whyClose" aria-label="Schließen">×</button>
-      <div class="why-emoji">🪂</div>
-      <h2 id="whyTitle">Warum tolwind.bz.it</h2>
+      <img class="why-flieger" src="./logo-flieger-white.png" alt="">
+      <h2 id="whyTitle">Warum tolwind.bz.it?</h2>
 
       <p>Servus,</p>
       <p>
@@ -674,10 +680,15 @@
         unterstützen möchtest, würde ich mich darüber sehr freuen!
       </p>
 
-      <a class="paypal-button" href="https://www.paypal.com/donate/?business=tolwind.bz.it%40gmail.com&currency_code=EUR&item_name=Unterst%C3%BCtzung+f%C3%BCr+tolwind.bz.it" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7.5 20.5H4.8c-.4 0-.7-.3-.6-.7L6.6 4.2c.1-.5.5-.8 1-.8h6.2c2.9 0 4.9 1.4 4.5 4.1-.4 3-2.6 4.6-5.7 4.6H10c-.4 0-.8.3-.9.7l-1 6.9c-.1.4-.3.6-.6.6zm9-13.7c.2 2-.9 3.3-2.9 3.3h-1.9l.6-3.9c0-.2.2-.4.4-.4h1.3c1.2 0 2.2.3 2.5 1z"/></svg>
-        Über PayPal unterstützen
-      </a>
+      <div class="paypal-row">
+        <a class="paypal-button" href="https://www.paypal.me/OswaldGunsch" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7.5 20.5H4.8c-.4 0-.7-.3-.6-.7L6.6 4.2c.1-.5.5-.8 1-.8h6.2c2.9 0 4.9 1.4 4.5 4.1-.4 3-2.6 4.6-5.7 4.6H10c-.4 0-.8.3-.9.7l-1 6.9c-.1.4-.3.6-.6.6zm9-13.7c.2 2-.9 3.3-2.9 3.3h-1.9l.6-3.9c0-.2.2-.4.4-.4h1.3c1.2 0 2.2.3 2.5 1z"/></svg>
+          Über PayPal unterstützen
+        </a>
+        <a href="https://www.paypal.me/OswaldGunsch" target="_blank" rel="noopener" class="paypal-qr-link">
+          <img class="paypal-qr" src="./paypal-qr.png" alt="PayPal QR-Code">
+        </a>
+      </div>
     </div>
   </div>
 
@@ -1604,7 +1615,7 @@
     var gustTxt = (gustKmh !== null && gustKmh !== undefined) ? Math.round(gustKmh) : '–';
 
     var blinkClass = '';
-    var overThreshold = (avgKmh !== null && avgKmh > 30) || (gustKmh !== null && gustKmh > 30);
+    var overThreshold = (avgKmh !== null && avgKmh >= 30) || (gustKmh !== null && gustKmh >= 30);
     var deviates = (avgKmh !== null && gustKmh !== null && Math.abs(gustKmh - avgKmh) > 10);
     if (overThreshold) blinkClass = 'wr-blink-red';
     else if (deviates) blinkClass = 'wr-blink-orange';
@@ -2050,9 +2061,18 @@
           }
           var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
 
+          // Gleiche Schwellenwert-Logik wie bei den Windwerte-Rechtecken auf
+          // der Karte: >30 km/h (Ø oder Böe) blinkt rot, Abweichung Böe/Ø
+          // >10 km/h blinkt orange.
+          var cardBlinkClass = '';
+          var cardOverThreshold = (avg !== null && avg !== undefined && avg >= 30) || (gust !== null && gust !== undefined && gust >= 30);
+          var cardDeviates = (avg !== null && avg !== undefined && gust !== null && gust !== undefined && Math.abs(gust - avg) > 10);
+          if (cardOverThreshold) cardBlinkClass = 'wr-blink-red';
+          else if (cardDeviates) cardBlinkClass = 'wr-blink-orange';
+
           var panelId = 'windDetailPanelSel-' + code;
 
-          return '<div class="selected-card" data-code="' + code + '">' +
+          return '<div class="selected-card ' + cardBlinkClass + '" data-code="' + code + '">' +
             '<div class="ssc-clickable">' +
               '<div class="ssc-header-col">' +
                 '<div class="ssc-header"><span class="ssc-name">' + station.name + '</span><span class="ssc-time">' + trafficDot + time + '</span></div>' +
