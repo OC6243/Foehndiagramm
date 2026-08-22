@@ -52,8 +52,8 @@
   .wrap{max-width:1320px;margin:0 auto;}
 
   header{margin-bottom:17.6px;}
-  .title-row{ display:flex; align-items:center; gap:14px; }
-  .title-row.title-wrapped{ align-items:flex-start; }
+  .title-row{ display:flex; align-items:center; gap:14px; position:relative; }
+  .title-row.title-wrapped img.logo{ z-index:2; }
 
   .top-bar{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .menu-wrap{ position:relative; }
@@ -677,16 +677,58 @@
 
     function updateTitleWrapState(){
       var titleRow = document.querySelector('.title-row');
-      if (!titleEl || !titleRow) return;
-      // Der vom Browser tatsächlich berechnete line-height-Wert in Pixel (dank
-      // des jetzt expliziten line-height:1.15 in CSS liefert getComputedStyle
-      // hier einen konkreten Pixelwert, keine Schätzung mehr nötig - das war
-      // der Grund, warum die alte Schätzung bei der echten Schriftart daneben
-      // lag). Zwei Zeilen sind ungefähr doppelt so hoch wie eine - 1.4x als
-      // sichere Schwelle dazwischen.
-      var oneLineHeight = parseFloat(getComputedStyle(titleEl).lineHeight);
-      var isWrapped = titleEl.offsetHeight > oneLineHeight * 1.4;
-      titleRow.classList.toggle('title-wrapped', isWrapped);
+      var logo = titleRow ? titleRow.querySelector('img.logo') : null;
+      if (!titleEl || !titleRow || !logo) return;
+
+      var LOGO_WIDTH = 51; // feste Logo-Breite, siehe .title-row img.logo in CSS
+      var GAP = 14;
+      var availableForText = titleRow.offsetWidth - LOGO_WIDTH - GAP;
+
+      var cs = getComputedStyle(titleEl);
+      var measurer = document.createElement('span');
+      measurer.style.cssText = 'position:absolute; visibility:hidden; white-space:nowrap; top:-9999px;' +
+        'font-family:' + cs.fontFamily + '; font-size:' + cs.fontSize + ';' +
+        'font-weight:' + cs.fontWeight + '; letter-spacing:' + cs.letterSpacing + ';';
+      measurer.textContent = titleEl.textContent;
+      document.body.appendChild(measurer);
+      var fullTextWidth = measurer.offsetWidth;
+
+      // Passt der GESAMTE Titel (einzeilig) neben das Logo? Diese eine
+      // Messung entscheidet alles - unabhängig davon, ob das Logo gerade
+      // normal oder absolut positioniert ist. Das ist wichtig: würde man
+      // stattdessen live an der aktuellen Flexbox-Höhe von h1 messen, gäbe
+      // es eine Rückkopplung (Logo rausnehmen -> h1 bekommt mehr Platz ->
+      // Messung ändert sich -> Logo-Position ändert sich -> usw.), die bei
+      // bestimmten Fensterbreiten zu einem Hin-und-Her-Flackern und sogar zu
+      // einer Überlappung von Logo und Text führen konnte.
+      var isWrapped = fullTextWidth > availableForText;
+
+      if (!isWrapped) {
+        document.body.removeChild(measurer);
+        titleRow.classList.remove('title-wrapped');
+        titleEl.style.maxWidth = '';
+        logo.style.position = '';
+        logo.style.left = '';
+        logo.style.top = '';
+        return;
+      }
+
+      var firstWord = (titleEl.textContent || '').split(' ')[0];
+      measurer.textContent = firstWord;
+      var firstWordWidth = measurer.offsetWidth;
+      document.body.removeChild(measurer);
+
+      // h1 explizit auf genau die geprüfte Breite begrenzen - sonst bekäme
+      // h1 durch das absolut positionierte (= aus dem Fluss genommene) Logo
+      // die VOLLE Zeilenbreite und würde eventuell doch einzeilig bleiben,
+      // während das Logo bereits von einem Umbruch ausgehend platziert
+      // wurde. Damit stimmen Berechnung und tatsächliches Umbruchverhalten
+      // immer exakt überein.
+      titleRow.classList.add('title-wrapped');
+      titleEl.style.maxWidth = availableForText + 'px';
+      logo.style.position = 'absolute';
+      logo.style.left = (firstWordWidth + GAP) + 'px';
+      logo.style.top = '0';
     }
 
     function activatePage(page){
