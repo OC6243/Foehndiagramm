@@ -18,6 +18,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=2">
 <link rel="icon" type="image/png" sizes="48x48" href="./favicon-48.png?v=2">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=2">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#E9EDEC">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -140,6 +142,7 @@
     text-decoration:underline; text-underline-offset:2px; opacity:0.75;
   }
   .impressum-link:hover{ opacity:1; color:var(--ink); }
+  .footer-dot{ color:var(--muted); opacity:0.6; margin:0 2px; font-size:12px; }
 
   .impressum-overlay{
     display:none; position:fixed; inset:0; background:rgba(28,43,58,0.45);
@@ -173,6 +176,22 @@
     font-size:20px; line-height:1; cursor:pointer; color:var(--muted);
   }
   .impressum-close:hover{ color:var(--ink); }
+
+  .why-box{ text-align:left; }
+  .why-emoji{ font-size:34px; line-height:1; margin-bottom:6px; }
+  .why-box h2{ margin-bottom:14px; }
+  .why-box p{ margin:12px 0; }
+  .why-support-text{
+    margin-top:18px; padding:14px 16px; background:var(--paper);
+    border-left:3px solid #E8A93C; border-radius:4px; font-weight:600;
+  }
+  .paypal-button{
+    display:inline-flex; align-items:center; gap:8px; margin-top:16px;
+    background:#0070BA; color:#fff; font-weight:700; font-size:14.5px;
+    padding:11px 20px; border-radius:24px; text-decoration:none;
+    font-family:'IBM Plex Sans', sans-serif; transition:background .15s ease;
+  }
+  .paypal-button:hover{ background:#00558c; }
 
   h1{
     font-size:clamp(28px,4vw,40px);
@@ -566,6 +585,8 @@
     </div>
 
     <footer class="site-footer">
+      <button type="button" class="impressum-link" id="whyOpen">Warum tolwind.bz.it</button>
+      <span class="footer-dot">·</span>
       <button type="button" class="impressum-link" id="impressumOpen">Impressum</button>
     </footer>
   </div>
@@ -631,6 +652,32 @@
         zum Einsatz, das ohne Cookies auskommt und keine personenbezogenen Nutzerprofile erstellt. Weitere
         Informationen: <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Datenschutzrichtlinie von Cloudflare</a>.
       </p>
+    </div>
+  </div>
+
+  <div class="impressum-overlay" id="whyOverlay" aria-hidden="true">
+    <div class="impressum-box why-box" role="dialog" aria-modal="true" aria-labelledby="whyTitle">
+      <button type="button" class="impressum-close" id="whyClose" aria-label="Schließen">×</button>
+      <div class="why-emoji">🪂</div>
+      <h2 id="whyTitle">Warum tolwind.bz.it</h2>
+
+      <p>Servus,</p>
+      <p>
+        ja warum ist diese Seite entstanden? Eigentlich ganz einfach. Ich wollte für mich selbst ein Föhndiagramm
+        bauen, das mir den aktuellen Föhn Ist-Stand und den der letzten Stunden anzeigt. Angefangen in Excel,
+        wollte ich etwas bauen, auf das jeder zugreifen kann. Und so hat das angefangen. Das Ganze hat dann seinen
+        Lauf genommen, und nun sind hier auf dieser Seite die wichtigsten Informationen zum Ist-Stand der
+        Situation dargestellt.
+      </p>
+      <p class="why-support-text">
+        Falls du diese Webseite nun öfters nutzt bzw. du mich mit der Zahlung der Domain (36&nbsp;€/Jahr)
+        unterstützen möchtest, würde ich mich darüber sehr freuen!
+      </p>
+
+      <a class="paypal-button" href="https://www.paypal.com/donate/?business=tolwind.bz.it%40gmail.com&currency_code=EUR&item_name=Unterst%C3%BCtzung+f%C3%BCr+tolwind.bz.it" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7.5 20.5H4.8c-.4 0-.7-.3-.6-.7L6.6 4.2c.1-.5.5-.8 1-.8h6.2c2.9 0 4.9 1.4 4.5 4.1-.4 3-2.6 4.6-5.7 4.6H10c-.4 0-.8.3-.9.7l-1 6.9c-.1.4-.3.6-.6.6zm9-13.7c.2 2-.9 3.3-2.9 3.3h-1.9l.6-3.9c0-.2.2-.4.4-.4h1.3c1.2 0 2.2.3 2.5 1z"/></svg>
+        Über PayPal unterstützen
+      </a>
     </div>
   </div>
 
@@ -1808,11 +1855,13 @@
     // Startansicht: am Handy enger auf den Obervinschgau zugeschnitten (wie im
     // Referenzbild), am Desktop weiterhin der ganze Vinschgau. Marker für ganz
     // Südtirol werden trotzdem geladen - man kann jederzeit rauszoomen.
-    // tap:false schaltet Leaflets eigene (ältere) Touch-Simulation ab und
-    // verlässt sich stattdessen auf native Browser-Touch-Events - behebt ein
-    // bekanntes Problem, bei dem Doppeltipp-zum-Zoomen auf iOS nicht
-    // zuverlässig funktioniert.
-    windMapInstance = L.map('windMap', { scrollWheelZoom: true, tap: false, doubleClickZoom: true });
+    // tap bewusst NICHT auf false gesetzt (Standard ist true): Leaflets
+    // eigener Touch-Übersetzer (tap.js) sorgt plattformübergreifend
+    // zuverlässig für sauber unterschiedene Einzel-/Doppeltipp-Events - iOS
+    // Safari liefert bei rohen nativen Touch-Events selbst keine zuverlässigen
+    // dblclick-Events, weshalb tap:false (frühere Version) das
+    // Doppeltipp-Zoomen auf iPhones sogar kaputt gemacht hat.
+    windMapInstance = L.map('windMap', { scrollWheelZoom: true, doubleClickZoom: true });
     var isMobileView = window.innerWidth <= 600;
     if (isMobileView) {
       windMapInstance.setView([46.657391, 10.588955], 10); // Schluderns
@@ -1825,12 +1874,10 @@
     // Marker haben ihren eigenen Klick-Handler und stoppen die Ausbreitung
     // zur Karte, daher feuert dieser Handler nur bei Klicks NEBEN einem
     // Symbol, nicht bei Klicks AUF ein Symbol.
-    // Kurze Verzögerung (250ms) vor dem Herauszoomen: ein Doppeltipp löst
-    // zwei einzelne 'click'-Ereignisse UND ein 'dblclick'-Ereignis aus - ohne
-    // diese Verzögerung würde das Herauszoomen jedes Mal dazwischenfunken und
-    // das Hineinzoomen per Doppeltipp verhindern. Kommt innerhalb der 250ms
-    // ein zweiter Tipp (= Doppeltipp), wird das Herauszoomen abgebrochen und
-    // stattdessen ganz normal per doubleClickZoom hineingezoomt.
+    // Kurze Verzögerung (250ms) vor dem Herauszoomen bleibt als zusätzliche
+    // Absicherung bestehen: kommt innerhalb der 250ms ein zweiter Tipp (=
+    // Doppeltipp), wird das Herauszoomen abgebrochen und stattdessen ganz
+    // normal per doubleClickZoom hineingezoomt.
     var mapClickTimer = null;
     windMapInstance.on('click', function(){
       if (mapClickTimer) clearTimeout(mapClickTimer);
@@ -1916,7 +1963,16 @@
           marker.on('click', function(){
             showWindDetail(station, rows);
             setTimeout(function(){
-              window.scrollBy({ top: 184, left: 0, behavior: 'smooth' });
+              var panel = document.getElementById('windDetailPanel');
+              var rect = panel.getBoundingClientRect();
+              // Nur scrollen, wenn das Panel noch nicht brauchbar sichtbar ist
+              // (z.B. beim allerersten Klick). Ist man durch einen früheren
+              // Klick schon runtergescrollt, bleibt die Position unverändert -
+              // sonst würde jeder weitere Stationsklick nochmal weiter nach
+              // unten scrollen.
+              if (rect.top > window.innerHeight * 0.7) {
+                window.scrollBy({ top: 184, left: 0, behavior: 'smooth' });
+              }
             }, 80);
           });
         });
@@ -2058,10 +2114,10 @@
     if (foehnprognoseVisited) refreshFoehnprognoseImages();
   };
 
-  (function initImpressum(){
-    var overlay = document.getElementById('impressumOverlay');
-    var openBtn = document.getElementById('impressumOpen');
-    var closeBtn = document.getElementById('impressumClose');
+  function initModal(overlayId, openBtnId, closeBtnId){
+    var overlay = document.getElementById(overlayId);
+    var openBtn = document.getElementById(openBtnId);
+    var closeBtn = document.getElementById(closeBtnId);
     if (!overlay || !openBtn || !closeBtn) return;
 
     function open(){ overlay.classList.add('open'); overlay.setAttribute('aria-hidden', 'false'); }
@@ -2071,7 +2127,9 @@
     closeBtn.addEventListener('click', close);
     overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
-  })();
+  }
+  initModal('impressumOverlay', 'impressumOpen', 'impressumClose');
+  initModal('whyOverlay', 'whyOpen', 'whyClose');
 
   // Erst jetzt, ganz am Ende - nachdem initWindMap und renderSelectedStations
   // tatsächlich definiert sind - den beim letzten Besuch aktiven Reiter
