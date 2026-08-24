@@ -16383,15 +16383,6 @@
     "27100MS": {
       "rows": [
         {
-          "instantUTC": "2026-08-24T00:10:00.000Z",
-          "time": "02:10",
-          "avgKmh": 3.6,
-          "gustKmh": 4.7,
-          "dirDeg": 31.4,
-          "tempC": 18.4,
-          "humidityPct": 100.3
-        },
-        {
           "instantUTC": "2026-08-24T00:20:00.000Z",
           "time": "02:20",
           "avgKmh": 4,
@@ -16741,6 +16732,15 @@
           "dirDeg": 325.3,
           "tempC": 24.6,
           "humidityPct": 64.1
+        },
+        {
+          "instantUTC": "2026-08-24T08:30:00.000Z",
+          "time": "10:30",
+          "avgKmh": 1.4,
+          "gustKmh": 7.9,
+          "dirDeg": 83,
+          "tempC": 24.9,
+          "humidityPct": 60.9
         }
       ]
     },
@@ -19399,12 +19399,6 @@
     "06040WS": {
       "rows": [
         {
-          "instantUTC": "2026-08-24T05:42:48.952Z",
-          "time": "07:42",
-          "avgKmh": null,
-          "gustKmh": null
-        },
-        {
           "instantUTC": "2026-08-24T05:47:45.602Z",
           "time": "07:47",
           "avgKmh": null,
@@ -19635,6 +19629,12 @@
         {
           "instantUTC": "2026-08-24T08:47:45.624Z",
           "time": "10:47",
+          "avgKmh": null,
+          "gustKmh": null
+        },
+        {
+          "instantUTC": "2026-08-24T08:52:49.295Z",
+          "time": "10:52",
           "avgKmh": null,
           "gustKmh": null
         }
@@ -32030,5 +32030,5 @@
       ]
     }
   },
-  "generatedAt": "24.08.2026, 10:47"
+  "generatedAt": "24.08.2026, 10:53"
 }
