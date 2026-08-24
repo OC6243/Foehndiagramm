@@ -287,8 +287,10 @@
 
   @keyframes blinkRed{ 0%,100%{ border-color:#E5342A; box-shadow:0 1px 4px rgba(0,0,0,0.18); } 50%{ border-color:#E5342A; box-shadow:0 0 0 3px rgba(229,52,42,0.55); } }
   @keyframes blinkOrange{ 0%,100%{ border-color:#F2994A; box-shadow:0 1px 4px rgba(0,0,0,0.18); } 50%{ border-color:#F2994A; box-shadow:0 0 0 3px rgba(242,153,74,0.55); } }
+  @keyframes blinkYellow{ 0%,100%{ border-color:#E6B800; box-shadow:0 1px 4px rgba(0,0,0,0.18); } 50%{ border-color:#E6B800; box-shadow:0 0 0 3px rgba(230,184,0,0.5); } }
   .wr-blink-red{ animation:blinkRed 1s ease-in-out infinite; border-width:2px !important; }
   .wr-blink-orange{ animation:blinkOrange 1s ease-in-out infinite; border-width:2px !important; }
+  .wr-blink-yellow{ animation:blinkYellow 1.3s ease-in-out infinite; border-width:2px !important; }
 
   @keyframes staleRingBlink{ 0%,100%{ opacity:0.9; } 50%{ opacity:0.15; } }
   .stale-ring{ animation:staleRingBlink 1.1s ease-in-out infinite; }
@@ -1616,9 +1618,10 @@
 
     var blinkClass = '';
     var overThreshold = (avgKmh !== null && avgKmh >= 30) || (gustKmh !== null && gustKmh >= 30);
-    var deviates = (avgKmh !== null && gustKmh !== null && Math.abs(gustKmh - avgKmh) > 10);
-    if (overThreshold) blinkClass = 'wr-blink-red';
-    else if (deviates) blinkClass = 'wr-blink-orange';
+    var deviation = (avgKmh !== null && gustKmh !== null) ? Math.abs(gustKmh - avgKmh) : null;
+    if (overThreshold || (deviation !== null && deviation >= 20)) blinkClass = 'wr-blink-red';
+    else if (deviation !== null && deviation >= 15) blinkClass = 'wr-blink-orange';
+    else if (deviation !== null && deviation >= 10) blinkClass = 'wr-blink-yellow';
 
     var sockColor = (station.type === 'tal') ? '#F2994A' : '#E5342A';
 
@@ -1881,6 +1884,19 @@
     }
     windMapInstance.on('zoomend', updateIconScale);
 
+    // Bekanntes iOS-Problem (u.a. in Leaflets eigenem Issue-Tracker
+    // dokumentiert): während bzw. kurz nach einer Zoom-Animation feuert iOS
+    // Safari zusätzliche, irreführende Klick-Events. Das führte dazu, dass
+    // nach einem erfolgreichen Doppeltipp-Zoom der NÄCHSTE Doppeltipp
+    // durcheinandergeriet (wirkte wie nur ein einzelner Tipp). Empfohlene
+    // Lösung: Klicks während/kurz nach einer laufenden Zoom-Animation
+    // schlicht ignorieren.
+    var isZooming = false;
+    windMapInstance.on('zoomstart', function(){ isZooming = true; });
+    windMapInstance.on('zoomend', function(){
+      setTimeout(function(){ isZooming = false; }, 300);
+    });
+
     // Einfacher Tipp auf eine leere Kartenfläche (kein Symbol) zoomt heraus.
     // Marker haben ihren eigenen Klick-Handler und stoppen die Ausbreitung
     // zur Karte, daher feuert dieser Handler nur bei Klicks NEBEN einem
@@ -1891,10 +1907,11 @@
     // normal per doubleClickZoom hineingezoomt.
     var mapClickTimer = null;
     windMapInstance.on('click', function(){
+      if (isZooming) return;
       if (mapClickTimer) clearTimeout(mapClickTimer);
       mapClickTimer = setTimeout(function(){
         mapClickTimer = null;
-        windMapInstance.setZoom(windMapInstance.getZoom() - 1);
+        if (!isZooming) windMapInstance.setZoom(windMapInstance.getZoom() - 1);
       }, 250);
     });
     windMapInstance.on('dblclick', function(){
@@ -2062,13 +2079,14 @@
           var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
 
           // Gleiche Schwellenwert-Logik wie bei den Windwerte-Rechtecken auf
-          // der Karte: >30 km/h (Ø oder Böe) blinkt rot, Abweichung Böe/Ø
-          // >10 km/h blinkt orange.
+          // der Karte: >=30 km/h (Ø oder Böe) blinkt rot. Zusätzlich
+          // Abweichung Böe/Ø: 10-14 km/h gelb, 15-19 km/h orange, ab 20 km/h rot.
           var cardBlinkClass = '';
           var cardOverThreshold = (avg !== null && avg !== undefined && avg >= 30) || (gust !== null && gust !== undefined && gust >= 30);
-          var cardDeviates = (avg !== null && avg !== undefined && gust !== null && gust !== undefined && Math.abs(gust - avg) > 10);
-          if (cardOverThreshold) cardBlinkClass = 'wr-blink-red';
-          else if (cardDeviates) cardBlinkClass = 'wr-blink-orange';
+          var cardDeviation = (avg !== null && avg !== undefined && gust !== null && gust !== undefined) ? Math.abs(gust - avg) : null;
+          if (cardOverThreshold || (cardDeviation !== null && cardDeviation >= 20)) cardBlinkClass = 'wr-blink-red';
+          else if (cardDeviation !== null && cardDeviation >= 15) cardBlinkClass = 'wr-blink-orange';
+          else if (cardDeviation !== null && cardDeviation >= 10) cardBlinkClass = 'wr-blink-yellow';
 
           var panelId = 'windDetailPanelSel-' + code;
 
