@@ -1619,8 +1619,8 @@
     var blinkClass = '';
     var overThreshold = (avgKmh !== null && avgKmh >= 30) || (gustKmh !== null && gustKmh >= 30);
     var deviation = (avgKmh !== null && gustKmh !== null) ? Math.abs(gustKmh - avgKmh) : null;
-    if (overThreshold || (deviation !== null && deviation >= 20)) blinkClass = 'wr-blink-red';
-    else if (deviation !== null && deviation >= 15) blinkClass = 'wr-blink-orange';
+    if (overThreshold || (deviation !== null && deviation >= 15)) blinkClass = 'wr-blink-red';
+    else if (deviation !== null && deviation >= 13) blinkClass = 'wr-blink-orange';
     else if (deviation !== null && deviation >= 10) blinkClass = 'wr-blink-yellow';
 
     var sockColor = (station.type === 'tal') ? '#F2994A' : '#E5342A';
@@ -2080,12 +2080,12 @@
 
           // Gleiche Schwellenwert-Logik wie bei den Windwerte-Rechtecken auf
           // der Karte: >=30 km/h (Ø oder Böe) blinkt rot. Zusätzlich
-          // Abweichung Böe/Ø: 10-14 km/h gelb, 15-19 km/h orange, ab 20 km/h rot.
+          // Abweichung Böe/Ø: 10-12 km/h gelb, 13-14 km/h orange, ab 15 km/h rot.
           var cardBlinkClass = '';
           var cardOverThreshold = (avg !== null && avg !== undefined && avg >= 30) || (gust !== null && gust !== undefined && gust >= 30);
           var cardDeviation = (avg !== null && avg !== undefined && gust !== null && gust !== undefined) ? Math.abs(gust - avg) : null;
-          if (cardOverThreshold || (cardDeviation !== null && cardDeviation >= 20)) cardBlinkClass = 'wr-blink-red';
-          else if (cardDeviation !== null && cardDeviation >= 15) cardBlinkClass = 'wr-blink-orange';
+          if (cardOverThreshold || (cardDeviation !== null && cardDeviation >= 15)) cardBlinkClass = 'wr-blink-red';
+          else if (cardDeviation !== null && cardDeviation >= 13) cardBlinkClass = 'wr-blink-orange';
           else if (cardDeviation !== null && cardDeviation >= 10) cardBlinkClass = 'wr-blink-yellow';
 
           var panelId = 'windDetailPanelSel-' + code;
