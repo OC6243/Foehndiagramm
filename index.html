@@ -350,11 +350,25 @@
   .foehn-forecast-card{ padding-top:16px; padding-bottom:14.4px; }
   .foehn-forecast-card + .foehn-forecast-card{ margin-top:13px; }
   @media (min-width:900px){
-    #page-foehnprognose{ display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch; }
-    #page-foehnprognose .foehn-forecast-card + .foehn-forecast-card{ margin-top:0; }
-    #page-foehnprognose .foehn-forecast-card{ display:flex; flex-direction:column; }
+    #page-foehnprognose{ display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch; margin-top:19.2px; }
+    /* Die allgemeine .section-Basisregel (margin-top:19.2px, für den Abstand
+       unter der Überschrift gedacht) sowie die .foehn-forecast-card +
+       .foehn-forecast-card- und .section:nth-of-type(2)-Regeln gelten
+       eigentlich nur für EINE der beiden Karten korrekt - im CSS-Grid werden
+       Ränder (anders als im normalen Blockfluss) nicht zusammengefasst,
+       wodurch die Karten unterschiedlich weit nach unten verschoben wurden.
+       Hier werden bei BEIDEN Karten sämtliche eigenen Außenabstände entfernt;
+       der Abstand zur Überschrift kommt stattdessen einheitlich vom
+       Grid-Container selbst (siehe margin-top oben). */
+    #page-foehnprognose > .foehn-forecast-card{ margin-top:0; }
+    #page-foehnprognose .foehn-forecast-card{ display:flex; flex-direction:column; height:100%; box-sizing:border-box; }
     #page-foehnprognose .foehn-forecast-img-wrap{ height:440px; flex:0 0 auto; }
     #page-foehnprognose .foehn-forecast-img{ width:auto; height:100%; max-width:100%; object-fit:contain; }
+    /* Die allgemeine .section:nth-of-type(2)-Regel (für den Föhndiagramm-Reiter
+       gedacht) trifft zufällig auch auf die zweite Föhnprognose-Karte zu, da
+       sie ebenfalls die Klasse "section" trägt - das verursachte hier eine
+       zusätzliche, ungewollte Höhenverschiebung. Gezielt aufgehoben. */
+    #page-foehnprognose .section:nth-of-type(2){ margin-top:0; }
   }
   .foehn-forecast-img-wrap{
     border-radius:10px; overflow:hidden; border:1px solid var(--hairline);
