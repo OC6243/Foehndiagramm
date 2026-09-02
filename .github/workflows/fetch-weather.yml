@@ -5,19 +5,18 @@ on:
     # Fauler Fallback (Primär-Steuerung läuft jetzt über einen externen
     # Cron-Dienst - cron-job.org -, der alle 5 Minuten workflow_dispatch
     # auslöst, da GitHub's eigener schedule-Trigger nachweislich unzuverlässig
-    # ist). Bewusst 2 Minuten NACH dem 5-Minuten-Raster (:02,:07,:12,...)
-    # statt exakt darauf: kleiner Sicherheitspuffer, falls die Bürgernetz-API
-    # um Sekunden zu spät veröffentlicht. Das Skript zielt dabei auf den
-    # aktuellsten verfügbaren Wert (kein künstlicher Verzug mehr), mit
-    # großzügigem Suchfenster (±25 Min., siehe WINDOW_MINUTES in
-    # fetch-weather.mjs) gegen die empirisch bestätigte, zwischen 10 und
-    # 20+ Minuten schwankende Veröffentlichungsverzögerung der Quelle. 5
-    # statt 10 Minuten Takt verkürzt die maximale Wartezeit bis zum nächsten
-    # Abholversuch, ändert aber nichts an der Verzögerung der Quelle selbst.
-    # Eine Nachhol-Logik im Skript selbst holt zusätzlich automatisch
-    # fehlende Slots nach, falls ein Lauf verzögert startet oder ausfällt.
-    # Siehe scripts/fetch-weather.mjs für Details.
-    - cron: "2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
+    # ist). Läuft jetzt exakt auf dem 5-Minuten-Raster (:00,:05,:10,...) -
+    # der Sicherheitspuffer gegen die Veröffentlichungsverzögerung der Quelle
+    # sitzt seit Kurzem stattdessen direkt im Skript selbst (sleep() ganz am
+    # Anfang, siehe fetch-weather.mjs), präziser auf ~10 Minuten abgestimmt
+    # (empirisch für die seit Kurzem verwendete neue geoservices-Domain
+    # gemessen, deutlich schneller als die frühere, gröbere Schätzung von
+    # 10-20+ Minuten für die alte Domain). Großzügiges Suchfenster (±25 Min.,
+    # siehe WINDOW_MINUTES in fetch-weather.mjs) bleibt zusätzlich als
+    # Sicherheitsnetz bestehen. Eine Nachhol-Logik im Skript selbst holt
+    # zusätzlich automatisch fehlende Slots nach, falls ein Lauf verzögert
+    # startet oder ausfällt. Siehe scripts/fetch-weather.mjs für Details.
+    - cron: "*/5 * * * *"
   workflow_dispatch: {} # erlaubt manuelles Auslösen (auch durch den externen Cron-Dienst)
 
 permissions:
@@ -45,10 +44,12 @@ jobs:
     runs-on: ubuntu-latest
     # Mit der jetzt parallelisierten Abruf-Logik (alle Slots und beide
     # Stationspaare gleichzeitig statt nacheinander) dauert ein Lauf normal
-    # nur wenige Sekunden. 4 Minuten harte Obergrenze als Sicherheitsnetz -
+    # nur wenige Sekunden, plus die neu ergänzten 30s Vorlauf-Pufferzeit ganz
+    # am Anfang von main() (siehe fetch-weather.mjs). 5 Minuten harte
+    # Obergrenze als Sicherheitsnetz (um die zusätzlichen 30s erhöht) -
     # danach lieber abbrechen und beim nächsten Trigger neu versuchen, statt
     # nachfolgende Läufe zu blockieren.
-    timeout-minutes: 4
+    timeout-minutes: 5
     steps:
       - name: Repo auschecken
         uses: actions/checkout@v4
