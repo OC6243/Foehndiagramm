@@ -495,6 +495,15 @@ async function fetchWindStations(windData) {
 }
 
 async function main() {
+  // Kurzer Puffer, bevor überhaupt irgendwas abgerufen wird: die Quelle
+  // braucht nach dem 10-Minuten-Messtakt noch etwas Verarbeitungszeit, bis
+  // ein neuer Wert tatsächlich abrufbar ist (empirisch für die aktuell
+  // verwendete geoservices-Domain gemessen: ca. 600-620 Sekunden nach dem
+  // Raster-Zeitpunkt). Bewusst VOR der now-Erfassung platziert, damit die
+  // anschließende Zielzeitpunkt-Berechnung die verstrichene Wartezeit korrekt
+  // mit einbezieht.
+  await new Promise((resolve) => setTimeout(resolve, 30 * 1000));
+
   const history = await loadHistory();
   const windHistory = await loadWindHistory();
   const now = new Date();
