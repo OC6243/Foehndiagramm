@@ -350,8 +350,11 @@
   .foehn-forecast-card{ padding-top:16px; padding-bottom:14.4px; }
   .foehn-forecast-card + .foehn-forecast-card{ margin-top:13px; }
   @media (min-width:900px){
-    #page-foehnprognose{ display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+    #page-foehnprognose{ display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch; }
     #page-foehnprognose .foehn-forecast-card + .foehn-forecast-card{ margin-top:0; }
+    #page-foehnprognose .foehn-forecast-card{ display:flex; flex-direction:column; }
+    #page-foehnprognose .foehn-forecast-img-wrap{ height:440px; flex:0 0 auto; }
+    #page-foehnprognose .foehn-forecast-img{ width:auto; height:100%; max-width:100%; object-fit:contain; }
   }
   .foehn-forecast-img-wrap{
     border-radius:10px; overflow:hidden; border:1px solid var(--hairline);
