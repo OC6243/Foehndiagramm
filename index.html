@@ -349,6 +349,10 @@
 
   .foehn-forecast-card{ padding-top:16px; padding-bottom:14.4px; }
   .foehn-forecast-card + .foehn-forecast-card{ margin-top:13px; }
+  @media (min-width:900px){
+    #page-foehnprognose{ display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+    #page-foehnprognose .foehn-forecast-card + .foehn-forecast-card{ margin-top:0; }
+  }
   .foehn-forecast-img-wrap{
     border-radius:10px; overflow:hidden; border:1px solid var(--hairline);
     background:#F4F6F5; box-shadow:0 2px 10px rgba(28,43,58,0.06);
@@ -1875,13 +1879,21 @@
     // Startansicht: am Handy enger auf den Obervinschgau zugeschnitten (wie im
     // Referenzbild), am Desktop weiterhin der ganze Vinschgau. Marker für ganz
     // Südtirol werden trotzdem geladen - man kann jederzeit rauszoomen.
-    // tap bewusst NICHT auf false gesetzt (Standard ist true): Leaflets
-    // eigener Touch-Übersetzer (tap.js) sorgt plattformübergreifend
-    // zuverlässig für sauber unterschiedene Einzel-/Doppeltipp-Events - iOS
-    // Safari liefert bei rohen nativen Touch-Events selbst keine zuverlässigen
-    // dblclick-Events, weshalb tap:false (frühere Version) das
-    // Doppeltipp-Zoomen auf iPhones sogar kaputt gemacht hat.
-    windMapInstance = L.map('windMap', { scrollWheelZoom: true, doubleClickZoom: true });
+    //
+    // Auf Touch-Geräten übernimmt weiter unten eine eigene, robuste
+    // Einzel-/Doppeltipp-Erkennung direkt über rohe touchend-Events (iOS
+    // Safari liefert sonst keine zuverlässigen dblclick-Events aus Touch-
+    // Gesten). Damit sich Leaflets eigene Touch-Verarbeitung dabei nicht in
+    // die Quere kommt (sonst würde ein Doppeltipp doppelt hineinzoomen -
+    // einmal durch die eigene Logik, einmal durch Leaflet selbst), werden
+    // tap und doubleClickZoom hier gezielt nur auf Touch-Geräten
+    // deaktiviert. Am Desktop (Maus) bleiben beide wie gehabt aktiv.
+    var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    windMapInstance = L.map('windMap', {
+      scrollWheelZoom: true,
+      doubleClickZoom: !isTouchDevice,
+      tap: !isTouchDevice
+    });
     var isMobileView = window.innerWidth <= 600;
     if (isMobileView) {
       windMapInstance.setView([46.657391, 10.588955], 10); // Schluderns
@@ -1890,39 +1902,84 @@
     }
     windMapInstance.on('zoomend', updateIconScale);
 
-    // Bekanntes iOS-Problem (u.a. in Leaflets eigenem Issue-Tracker
-    // dokumentiert): während bzw. kurz nach einer Zoom-Animation feuert iOS
-    // Safari zusätzliche, irreführende Klick-Events. Das führte dazu, dass
-    // nach einem erfolgreichen Doppeltipp-Zoom der NÄCHSTE Doppeltipp
-    // durcheinandergeriet (wirkte wie nur ein einzelner Tipp). Empfohlene
-    // Lösung: Klicks während/kurz nach einer laufenden Zoom-Animation
-    // schlicht ignorieren.
-    var isZooming = false;
-    windMapInstance.on('zoomstart', function(){ isZooming = true; });
-    windMapInstance.on('zoomend', function(){
-      setTimeout(function(){ isZooming = false; }, 300);
-    });
+    // Einzeltipp auf eine leere Kartenfläche (kein Symbol) zoomt heraus,
+    // Doppeltipp zoomt hinein. Zwei getrennte Wege, je nach Gerät:
+    //
+    // TOUCH-GERÄTE (Handy/Tablet): eigene Erkennung direkt über rohe
+    // touchend-Events, NICHT über Leaflets abstrahierte click/dblclick-
+    // Events. Grund: iOS Safari synthetisiert Maus-Events aus Touch-Gesten
+    // bekanntermaßen unzuverlässig (u.a. dokumentiert in Leaflets eigenem
+    // Issue-Tracker, github.com/Leaflet/Leaflet/issues/6817) - das führte
+    // dazu, dass Doppeltipp-zum-Hineinzoomen auf dem iPhone nicht
+    // zuverlässig funktionierte. Rohe Touch-Events sind plattformübergreifend
+    // zuverlässig.
+    //
+    // DESKTOP (Maus, kein Touch): bewährte Klick/Doppelklick-Logik bleibt
+    // unverändert bestehen.
+    //
+    // Eigene, zusätzliche Absicherung (window.__zoomHandlersAttached) nur für
+    // diese Zoom-Handler: verhindert zuverlässig doppelt registrierte
+    // Listener (die sich sonst gegenseitig durcheinanderbringen könnten),
+    // unabhängig vom allgemeinen Schutz weiter oben in dieser Funktion.
+    if (!window.__zoomHandlersAttached) {
+      window.__zoomHandlersAttached = true;
 
-    // Einfacher Tipp auf eine leere Kartenfläche (kein Symbol) zoomt heraus.
-    // Marker haben ihren eigenen Klick-Handler und stoppen die Ausbreitung
-    // zur Karte, daher feuert dieser Handler nur bei Klicks NEBEN einem
-    // Symbol, nicht bei Klicks AUF ein Symbol.
-    // Kurze Verzögerung (250ms) vor dem Herauszoomen bleibt als zusätzliche
-    // Absicherung bestehen: kommt innerhalb der 250ms ein zweiter Tipp (=
-    // Doppeltipp), wird das Herauszoomen abgebrochen und stattdessen ganz
-    // normal per doubleClickZoom hineingezoomt.
-    var mapClickTimer = null;
-    windMapInstance.on('click', function(){
-      if (isZooming) return;
-      if (mapClickTimer) clearTimeout(mapClickTimer);
-      mapClickTimer = setTimeout(function(){
-        mapClickTimer = null;
-        if (!isZooming) windMapInstance.setZoom(windMapInstance.getZoom() - 1);
-      }, 250);
-    });
-    windMapInstance.on('dblclick', function(){
-      if (mapClickTimer) { clearTimeout(mapClickTimer); mapClickTimer = null; }
-    });
+      if (isTouchDevice) {
+        var mapContainer = windMapInstance.getContainer();
+        var lastTapTime = 0;
+        var lastTapX = 0, lastTapY = 0;
+        var singleTapTimer = null;
+        var TAP_DELAY = 300; // Zeitfenster, in dem ein zweiter Tipp als Doppeltipp zählt
+        var TAP_DIST = 40; // Pixel-Toleranz, damit zwei Tipps an unterschiedlichen Stellen nicht als Doppeltipp gelten
+
+        mapContainer.addEventListener('touchend', function(e){
+          // Nur bei genau einem Finger (kein Zwei-Finger-Pinch) auswerten
+          if (e.touches.length > 0 || e.changedTouches.length !== 1) return;
+          // Nicht auslösen, wenn der Tipp auf einem Stations-Symbol war -
+          // Marker haben ihren eigenen Klick-Handler für die Detailansicht.
+          var target = e.target;
+          if (target.closest && target.closest('.windsock-icon')) return;
+
+          var touch = e.changedTouches[0];
+          var now = Date.now();
+          var dx = touch.clientX - lastTapX;
+          var dy = touch.clientY - lastTapY;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (now - lastTapTime < TAP_DELAY && dist < TAP_DIST) {
+            // Doppeltipp erkannt: sofort an der getippten Stelle hineinzoomen,
+            // den noch ausstehenden Einzeltipp-Timer (Herauszoomen) abbrechen.
+            if (singleTapTimer) { clearTimeout(singleTapTimer); singleTapTimer = null; }
+            e.preventDefault();
+            var point = windMapInstance.mouseEventToContainerPoint(touch);
+            var latlng = windMapInstance.containerPointToLatLng(point);
+            windMapInstance.setZoomAround(latlng, windMapInstance.getZoom() + 1);
+            lastTapTime = 0; // zurücksetzen, damit ein direkt folgender dritter Tipp nicht sofort wieder als Doppeltipp zählt
+          } else {
+            lastTapTime = now;
+            lastTapX = touch.clientX;
+            lastTapY = touch.clientY;
+            if (singleTapTimer) clearTimeout(singleTapTimer);
+            singleTapTimer = setTimeout(function(){
+              singleTapTimer = null;
+              windMapInstance.setZoom(windMapInstance.getZoom() - 1);
+            }, TAP_DELAY);
+          }
+        }, { passive: false });
+      } else {
+        var mapClickTimer = null;
+        windMapInstance.on('click', function(){
+          if (mapClickTimer) clearTimeout(mapClickTimer);
+          mapClickTimer = setTimeout(function(){
+            mapClickTimer = null;
+            windMapInstance.setZoom(windMapInstance.getZoom() - 1);
+          }, 250);
+        });
+        windMapInstance.on('dblclick', function(){
+          if (mapClickTimer) { clearTimeout(mapClickTimer); mapClickTimer = null; }
+        });
+      }
+    }
 
     var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: 'Karte: © OpenStreetMap · Daten: Autonome Provinz Bozen – Südtirol',
