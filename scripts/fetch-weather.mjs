@@ -502,7 +502,7 @@ async function main() {
   // Raster-Zeitpunkt). Bewusst VOR der now-Erfassung platziert, damit die
   // anschließende Zielzeitpunkt-Berechnung die verstrichene Wartezeit korrekt
   // mit einbezieht.
-  await new Promise((resolve) => setTimeout(resolve, 30 * 1000));
+  await new Promise((resolve) => setTimeout(resolve, 40 * 1000));
 
   const history = await loadHistory();
   const windHistory = await loadWindHistory();
