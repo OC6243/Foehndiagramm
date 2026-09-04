@@ -1950,6 +1950,15 @@
         var TAP_DELAY = 300; // Zeitfenster, in dem ein zweiter Tipp als Doppeltipp zählt
         var TAP_DIST = 40; // Pixel-Toleranz, damit zwei Tipps an unterschiedlichen Stellen nicht als Doppeltipp gelten
 
+        var touchStartX = 0, touchStartY = 0;
+        var DRAG_THRESHOLD = 10; // Pixel-Bewegung, ab der es als Verschieben zählt statt als Tipp
+
+        mapContainer.addEventListener('touchstart', function(e){
+          if (e.touches.length !== 1) return;
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
         mapContainer.addEventListener('touchend', function(e){
           // Nur bei genau einem Finger (kein Zwei-Finger-Pinch) auswerten
           if (e.touches.length > 0 || e.changedTouches.length !== 1) return;
@@ -1959,6 +1968,15 @@
           if (target.closest && target.closest('.windsock-icon')) return;
 
           var touch = e.changedTouches[0];
+
+          // Hat sich der Finger seit dem Berühren deutlich bewegt? Dann war
+          // es ein Verschieben (Karte ziehen), kein Tipp - dabei soll beim
+          // Loslassen weder rein- noch rausgezoomt werden.
+          var moveDx = touch.clientX - touchStartX;
+          var moveDy = touch.clientY - touchStartY;
+          var moveDist = Math.sqrt(moveDx * moveDx + moveDy * moveDy);
+          if (moveDist > DRAG_THRESHOLD) return;
+
           var now = Date.now();
           var dx = touch.clientX - lastTapX;
           var dy = touch.clientY - lastTapY;
