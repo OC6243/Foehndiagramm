@@ -348,6 +348,29 @@
   .wind-compass-legend .wcl-dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
 
   .foehn-forecast-card{ padding-top:16px; padding-bottom:14.4px; }
+  /* Live-Tracking: zwei gleich große, vollflächig klickbare Karten */
+  .lt-intro{ margin:0 0 14px; font-size:14px; color:var(--muted); line-height:1.45; }
+  .lt-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .lt-card{
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px;
+    padding:22px 16px 18px; background:var(--panel); border:1.5px solid var(--hairline);
+    border-radius:10px; color:var(--ink); text-decoration:none;
+    transition:border-color .15s, box-shadow .15s, transform .15s;
+  }
+  .lt-card:hover, .lt-card:focus-visible{ border-color:var(--cool); box-shadow:0 4px 14px rgba(28,43,58,0.12); transform:translateY(-1px); outline:none; }
+  .lt-card:focus-visible{ box-shadow:0 0 0 3px rgba(62,110,142,0.35); }
+  .lt-text{ display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0; }
+  .lt-icon{ flex:0 0 auto; width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(62,110,142,0.12); color:var(--cool); }
+  .lt-icon svg{ width:30px; height:30px; }
+  .lt-name{ font-size:20px; font-weight:700; letter-spacing:0.2px; }
+  .lt-desc{ font-size:13.5px; color:var(--muted); line-height:1.4; }
+  .lt-open{ margin-top:4px; font-size:14px; font-weight:600; color:var(--cool); }
+  @media (max-width:520px){
+    .lt-grid{ grid-template-columns:1fr; }
+    .lt-card{ flex-direction:row; text-align:left; align-items:center; gap:14px; padding:14px; }
+    .lt-text{ align-items:flex-start; gap:2px; }
+    .lt-open{ margin-top:2px; }
+  }
   .foehn-forecast-card + .foehn-forecast-card{ margin-top:13px; }
   @media (min-width:900px){
     #page-foehnprognose{ display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch; margin-top:19.2px; }
@@ -559,6 +582,7 @@
             <button class="menu-item" data-page="livewerte">Live-Windwerte</button>
             <button class="menu-item" data-page="selected">Ausgewählte Stationen</button>
             <button class="menu-item" data-page="foehnprognose">Föhnprognose</button>
+            <button class="menu-item" data-page="livetracking">Live-Tracking</button>
           </div>
         </div>
       </div>
@@ -607,6 +631,30 @@
       <div class="section">
         <div class="selected-stations-grid" id="selectedStationsGrid"></div>
         <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
+      </div>
+    </div>
+
+    <div id="page-livetracking" style="display:none;">
+      <div class="section">
+        <p class="lt-intro">Wo sind gerade Piloten in der Luft? Wähle einen Dienst – er öffnet sich in einem neuen Tab.</p>
+        <div class="lt-grid">
+          <a class="lt-card" href="https://www.livetracking.burnair.cloud/?layers=snt%2Cto%2Clz%2Clp%2Cpz%2Cfp%2Cna%2Cle%2Cca%2Cvw%2Ccc%2Ctt%2Cpt%2Ctl%2Ctp%2Cpp%2Cmp%2Cw-ch-jb%2Cw-ch-uw%2Cw-ch-wr%2Cmw%2Ctodhv%2Clzp%2Csnm&amp;visibility=auto%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Cauto&amp;base=bbt#9/46.7314/10.7968" target="_blank" rel="noopener">
+            <span class="lt-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg></span>
+            <span class="lt-text">
+              <span class="lt-name">Burnair</span>
+              <span class="lt-desc">Live-Tracking-Karte, vorbereitet auf den Vinschgau</span>
+              <span class="lt-open">Öffnen ↗</span>
+            </span>
+          </a>
+          <a class="lt-card" href="https://www.xcontest.org/world/de/fluge/live/:fp" target="_blank" rel="noopener">
+            <span class="lt-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12c0-4.4 4-8 9-8s9 3.6 9 8c-2-1.4-4-1.4-6 0-1-1.4-2-1.4-3 0-1-1.4-2-1.4-3 0-2-1.4-4-1.4-6 0z"/><path d="M12 12v8M7 12l5 8M17 12l-5 8"/></svg></span>
+            <span class="lt-text">
+              <span class="lt-name">XContest</span>
+              <span class="lt-desc">Live-Flüge von Piloten weltweit</span>
+              <span class="lt-open">Öffnen ↗</span>
+            </span>
+          </a>
+        </div>
       </div>
     </div>
 
@@ -765,8 +813,8 @@
     var toggle = document.getElementById('menuToggle');
     var dropdown = document.getElementById('menuDropdown');
     var items = dropdown.querySelectorAll('.menu-item');
-    var pages = { foehndiagramm: document.getElementById('page-foehndiagramm'), livewerte: document.getElementById('page-livewerte'), selected: document.getElementById('page-selected'), foehnprognose: document.getElementById('page-foehnprognose') };
-    var titles = { foehndiagramm: 'Föhndiagramm', livewerte: 'Live-Windwerte', selected: 'Ausgewählte Stationen', foehnprognose: 'Föhnprognose' };
+    var pages = { foehndiagramm: document.getElementById('page-foehndiagramm'), livewerte: document.getElementById('page-livewerte'), selected: document.getElementById('page-selected'), foehnprognose: document.getElementById('page-foehnprognose'), livetracking: document.getElementById('page-livetracking') };
+    var titles = { foehndiagramm: 'Föhndiagramm', livewerte: 'Live-Windwerte', selected: 'Ausgewählte Stationen', foehnprognose: 'Föhnprognose', livetracking: 'Live-Tracking' };
     var titleEl = document.getElementById('pageTitle');
 
     function updateTitleWrapState(){
@@ -1617,7 +1665,8 @@
   // kommt). Auf der gegenüberliegenden Seite (also dort, WOHER der Wind kommt)
   // steht ein kleines Rechteck mit Geschwindigkeit (oben) und Böe (unten).
   // Farbe: Bergstationen rot/weiß, Talstationen orange/weiß.
-  function buildWindsockIcon(station, last, hasWindSensor){
+  function buildWindsockIcon(station, last, hasWindSensor, hasDirSensor){
+    if (hasDirSensor === undefined) hasDirSensor = true;
     var cx = 45, cy = 45;
 
     // Stationen, die (soweit die vorhandene Historie zeigt) nie Windwerte
@@ -1691,13 +1740,13 @@
     var isStale = !isAbandoned && ageMin !== null && ageMin > staleLimits(station).stale;
 
     var opacity = (hasData && !isAbandoned) ? 1 : 0.5;
-    var staleRingSvg = isStale
-      ? '<circle class="stale-ring" cx="' + cx + '" cy="' + cy + '" r="7.2" fill="none" stroke="#E5342A" stroke-width="1.28"></circle>'
-      : '';
 
-    return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;opacity:' + opacity + ';">' +
-      (staleRingSvg ? '<svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;pointer-events:none;">' + staleRingSvg + '</svg>' : '') +
-      '<svg width="38" height="16" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
+    // Liefert die Station nie eine Windrichtung (laut gespeicherter Historie),
+    // wäre ein drehender Windsack irreführend: dann nur der Stationspunkt
+    // (Drehpunkt des Windsacks, gleiche Größe) plus das Werte-Rechteck.
+    var sockSvg;
+    if (hasDirSensor) {
+      sockSvg = '<svg width="38" height="16" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
         'style="position:absolute;left:' + (cx - 3.8) + 'px;top:' + (cy - 8) + 'px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;">' +
         '<line x1="6" y1="12" x2="18" y2="5" stroke="#3A4750" stroke-width="1.3"/>' +
         '<line x1="6" y1="12" x2="18" y2="19" stroke="#3A4750" stroke-width="1.3"/>' +
@@ -1705,7 +1754,18 @@
         '<polygon points="31,7 31,17 45,15 45,9" fill="#ffffff" stroke="#cfd3d2" stroke-width="0.4"/>' +
         '<polygon points="45,9 45,15 58,13.5 58,10.5" fill="' + sockColor + '"/>' +
         '<circle cx="6" cy="12" r="5" fill="#2B2B2B"/>' +
-      '</svg>' +
+      '</svg>';
+    } else {
+      sockSvg = '<svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;pointer-events:none;">' +
+        '<circle cx="' + cx + '" cy="' + cy + '" r="3.2" fill="#2B2B2B"/></svg>';
+    }
+    var staleRingSvg = isStale
+      ? '<circle class="stale-ring" cx="' + cx + '" cy="' + cy + '" r="7.2" fill="none" stroke="#E5342A" stroke-width="1.28"></circle>'
+      : '';
+
+    return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;opacity:' + opacity + ';">' +
+      (staleRingSvg ? '<svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;pointer-events:none;">' + staleRingSvg + '</svg>' : '') +
+      sockSvg +
       '<div class="' + blinkClass + '" style="position:absolute;left:' + (rx - rectW / 2) + 'px;top:' + (ry - rectH / 2) + 'px;width:' + rectW + 'px;height:' + rectH + 'px;box-sizing:border-box;padding:3px 0;' +
         'background:rgba(255,255,255,0.96);border:1px solid #C9CFCD;border-radius:5px;box-shadow:0 1px 4px rgba(0,0,0,0.18);' +
         'display:flex;flex-direction:column;align-items:center;justify-content:space-between;' +
@@ -1884,6 +1944,33 @@
     var speedChartId = 'wind-speed-chart' + suffix;
     var compassContainerId = 'wind-compass-container' + suffix;
 
+    // Was liefert die Station laut Historie überhaupt? Ohne Windwerte entfallen
+    // beide Diagramme (sie wären leer), ohne Richtung nur der Kompass.
+    var hasRows = !!(rows && rows.length);
+    var anyWind = hasRows && rows.some(function(r){ return (r.avgKmh !== null && r.avgKmh !== undefined) || (r.gustKmh !== null && r.gustKmh !== undefined); });
+    var anyDir = hasRows && rows.some(function(r){ return r.dirDeg !== null && r.dirDeg !== undefined && !isNaN(r.dirDeg); });
+    var showSpeedChart = !hasRows || anyWind;
+    var showCompass = !hasRows || anyDir;
+    var chartsHtml = '';
+    if (showSpeedChart) {
+      chartsHtml += '<div class="wind-chart-box">' +
+          '<div class="wind-chart-title">Windgeschwindigkeit</div>' +
+          '<div style="height:200px;"><canvas id="' + speedChartId + '"></canvas></div>' +
+        '</div>';
+    }
+    if (showCompass) {
+      chartsHtml += '<div class="wind-chart-box wind-compass-box">' +
+          '<div class="wind-chart-title">Windrichtung</div>' +
+          '<div class="wind-compass-body">' +
+            '<div id="' + compassContainerId + '"></div>' +
+            buildWindCompassLegend() +
+          '</div>' +
+        '</div>';
+    }
+    if (hasRows && !anyWind) {
+      chartsHtml = '<p class="wind-note">Diese Station liefert derzeit keine Windwerte (nur Temperatur bzw. Luftfeuchte).</p>';
+    }
+
     // Zusatzstationen: Name/Quelle stammen aus fremden Datenquellen -> maskieren
     var stationTitle = station.extra ? escHtml(station.name) : station.name;
     var sourceNote = (station.extra && station.attribution)
@@ -1902,24 +1989,12 @@
         '<div><span class="wdg-label">Luftfeuchte</span><span class="wdg-value">' + (hum !== null && hum !== undefined ? hum.toFixed(0) + ' %' : '—') + '</span></div>' +
         '<div><span class="wdg-label"><span class="wdg-label-inner">Letztes Update' + trafficDot + '</span></span><span class="wdg-value">' + time + (dateStr ? '<span class="wdg-date">' + dateStr + '</span>' : '') + '</span></div>' +
       '</div>' +
-      '<div class="wind-charts-row">' +
-        '<div class="wind-chart-box">' +
-          '<div class="wind-chart-title">Windgeschwindigkeit</div>' +
-          '<div style="height:200px;"><canvas id="' + speedChartId + '"></canvas></div>' +
-        '</div>' +
-        '<div class="wind-chart-box wind-compass-box">' +
-          '<div class="wind-chart-title">Windrichtung</div>' +
-          '<div class="wind-compass-body">' +
-            '<div id="' + compassContainerId + '"></div>' +
-            buildWindCompassLegend() +
-          '</div>' +
-        '</div>' +
-      '</div>' + sourceNote;
+      '<div class="wind-charts-row">' + chartsHtml + '</div>' + sourceNote;
     panel.classList.add('open');
 
     if (rows && rows.length){
-      buildWindSpeedChart(rows.slice(-36), speedChartId);
-      document.getElementById(compassContainerId).innerHTML = buildWindCompassSvg(rows);
+      if (showSpeedChart) buildWindSpeedChart(rows.slice(-36), speedChartId);
+      if (showCompass) document.getElementById(compassContainerId).innerHTML = buildWindCompassSvg(rows);
     }
   }
 
@@ -2077,9 +2152,22 @@
       attribution: 'Karte: © OpenTopoMap (CC-BY-SA) · Daten: Autonome Provinz Bozen – Südtirol',
       maxZoom: 16
     });
+    // Satellitenbild: Esri World Imagery (weltweit, im Alpenraum hoch aufgelöst)
+    // plus durchsichtige Ortsbeschriftung darüber, damit man sich auf dem
+    // Luftbild zurechtfindet. Beide zusammen als EIN wählbarer Layer.
+    var satImageLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Satellitenbild: © Esri, Maxar, Earthstar Geographics, GIS User Community · Daten: Autonome Provinz Bozen – Südtirol',
+      maxNativeZoom: 18,
+      maxZoom: 19
+    });
+    var satLabelLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 18,
+      maxZoom: 19
+    });
+    var satelliteLayer = L.layerGroup([satImageLayer, satLabelLayer]);
     osmLayer.addTo(windMapInstance); // Standard-Ansicht
     L.control.layers(
-      { 'Straßenkarte': osmLayer, 'Topografisch': topoLayer },
+      { 'Straßenkarte': osmLayer, 'Topografisch': topoLayer, 'Satellit': satelliteLayer },
       null,
       { position: 'topright', collapsed: true }
     ).addTo(windMapInstance);
@@ -2111,7 +2199,9 @@
           var elev = (typeof m.elevationM === 'number') ? Math.round(m.elevationM) : null;
           orderedStations.push({
             code: key, name: m.name || key, lat: m.lat, lon: m.lon, elev: elev,
-            type: (elev !== null && elev >= 1500) ? 'berg' : 'tal',
+            // Tal/Berg (Farbe des Windsacks): bevorzugt die Einstufung aus dem
+            // Abruf-Skript (nach Lage und Höhe festgelegt), sonst nur nach Höhe.
+            type: (m.type === 'tal' || m.type === 'berg') ? m.type : ((elev !== null && elev >= 1850) ? 'berg' : 'tal'),
             extra: true, source: m.source || '', attribution: m.attribution || '',
             intervalMin: m.intervalMin || 10
           });
@@ -2163,7 +2253,13 @@
             zIndexOffset = isTransparent ? 0 : 200; // nicht-transparent immer vor transparent
           }
 
-          var icon = L.divIcon({ className: '', html: buildWindsockIcon(station, last, hasWindSensor), iconSize: [90, 90], iconAnchor: [45, 45] });
+          // Hat die Station laut Historie je eine Windrichtung geliefert? Wenn nicht
+          // (z.B. Latschbloder), wird statt des Windsacks nur der Stationspunkt
+          // gezeichnet. Ohne Historie oder bei den Prioritätsstationen: Windsack.
+          var hasDirSensor = PRIORITY_CODES.indexOf(station.code) !== -1 || rows.length === 0 || rows.some(function(r){
+            return r.dirDeg !== null && r.dirDeg !== undefined && !isNaN(r.dirDeg);
+          });
+          var icon = L.divIcon({ className: '', html: buildWindsockIcon(station, last, hasWindSensor, hasDirSensor), iconSize: [90, 90], iconAnchor: [45, 45] });
           var marker = L.marker([station.lat, station.lon], { icon: icon, zIndexOffset: zIndexOffset }).addTo(windMapInstance);
           marker.on('click', function(){
             showWindDetail(station, rows);
