@@ -1624,13 +1624,11 @@
     });
   }
 
-  // Ampel-/Verzögerungsgrenzen in Minuten. Basis ist der 10-Minuten-Takt der
-  // Südtiroler Stationen; Quellen mit längerem Messintervall (SLF 30 min,
-  // Meteotrentino 15 min) bekommen entsprechend mehr Spielraum, sonst wären
-  // sie dauerhaft gelb/rot, obwohl alles planmäßig läuft.
+  // Ampel-/Verzögerungsgrenzen in Minuten (grün bis 35, orange bis 65, rot darüber).
   function staleLimits(station){
-    var extra = Math.max(0, ((station && station.intervalMin) || 10) - 10);
-    return { green: 35 + extra, stale: 60 + extra };
+    // Bewusst für ALLE Quellen gleich (unabhängig vom Messintervall): so sieht man
+    // auf einen Blick, was gerade aktuell "in der Luft" ist und was nicht.
+    return { green: 35, stale: 65 };
   }
 
   function windDirLabel(deg){
@@ -1717,7 +1715,11 @@
 
     var sockColor = (station.type === 'tal') ? '#F2994A' : '#E5342A';
 
-    var isStale = !isAbandoned && ageMin !== null && ageMin > staleLimits(station).stale;
+    // Ring um den Stationspunkt: orange ab 35 Min. ("nicht mehr aktuell"),
+    // rot ab 65 Min. ("verzögert") - für alle Quellen gleich.
+    var staleLim = staleLimits(station);
+    var isStale = !isAbandoned && ageMin !== null && ageMin > staleLim.stale;
+    var isLate = !isAbandoned && !isStale && ageMin !== null && ageMin > staleLim.green;
 
     var opacity = (hasData && !isAbandoned) ? 1 : 0.5;
 
@@ -1739,8 +1741,8 @@
       sockSvg = '<svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;pointer-events:none;">' +
         '<circle cx="' + cx + '" cy="' + cy + '" r="3.2" fill="#2B2B2B"/></svg>';
     }
-    var staleRingSvg = isStale
-      ? '<circle class="stale-ring" cx="' + cx + '" cy="' + cy + '" r="7.2" fill="none" stroke="#E5342A" stroke-width="1.28"></circle>'
+    var staleRingSvg = (isStale || isLate)
+      ? '<circle class="stale-ring" cx="' + cx + '" cy="' + cy + '" r="7.2" fill="none" stroke="' + (isStale ? '#E5342A' : '#F2994A') + '" stroke-width="1.28"></circle>'
       : '';
 
     return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;opacity:' + opacity + ';">' +
@@ -2324,9 +2326,9 @@
           var trafficColor = '#B9C2C0';
           if (last && last.instantUTC) {
             var ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
-            isStale = ageMin > 60;
+            isStale = ageMin > 65;
             if (ageMin <= 35) trafficColor = '#22C55E';
-            else if (ageMin <= 60) trafficColor = '#F2C94C';
+            else if (ageMin <= 65) trafficColor = '#F2C94C';
             else trafficColor = '#E5342A';
           }
           var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
