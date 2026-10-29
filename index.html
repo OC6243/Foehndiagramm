@@ -348,29 +348,19 @@
   .wind-compass-legend .wcl-dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
 
   .foehn-forecast-card{ padding-top:16px; padding-bottom:14.4px; }
-  /* Live-Tracking: zwei gleich große, vollflächig klickbare Karten */
-  .lt-intro{ margin:0 0 14px; font-size:14px; color:var(--muted); line-height:1.45; }
-  .lt-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  /* Live-Tracking: zwei gleich große, vollflächig klickbare Karten untereinander (XContest oben) */
+  .lt-grid{ display:grid; grid-template-columns:1fr; gap:14px; max-width:560px; margin:0 auto; }
   .lt-card{
-    display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px;
-    padding:22px 16px 18px; background:var(--panel); border:1.5px solid var(--hairline);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    padding:20px 16px 16px; background:var(--panel); border:1.5px solid var(--hairline);
     border-radius:10px; color:var(--ink); text-decoration:none;
     transition:border-color .15s, box-shadow .15s, transform .15s;
   }
   .lt-card:hover, .lt-card:focus-visible{ border-color:var(--cool); box-shadow:0 4px 14px rgba(28,43,58,0.12); transform:translateY(-1px); outline:none; }
   .lt-card:focus-visible{ box-shadow:0 0 0 3px rgba(62,110,142,0.35); }
-  .lt-text{ display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0; }
-  .lt-icon{ flex:0 0 auto; width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(62,110,142,0.12); color:var(--cool); }
-  .lt-icon svg{ width:30px; height:30px; }
-  .lt-name{ font-size:20px; font-weight:700; letter-spacing:0.2px; }
-  .lt-desc{ font-size:13.5px; color:var(--muted); line-height:1.4; }
-  .lt-open{ margin-top:4px; font-size:14px; font-weight:600; color:var(--cool); }
-  @media (max-width:520px){
-    .lt-grid{ grid-template-columns:1fr; }
-    .lt-card{ flex-direction:row; text-align:left; align-items:center; gap:14px; padding:14px; }
-    .lt-text{ align-items:flex-start; gap:2px; }
-    .lt-open{ margin-top:2px; }
-  }
+  .lt-logo{ display:flex; align-items:center; justify-content:center; height:84px; width:100%; }
+  .lt-logo img{ max-height:100%; max-width:80%; width:auto; height:auto; object-fit:contain; }
+  .lt-open{ font-size:14px; font-weight:600; color:var(--cool); }
   .foehn-forecast-card + .foehn-forecast-card{ margin-top:13px; }
   @media (min-width:900px){
     #page-foehnprognose{ display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch; margin-top:19.2px; }
@@ -615,13 +605,12 @@
       <div class="section">
         <div id="windMap"></div>
         <div class="wind-detail-panel" id="windDetailPanel"></div>
-        <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
-        <p class="wind-note">Weitere Stationen:
+        <p class="wind-note">Quellen: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a> ·
           <a href="https://www.meteoschweiz.admin.ch" target="_blank" rel="noopener">MeteoSchweiz</a> ·
           <a href="https://www.slf.ch" target="_blank" rel="noopener">WSL-Institut für Schnee- und Lawinenforschung SLF</a> ·
           <a href="https://lawinen.report" target="_blank" rel="noopener">Lawinenwarndienst Tirol / lawinen.report</a> ·
           <a href="https://www.geosphere.at" target="_blank" rel="noopener">GeoSphere Austria</a> ·
-          <a href="https://www.meteotrentino.it" target="_blank" rel="noopener">Meteotrentino</a>.
+          <a href="https://www.meteotrentino.it" target="_blank" rel="noopener">Meteotrentino</a><br>
           Messintervalle und Böen-Definitionen unterscheiden sich je nach Quelle, Böenwerte sind daher nicht direkt vergleichbar.
         </p>
       </div>
@@ -636,23 +625,14 @@
 
     <div id="page-livetracking" style="display:none;">
       <div class="section">
-        <p class="lt-intro">Wo sind gerade Piloten in der Luft? Wähle einen Dienst – er öffnet sich in einem neuen Tab.</p>
         <div class="lt-grid">
-          <a class="lt-card" href="https://www.livetracking.burnair.cloud/?layers=snt%2Cto%2Clz%2Clp%2Cpz%2Cfp%2Cna%2Cle%2Cca%2Cvw%2Ccc%2Ctt%2Cpt%2Ctl%2Ctp%2Cpp%2Cmp%2Cw-ch-jb%2Cw-ch-uw%2Cw-ch-wr%2Cmw%2Ctodhv%2Clzp%2Csnm&amp;visibility=auto%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Cauto&amp;base=bbt#9/46.7314/10.7968" target="_blank" rel="noopener">
-            <span class="lt-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg></span>
-            <span class="lt-text">
-              <span class="lt-name">Burnair</span>
-              <span class="lt-desc">Live-Tracking-Karte, vorbereitet auf den Vinschgau</span>
-              <span class="lt-open">Öffnen ↗</span>
-            </span>
-          </a>
           <a class="lt-card" href="https://www.xcontest.org/world/de/fluge/live/:fp" target="_blank" rel="noopener">
-            <span class="lt-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12c0-4.4 4-8 9-8s9 3.6 9 8c-2-1.4-4-1.4-6 0-1-1.4-2-1.4-3 0-1-1.4-2-1.4-3 0-2-1.4-4-1.4-6 0z"/><path d="M12 12v8M7 12l5 8M17 12l-5 8"/></svg></span>
-            <span class="lt-text">
-              <span class="lt-name">XContest</span>
-              <span class="lt-desc">Live-Flüge von Piloten weltweit</span>
-              <span class="lt-open">Öffnen ↗</span>
-            </span>
+            <span class="lt-logo"><img src="logo-xcontest.png" alt="XContest"></span>
+            <span class="lt-open">Live-Tracking ↗</span>
+          </a>
+          <a class="lt-card" href="https://www.livetracking.burnair.cloud/?layers=snt%2Cto%2Clz%2Clp%2Cpz%2Cfp%2Cna%2Cle%2Cca%2Cvw%2Ccc%2Ctt%2Cpt%2Ctl%2Ctp%2Cpp%2Cmp%2Cw-ch-jb%2Cw-ch-uw%2Cw-ch-wr%2Cmw%2Ctodhv%2Clzp%2Csnm&amp;visibility=auto%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Cauto&amp;base=bbt#9/46.7314/10.7968" target="_blank" rel="noopener">
+            <span class="lt-logo"><img src="logo-burnair.png" alt="Burnair"></span>
+            <span class="lt-open">Live-Tracking ↗</span>
           </a>
         </div>
       </div>
