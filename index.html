@@ -592,6 +592,14 @@
         <div id="windMap"></div>
         <div class="wind-detail-panel" id="windDetailPanel"></div>
         <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
+        <p class="wind-note">Weitere Stationen:
+          <a href="https://www.meteoschweiz.admin.ch" target="_blank" rel="noopener">MeteoSchweiz</a> ·
+          <a href="https://www.slf.ch" target="_blank" rel="noopener">WSL-Institut für Schnee- und Lawinenforschung SLF</a> ·
+          <a href="https://lawinen.report" target="_blank" rel="noopener">Lawinenwarndienst Tirol / lawinen.report</a> ·
+          <a href="https://www.geosphere.at" target="_blank" rel="noopener">GeoSphere Austria</a> ·
+          <a href="https://www.meteotrentino.it" target="_blank" rel="noopener">Meteotrentino</a>.
+          Messintervalle und Böen-Definitionen unterscheiden sich je nach Quelle, Böenwerte sind daher nicht direkt vergleichbar.
+        </p>
       </div>
     </div>
 
@@ -665,6 +673,10 @@
       <ul class="impressum-sources">
         <li><a href="https://wetter.provinz.bz.it" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a></li>
         <li><a href="https://www.geosphere.at" target="_blank" rel="noopener">GeoSphere Austria</a></li>
+        <li><a href="https://www.meteoschweiz.admin.ch" target="_blank" rel="noopener">MeteoSchweiz</a></li>
+        <li><a href="https://www.slf.ch" target="_blank" rel="noopener">WSL-Institut für Schnee- und Lawinenforschung SLF</a> (IMIS-Messnetz, <a href="https://whiterisk.ch" target="_blank" rel="noopener">whiterisk.ch</a>)</li>
+        <li><a href="https://lawinen.report" target="_blank" rel="noopener">Lawinenwarndienst Tirol / lawinen.report</a> (Messdaten der jeweils genannten Betreiber)</li>
+        <li><a href="https://www.meteotrentino.it" target="_blank" rel="noopener">Provincia autonoma di Trento – Meteotrentino</a></li>
         <li><a href="https://wetterring.at" target="_blank" rel="noopener">Wetterring.at</a></li>
       </ul>
 
@@ -1571,6 +1583,28 @@
 
   var windMapInstance = null;
 
+  // Zusatzstationen (MeteoSchweiz, SLF, Tirol, Trentino, GeoSphere): kommen
+  // zusammen mit ihren Stammdaten ("meta") aus data/wind.json. Blinken der
+  // Windwerte-Rechtecke ist dort aus, weil die Böen-Messverfahren der Quellen
+  // nicht vergleichbar sind (siehe Hinweis in der Datenbeschreibung). Zum
+  // Einschalten einfach auf true setzen.
+  var EXTRA_STATIONS_BLINK = false;
+
+  function escHtml(s){
+    return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function(c){
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // Ampel-/Verzögerungsgrenzen in Minuten. Basis ist der 10-Minuten-Takt der
+  // Südtiroler Stationen; Quellen mit längerem Messintervall (SLF 30 min,
+  // Meteotrentino 15 min) bekommen entsprechend mehr Spielraum, sonst wären
+  // sie dauerhaft gelb/rot, obwohl alles planmäßig läuft.
+  function staleLimits(station){
+    var extra = Math.max(0, ((station && station.intervalMin) || 10) - 10);
+    return { green: 35 + extra, stale: 60 + extra };
+  }
+
   function windDirLabel(deg){
     if (deg === null || deg === undefined || isNaN(deg)) return '—';
     var dirs = ['N','NO','O','SO','S','SW','W','NW'];
@@ -1650,10 +1684,11 @@
     if (overThreshold || (deviation !== null && deviation >= 15)) blinkClass = 'wr-blink-red';
     else if (deviation !== null && deviation >= 13) blinkClass = 'wr-blink-orange';
     else if (deviation !== null && deviation >= 10) blinkClass = 'wr-blink-yellow';
+    if (station.extra && !EXTRA_STATIONS_BLINK) blinkClass = '';
 
     var sockColor = (station.type === 'tal') ? '#F2994A' : '#E5342A';
 
-    var isStale = !isAbandoned && ageMin !== null && ageMin > 60;
+    var isStale = !isAbandoned && ageMin !== null && ageMin > staleLimits(station).stale;
 
     var opacity = (hasData && !isAbandoned) ? 1 : 0.5;
     var staleRingSvg = isStale
@@ -1688,6 +1723,9 @@
     var labels = rows.map(function(r){ return r.time; });
     var avgData = rows.map(function(r){ return r.avgKmh; });
     var gustData = rows.map(function(r){ return r.gustKmh; });
+    // Einzelner Messpunkt (z.B. Tirol-Stationen direkt nach dem Start, ihr Verlauf
+    // baut sich erst über die Abrufe auf): Punkt anzeigen, sonst bliebe das Diagramm leer.
+    var singlePoint = rows.length === 1;
     if (charts[elId]) charts[elId].destroy();
     var ctx = document.getElementById(elId).getContext('2d');
     charts[elId] = new Chart(ctx, {
@@ -1695,8 +1733,8 @@
       data: {
         labels: labels,
         datasets: [
-          { label: 'Böe', data: gustData, borderColor: '#C1443C', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
-          { label: 'Mittel', data: avgData, borderColor: '#1C2B3A', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.3 }
+          { label: 'Böe', data: gustData, borderColor: '#C1443C', backgroundColor: '#C1443C', borderWidth: 1.5, pointRadius: singlePoint ? 3 : 0, tension: 0.3 },
+          { label: 'Mittel', data: avgData, borderColor: '#1C2B3A', backgroundColor: '#1C2B3A', borderWidth: 2, pointRadius: singlePoint ? 3 : 0, tension: 0.3 }
         ]
       },
       options: {
@@ -1765,7 +1803,13 @@
       if (minutesAgo < 0 || minutesAgo > 360) return; // außerhalb 6h-Fenster oder in der Zukunft
       var minuteOfHour = instant.getUTCMinutes();
       var ringIndex = COMPASS_RING_MINUTE_ORDER.indexOf(minuteOfHour) + 1; // 1-basiert
-      if (ringIndex <= 0) return; // nicht auf dem 10-Minuten-Raster (sollte nicht vorkommen)
+      if (ringIndex <= 0) {
+        // Nicht auf dem 10-Minuten-Raster (z.B. :15/:45 bei den 15-Minuten-
+        // Werten von Meteotrentino): dem nächstgelegenen Ring zuordnen.
+        var nearestMinute = (Math.round(minuteOfHour / 10) * 10) % 60;
+        ringIndex = COMPASS_RING_MINUTE_ORDER.indexOf(nearestMinute) + 1;
+      }
+      if (ringIndex <= 0) return;
       // 1ms abziehen vor dem Abrunden auf die volle Stunde: ein Wert exakt um
       // :00 soll damit zur VORHERIGEN Stunde gehören (gleiche Farbe wie die
       // Werte um :10 bis :50 davor), nicht zur gerade erst beginnenden neuen
@@ -1827,11 +1871,12 @@
       ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
       dateStr = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(last.instantUTC));
     }
-    var isStale = (ageMin !== null && ageMin > 60);
+    var limits = staleLimits(station);
+    var isStale = (ageMin !== null && ageMin > limits.stale);
     var trafficColor = '#B9C2C0';
     if (ageMin !== null) {
-      if (ageMin <= 35) trafficColor = '#22C55E';
-      else if (ageMin <= 60) trafficColor = '#F2C94C';
+      if (ageMin <= limits.green) trafficColor = '#22C55E';
+      else if (ageMin <= limits.stale) trafficColor = '#F2C94C';
       else trafficColor = '#E5342A';
     }
     var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
@@ -1839,8 +1884,15 @@
     var speedChartId = 'wind-speed-chart' + suffix;
     var compassContainerId = 'wind-compass-container' + suffix;
 
+    // Zusatzstationen: Name/Quelle stammen aus fremden Datenquellen -> maskieren
+    var stationTitle = station.extra ? escHtml(station.name) : station.name;
+    var sourceNote = (station.extra && station.attribution)
+      ? '<p class="wind-note wind-source-note">' + escHtml(station.attribution) +
+        (station.intervalMin && station.intervalMin > 10 ? ' · Messintervall ' + escHtml(station.intervalMin) + ' Min.' : '') + '</p>'
+      : '';
+
     panel.innerHTML =
-      '<h3>' + station.name + (station.elev ? ' <span class="station-elev-label">' + station.elev + ' m</span>' : '') + '</h3>' +
+      '<h3>' + stationTitle + (station.elev ? ' <span class="station-elev-label">' + station.elev + ' m</span>' : '') + '</h3>' +
       (isStale ? '<div class="stale-warning-text stale-warning-block">Aktualisierung verzögert!</div>' : '') +
       '<div class="wind-detail-grid">' +
         '<div><span class="wdg-label">Mittlere Windgeschwindigkeit</span><span class="wdg-value">' + (avg !== null && avg !== undefined ? avg + ' km/h' : '—') + '</span></div>' +
@@ -1862,7 +1914,7 @@
             buildWindCompassLegend() +
           '</div>' +
         '</div>' +
-      '</div>';
+      '</div>' + sourceNote;
     panel.classList.add('open');
 
     if (rows && rows.length){
@@ -2047,6 +2099,24 @@
           return pa - pb;
         });
 
+        // Zusatzstationen anderer Quellen: alles in data/wind.json, was einen
+        // "meta"-Block mit Koordinaten hat und keine Südtiroler Station ist.
+        var knownCodes = {};
+        ALL_STATIONS.forEach(function(s){ knownCodes[s.code] = true; });
+        Object.keys(stations).forEach(function(key){
+          var e = stations[key];
+          if (knownCodes[key] || !e || !e.meta) return;
+          var m = e.meta;
+          if (typeof m.lat !== 'number' || typeof m.lon !== 'number') return;
+          var elev = (typeof m.elevationM === 'number') ? Math.round(m.elevationM) : null;
+          orderedStations.push({
+            code: key, name: m.name || key, lat: m.lat, lon: m.lon, elev: elev,
+            type: (elev !== null && elev >= 1500) ? 'berg' : 'tal',
+            extra: true, source: m.source || '', attribution: m.attribution || '',
+            intervalMin: m.intervalMin || 10
+          });
+        });
+
         orderedStations.forEach(function(station){
           var entry = stations[station.code];
           var rows = (entry && entry.rows) ? entry.rows : [];
@@ -2081,6 +2151,14 @@
           var zIndexOffset;
           if (priorityIdx !== -1) {
             zIndexOffset = 4000 - priorityIdx * 1000; // 4000,3000,2000,1000 - garantiert ganz vorne
+          } else if (station.extra) {
+            // Zusatzstationen: je höher die Station liegt, desto weiter vorne
+            // (aussagekräftiger für die Flugpraxis). 3 Punkte pro Höhenmeter
+            // überwiegen sicher den Breitengrad-Unterschied überlappender Symbole.
+            // Stationen mit Daten liegen immer vor solchen ohne. Insgesamt bleiben
+            // die Zusatzstationen hinter den Südtiroler Stationen, damit sie keine
+            // bestehenden Symbole verdecken.
+            zIndexOffset = (isTransparent ? -30000 : -20000) + (station.elev || 0) * 3;
           } else {
             zIndexOffset = isTransparent ? 0 : 200; // nicht-transparent immer vor transparent
           }
