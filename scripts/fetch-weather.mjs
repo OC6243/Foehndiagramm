@@ -547,95 +547,130 @@ const TIROL_ATTR = "Quelle: Lawinenwarndienst Tirol / lawinen.report";
 const TRENTINO_ATTR = "Quelle: Provincia autonoma di Trento - Meteotrentino";
 const GEOSPHERE_ATTR = "Quelle: GeoSphere Austria";
 
+// "type" (tal/berg) bestimmt die Farbe des Windsacks auf der Karte (orange = Tal,
+// rot = Berg) und folgt der Einstufung der Südtiroler Stationen: Dort gelten
+// Orts-/Talstationen bis ca. 1900 m als "tal" (z. B. Sulden 1902 m, Karerpass
+// 1713 m), freie Lagen (Gipfel, Grat, Gletscher, Alm, Skigebiet) ab ca. 1800 m
+// als "berg" (Gantkofel 1860 m). Hier ebenso nach Lage UND Höhe eingestuft:
+// Ortschaften und Täler = tal (auch Obergurgl 1941 m, Brenner, Passo Mendola),
+// alles Hochalpine ohne Siedlung = berg. Sämtliche SLF- und Tiroler
+// lawinen.report-Stationen liegen auf Grat/Gipfel (2098-3499 m) = berg.
 // Koordinaten/Höhe sind Rückfallwerte; wo die Quelle sie selbst liefert
 // (SLF-Stationsliste, Tirol-Datei, MeteoSchweiz-Meta-CSV), werden sie beim
 // Lauf überschrieben.
 const EXTRA_STATIONS = {
   // ---- MeteoSchweiz (SwissMetNet) ----
-  MCH_SMM: { adapter: "mch", id: "smm", name: "Sta. Maria Val Müstair", source: "MeteoSchweiz", attribution: "Quelle: MeteoSchweiz", lat: 46.602256, lon: 10.426314, elevationM: 1386, intervalMin: 10 },
-  MCH_BUF: { adapter: "mch", id: "buf", name: "Buffalora", source: "MeteoSchweiz", attribution: "Quelle: MeteoSchweiz", lat: 46.648408, lon: 10.2672, elevationM: 1971, intervalMin: 10 },
-  MCH_SCU: { adapter: "mch", id: "scu", name: "Scuol", source: "MeteoSchweiz", attribution: "Quelle: MeteoSchweiz", lat: 46.793275, lon: 10.283267, elevationM: 1304, intervalMin: 10 },
-  MCH_NAS: { adapter: "mch", id: "nas", name: "Naluns / Schlivera", source: "MeteoSchweiz", attribution: "Quelle: MeteoSchweiz", lat: 46.817164, lon: 10.2614, elevationM: 2380, intervalMin: 10 },
+  MCH_SMM: { adapter: "mch", id: "smm", name: "Sta. Maria Val Müstair", source: "MeteoSchweiz", attribution: "Quelle: MeteoSchweiz", lat: 46.602256, lon: 10.426314, elevationM: 1386, type: "tal", intervalMin: 10 },
+  MCH_BUF: { adapter: "mch", id: "buf", name: "Buffalora", source: "MeteoSchweiz", attribution: "Quelle: MeteoSchweiz", lat: 46.648408, lon: 10.2672, elevationM: 1971, type: "berg", intervalMin: 10 },
+  MCH_SCU: { adapter: "mch", id: "scu", name: "Scuol", source: "MeteoSchweiz", attribution: "Quelle: MeteoSchweiz", lat: 46.793275, lon: 10.283267, elevationM: 1304, type: "tal", intervalMin: 10 },
+  MCH_NAS: { adapter: "mch", id: "nas", name: "Naluns / Schlivera", source: "MeteoSchweiz", attribution: "Quelle: MeteoSchweiz", lat: 46.817164, lon: 10.2614, elevationM: 2380, type: "berg", intervalMin: 10 },
   // ---- SLF / whiterisk.ch (IMIS) ----
-  SLF_OFE1: { adapter: "slf", id: "OFE1", name: "Piz Dora", source: "SLF (IMIS)", attribution: SLF_ATTR, lat: 46.605056, lon: 10.306127, elevationM: 2949, intervalMin: 30 },
-  SLF_OFE2: { adapter: "slf", id: "OFE2", name: "Murtaröl", source: "SLF (IMIS)", attribution: SLF_ATTR, lat: 46.631706, lon: 10.289051, elevationM: 2359, intervalMin: 30 },
-  SLF_VSC1: { adapter: "slf", id: "VSC1", name: "Piz San Jon Dadaint", source: "SLF (IMIS)", attribution: SLF_ATTR, lat: 46.753260, lon: 10.339132, elevationM: 3092, intervalMin: 30 },
-  SLF_VIN1: { adapter: "slf", id: "VIN1", name: "Piz Alpetta", source: "SLF (IMIS)", attribution: SLF_ATTR, lat: 46.928788, lon: 10.449316, elevationM: 2975, intervalMin: 30 },
-  SLF_LAV1: { adapter: "slf", id: "LAV1", name: "Gonda Cotschna", source: "SLF (IMIS)", attribution: SLF_ATTR, lat: 46.784326, lon: 10.112328, elevationM: 2405, intervalMin: 30 },
+  SLF_OFE1: { adapter: "slf", id: "OFE1", name: "Piz Dora", source: "SLF (IMIS)", attribution: SLF_ATTR, lat: 46.605056, lon: 10.306127, elevationM: 2949, type: "berg", intervalMin: 30 },
+  SLF_OFE2: { adapter: "slf", id: "OFE2", name: "Murtaröl", source: "SLF (IMIS)", attribution: SLF_ATTR, lat: 46.631706, lon: 10.289051, elevationM: 2359, type: "berg", intervalMin: 30 },
+  SLF_VSC1: { adapter: "slf", id: "VSC1", name: "Piz San Jon Dadaint", source: "SLF (IMIS)", attribution: SLF_ATTR, lat: 46.753260, lon: 10.339132, elevationM: 3092, type: "berg", intervalMin: 30 },
+  SLF_VIN1: { adapter: "slf", id: "VIN1", name: "Piz Alpetta", source: "SLF (IMIS)", attribution: SLF_ATTR, lat: 46.928788, lon: 10.449316, elevationM: 2975, type: "berg", intervalMin: 30 },
+  SLF_LAV1: { adapter: "slf", id: "LAV1", name: "Gonda Cotschna", source: "SLF (IMIS)", attribution: SLF_ATTR, lat: 46.784326, lon: 10.112328, elevationM: 2405, type: "berg", intervalMin: 30 },
   // ---- Tirol (lawinen.report, stations.geojson) ----
-  TIROL_valdafur: { adapter: "tirol", plot: "valdafur", id: "Tscheyegg", name: "Tscheyegg", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.889031, lon: 10.570519, elevationM: 2668, intervalMin: 10 },
-  TIROL_gamoarbach: { adapter: "tirol", plot: "gamoarbach", id: "Schartlkopf", name: "Schartlkopf", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.899630, lon: 10.561746, elevationM: 2800, intervalMin: 10 },
-  TIROL_nachtweide: { adapter: "tirol", plot: "nachtweide", id: "Palinkopf", name: "Palinkopf", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.950206, lon: 10.309403, elevationM: 2864, intervalMin: 10 },
-  TIROL_jamtalhuette_gamshorn: { adapter: "tirol", plot: "jamtalhuette_gamshorn", id: "Westliches Gamshorn", name: "Westliches Gamshorn", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.896034, lon: 10.190435, elevationM: 2997, intervalMin: 10 },
-  TIROL_serfaus: { adapter: "tirol", plot: "serfaus", id: "Serfaus Masnerkopf", name: "Serfaus Masnerkopf", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.012741, lon: 10.472944, elevationM: 2824, intervalMin: 10 },
-  TIROL_plojen: { adapter: "tirol", plot: "plojen", id: "Planskopf", name: "Planskopf", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.052584, lon: 10.545645, elevationM: 2660, intervalMin: 10 },
-  TIROL_falkaunsalpe: { adapter: "tirol", plot: "falkaunsalpe", id: "Roter Schrofen", name: "Roter Schrofen", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.040000, lon: 10.718100, elevationM: 2700, intervalMin: 10 },
-  TIROL_rifflsee: { adapter: "tirol", plot: "rifflsee", id: "Rifflsee Muttenkopf", name: "Rifflsee Muttenkopf", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.963654, lon: 10.855198, elevationM: 2293, intervalMin: 10 },
-  TIROL_seirloecherkogel: { adapter: "tirol", plot: "seirloecherkogel", id: "Seirlöcher Kogel", name: "Seirlöcher Kogel", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.033900, lon: 10.852800, elevationM: 2410, intervalMin: 10 },
-  TIROL_agetwoad: { adapter: "tirol", plot: "agetwoad", id: "Agetwoad", name: "Agetwoad", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.069889, lon: 10.862306, elevationM: 2330, intervalMin: 10 },
-  TIROL_burgbach: { adapter: "tirol", plot: "burgbach", id: "Burgbach Brechgrad", name: "Burgbach Brechgrad", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.094400, lon: 10.796000, elevationM: 2359, intervalMin: 10 },
-  TIROL_rettenbach: { adapter: "tirol", plot: "rettenbach", id: "Schwarze Schneid", name: "Schwarze Schneid", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.923988, lon: 10.928658, elevationM: 3370, intervalMin: 10 },
-  TIROL_IGF_weissseespitze: { adapter: "tirol", plot: "IGF_weissseespitze", id: "Weißseespitze", name: "Weißseespitze", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.846250, lon: 10.717989, elevationM: 3499, intervalMin: 10 },
-  TIROL_UIBK_latschbloder: { adapter: "tirol", plot: "UIBK_latschbloder", id: "Latschbloder", name: "Latschbloder", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.798656, lon: 10.806594, elevationM: 2910, intervalMin: 10 },
-  TIROL_hintereis: { adapter: "tirol", plot: "hintereis", id: "Hintereis", name: "Hintereis", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.798896, lon: 10.760373, elevationM: 3031, intervalMin: 10 },
-  TIROL_soelden_kreuzspitze: { adapter: "tirol", plot: "soelden_kreuzspitze", id: "Sölden Kreuzspitze", name: "Sölden Kreuzspitze", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.816395, lon: 10.870003, elevationM: 3453, intervalMin: 10 },
-  TIROL_vorderegg: { adapter: "tirol", plot: "vorderegg", id: "Marchkofel", name: "Marchkofel", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.891720, lon: 10.938071, elevationM: 2540, intervalMin: 10 },
-  TIROL_obergurgl_sonn: { adapter: "tirol", plot: "obergurgl_sonn", id: "Zirmkogel Windstation", name: "Zirmkogel Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.881386, lon: 10.988783, elevationM: 3274, intervalMin: 10 },
-  TIROL_rosskar: { adapter: "tirol", plot: "rosskar", id: "Festkogel", name: "Festkogel", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.853977, lon: 11.051768, elevationM: 3035, intervalMin: 10 },
-  TIROL_schaufeljoch: { adapter: "tirol", plot: "schaufeljoch", id: "Schaufeljoch", name: "Schaufeljoch", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.977200, lon: 11.110900, elevationM: 3160, intervalMin: 10 },
-  TIROL_stubaiergletscher_eisgrat: { adapter: "tirol", plot: "stubaiergletscher_eisgrat", id: "Rotadl", name: "Rotadl", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.987323, lon: 11.106927, elevationM: 3010, intervalMin: 10 },
-  TIROL_breiter_grieskogel: { adapter: "tirol", plot: "breiter_grieskogel", id: "Breiter Grieskogel Windstation", name: "Breiter Grieskogel Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.101056, lon: 11.023039, elevationM: 3282, intervalMin: 10 },
-  TIROL_laengental: { adapter: "tirol", plot: "laengental", id: "Kühtai Hochalter", name: "Kühtai Hochalter", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.231557, lon: 11.030122, elevationM: 2678, intervalMin: 10 },
-  TIROL_lampsenspitze: { adapter: "tirol", plot: "lampsenspitze", id: "Lampsenspitze Windstation", name: "Lampsenspitze Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.156075, lon: 11.095642, elevationM: 2870, intervalMin: 10 },
-  TIROL_franz_senn_huette: { adapter: "tirol", plot: "franz_senn_huette", id: "Franz-Senn-Hütte Horntaler Spitzl", name: "Franz-Senn-Hütte Horntaler Spitzl", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.099611, lon: 11.155417, elevationM: 2846, intervalMin: 10 },
-  TIROL_nockwand: { adapter: "tirol", plot: "nockwand", id: "Nockwand Wind", name: "Nockwand Wind", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.036842, lon: 11.174653, elevationM: 3092, intervalMin: 10 },
-  TIROL_gallreideschrofen: { adapter: "tirol", plot: "gallreideschrofen", id: "Kalkwand", name: "Kalkwand", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.053101, lon: 11.325632, elevationM: 2444, intervalMin: 10 },
-  TIROL_elferspitze: { adapter: "tirol", plot: "elferspitze", id: "Elferspitze Windstation", name: "Elferspitze Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.082711, lon: 11.313464, elevationM: 2440, intervalMin: 10 },
-  TIROL_schlickeralm: { adapter: "tirol", plot: "schlickeralm", id: "Sennjoch", name: "Sennjoch", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.137671, lon: 11.296132, elevationM: 2230, intervalMin: 10 },
-  TIROL_axamer_lizum: { adapter: "tirol", plot: "axamer_lizum", id: "Axams Hoadlsattel", name: "Axams Hoadlsattel", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.178144, lon: 11.282456, elevationM: 2275, intervalMin: 10 },
-  TIROL_birgitzkoepfl: { adapter: "tirol", plot: "birgitzkoepfl", id: "Birgitzköpfl", name: "Birgitzköpfl", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.194818, lon: 11.316349, elevationM: 2098, intervalMin: 10 },
-  TIROL_seegrube: { adapter: "tirol", plot: "seegrube", id: "Hafelekar", name: "Hafelekar", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.312079, lon: 11.383623, elevationM: 2270, intervalMin: 10 },
-  TIROL_sonntagskoepfl: { adapter: "tirol", plot: "sonntagskoepfl", id: "Sonntagsköpfl Windstation", name: "Sonntagsköpfl Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.271989, lon: 11.755802, elevationM: 2244, intervalMin: 10 },
-  TIROL_laemmerbichlalm: { adapter: "tirol", plot: "laemmerbichlalm", id: "Rastkogel Windstation", name: "Rastkogel Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.192132, lon: 11.767481, elevationM: 2538, intervalMin: 10 },
-  TIROL_tuxerjoch: { adapter: "tirol", plot: "tuxerjoch", id: "Tuxerjoch Windstation", name: "Tuxerjoch Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.089717, lon: 11.648987, elevationM: 2518, intervalMin: 10 },
-  TIROL_wandspitze: { adapter: "tirol", plot: "wandspitze", id: "Wandspitze Windstation", name: "Wandspitze Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.120752, lon: 11.658062, elevationM: 2580, intervalMin: 10 },
-  TIROL_eselruecken: { adapter: "tirol", plot: "eselruecken", id: "Kreuzspitze", name: "Kreuzspitze", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.046708, lon: 12.358958, elevationM: 3155, intervalMin: 10 },
-  TIROL_stveit_zischke: { adapter: "tirol", plot: "stveit_zischke", id: "St Veit Speikboden", name: "St Veit Speikboden", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.945841, lon: 12.415529, elevationM: 2630, intervalMin: 10 },
-  TIROL_mosesgipfel: { adapter: "tirol", plot: "mosesgipfel", id: "Mosesgipfel Windstation", name: "Mosesgipfel Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.820923, lon: 12.336998, elevationM: 2550, intervalMin: 10 },
-  TIROL_thurntaler: { adapter: "tirol", plot: "thurntaler", id: "Thurntaler Windstation", name: "Thurntaler Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.775000, lon: 12.383600, elevationM: 2408, intervalMin: 10 },
-  TIROL_raucheggen: { adapter: "tirol", plot: "raucheggen", id: "Raucheggen Windstation", name: "Raucheggen Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.803372, lon: 12.479020, elevationM: 2484, intervalMin: 10 },
+  TIROL_valdafur: { adapter: "tirol", plot: "valdafur", id: "Tscheyegg", name: "Tscheyegg", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.889031, lon: 10.570519, elevationM: 2668, type: "berg", intervalMin: 10 },
+  TIROL_gamoarbach: { adapter: "tirol", plot: "gamoarbach", id: "Schartlkopf", name: "Schartlkopf", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.899630, lon: 10.561746, elevationM: 2800, type: "berg", intervalMin: 10 },
+  TIROL_nachtweide: { adapter: "tirol", plot: "nachtweide", id: "Palinkopf", name: "Palinkopf", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.950206, lon: 10.309403, elevationM: 2864, type: "berg", intervalMin: 10 },
+  TIROL_jamtalhuette_gamshorn: { adapter: "tirol", plot: "jamtalhuette_gamshorn", id: "Westliches Gamshorn", name: "Westliches Gamshorn", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.896034, lon: 10.190435, elevationM: 2997, type: "berg", intervalMin: 10 },
+  TIROL_serfaus: { adapter: "tirol", plot: "serfaus", id: "Serfaus Masnerkopf", name: "Serfaus Masnerkopf", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.012741, lon: 10.472944, elevationM: 2824, type: "berg", intervalMin: 10 },
+  TIROL_plojen: { adapter: "tirol", plot: "plojen", id: "Planskopf", name: "Planskopf", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.052584, lon: 10.545645, elevationM: 2660, type: "berg", intervalMin: 10 },
+  TIROL_falkaunsalpe: { adapter: "tirol", plot: "falkaunsalpe", id: "Roter Schrofen", name: "Roter Schrofen", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.040000, lon: 10.718100, elevationM: 2700, type: "berg", intervalMin: 10 },
+  TIROL_rifflsee: { adapter: "tirol", plot: "rifflsee", id: "Rifflsee Muttenkopf", name: "Rifflsee Muttenkopf", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.963654, lon: 10.855198, elevationM: 2293, type: "berg", intervalMin: 10 },
+  TIROL_seirloecherkogel: { adapter: "tirol", plot: "seirloecherkogel", id: "Seirlöcher Kogel", name: "Seirlöcher Kogel", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.033900, lon: 10.852800, elevationM: 2410, type: "berg", intervalMin: 10 },
+  TIROL_agetwoad: { adapter: "tirol", plot: "agetwoad", id: "Agetwoad", name: "Agetwoad", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.069889, lon: 10.862306, elevationM: 2330, type: "berg", intervalMin: 10 },
+  TIROL_burgbach: { adapter: "tirol", plot: "burgbach", id: "Burgbach Brechgrad", name: "Burgbach Brechgrad", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.094400, lon: 10.796000, elevationM: 2359, type: "berg", intervalMin: 10 },
+  TIROL_rettenbach: { adapter: "tirol", plot: "rettenbach", id: "Schwarze Schneid", name: "Schwarze Schneid", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.923988, lon: 10.928658, elevationM: 3370, type: "berg", intervalMin: 10 },
+  TIROL_IGF_weissseespitze: { adapter: "tirol", plot: "IGF_weissseespitze", id: "Weißseespitze", name: "Weißseespitze", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.846250, lon: 10.717989, elevationM: 3499, type: "berg", intervalMin: 10 },
+  TIROL_UIBK_latschbloder: { adapter: "tirol", plot: "UIBK_latschbloder", id: "Latschbloder", name: "Latschbloder", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.798656, lon: 10.806594, elevationM: 2910, type: "berg", intervalMin: 10 },
+  TIROL_hintereis: { adapter: "tirol", plot: "hintereis", id: "Hintereis", name: "Hintereis", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.798896, lon: 10.760373, elevationM: 3031, type: "berg", intervalMin: 10 },
+  TIROL_soelden_kreuzspitze: { adapter: "tirol", plot: "soelden_kreuzspitze", id: "Sölden Kreuzspitze", name: "Sölden Kreuzspitze", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.816395, lon: 10.870003, elevationM: 3453, type: "berg", intervalMin: 10 },
+  TIROL_vorderegg: { adapter: "tirol", plot: "vorderegg", id: "Marchkofel", name: "Marchkofel", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.891720, lon: 10.938071, elevationM: 2540, type: "berg", intervalMin: 10 },
+  TIROL_obergurgl_sonn: { adapter: "tirol", plot: "obergurgl_sonn", id: "Zirmkogel Windstation", name: "Zirmkogel Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.881386, lon: 10.988783, elevationM: 3274, type: "berg", intervalMin: 10 },
+  TIROL_rosskar: { adapter: "tirol", plot: "rosskar", id: "Festkogel", name: "Festkogel", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.853977, lon: 11.051768, elevationM: 3035, type: "berg", intervalMin: 10 },
+  TIROL_schaufeljoch: { adapter: "tirol", plot: "schaufeljoch", id: "Schaufeljoch", name: "Schaufeljoch", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.977200, lon: 11.110900, elevationM: 3160, type: "berg", intervalMin: 10 },
+  TIROL_stubaiergletscher_eisgrat: { adapter: "tirol", plot: "stubaiergletscher_eisgrat", id: "Rotadl", name: "Rotadl", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.987323, lon: 11.106927, elevationM: 3010, type: "berg", intervalMin: 10 },
+  TIROL_breiter_grieskogel: { adapter: "tirol", plot: "breiter_grieskogel", id: "Breiter Grieskogel Windstation", name: "Breiter Grieskogel Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.101056, lon: 11.023039, elevationM: 3282, type: "berg", intervalMin: 10 },
+  TIROL_laengental: { adapter: "tirol", plot: "laengental", id: "Kühtai Hochalter", name: "Kühtai Hochalter", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.231557, lon: 11.030122, elevationM: 2678, type: "berg", intervalMin: 10 },
+  TIROL_lampsenspitze: { adapter: "tirol", plot: "lampsenspitze", id: "Lampsenspitze Windstation", name: "Lampsenspitze Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.156075, lon: 11.095642, elevationM: 2870, type: "berg", intervalMin: 10 },
+  TIROL_franz_senn_huette: { adapter: "tirol", plot: "franz_senn_huette", id: "Franz-Senn-Hütte Horntaler Spitzl", name: "Franz-Senn-Hütte Horntaler Spitzl", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.099611, lon: 11.155417, elevationM: 2846, type: "berg", intervalMin: 10 },
+  TIROL_nockwand: { adapter: "tirol", plot: "nockwand", id: "Nockwand Wind", name: "Nockwand Wind", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.036842, lon: 11.174653, elevationM: 3092, type: "berg", intervalMin: 10 },
+  TIROL_gallreideschrofen: { adapter: "tirol", plot: "gallreideschrofen", id: "Kalkwand", name: "Kalkwand", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.053101, lon: 11.325632, elevationM: 2444, type: "berg", intervalMin: 10 },
+  TIROL_elferspitze: { adapter: "tirol", plot: "elferspitze", id: "Elferspitze Windstation", name: "Elferspitze Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.082711, lon: 11.313464, elevationM: 2440, type: "berg", intervalMin: 10 },
+  TIROL_schlickeralm: { adapter: "tirol", plot: "schlickeralm", id: "Sennjoch", name: "Sennjoch", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.137671, lon: 11.296132, elevationM: 2230, type: "berg", intervalMin: 10 },
+  TIROL_axamer_lizum: { adapter: "tirol", plot: "axamer_lizum", id: "Axams Hoadlsattel", name: "Axams Hoadlsattel", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.178144, lon: 11.282456, elevationM: 2275, type: "berg", intervalMin: 10 },
+  TIROL_birgitzkoepfl: { adapter: "tirol", plot: "birgitzkoepfl", id: "Birgitzköpfl", name: "Birgitzköpfl", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.194818, lon: 11.316349, elevationM: 2098, type: "berg", intervalMin: 10 },
+  TIROL_seegrube: { adapter: "tirol", plot: "seegrube", id: "Hafelekar", name: "Hafelekar", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.312079, lon: 11.383623, elevationM: 2270, type: "berg", intervalMin: 10 },
+  TIROL_sonntagskoepfl: { adapter: "tirol", plot: "sonntagskoepfl", id: "Sonntagsköpfl Windstation", name: "Sonntagsköpfl Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.271989, lon: 11.755802, elevationM: 2244, type: "berg", intervalMin: 10 },
+  TIROL_laemmerbichlalm: { adapter: "tirol", plot: "laemmerbichlalm", id: "Rastkogel Windstation", name: "Rastkogel Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.192132, lon: 11.767481, elevationM: 2538, type: "berg", intervalMin: 10 },
+  TIROL_tuxerjoch: { adapter: "tirol", plot: "tuxerjoch", id: "Tuxerjoch Windstation", name: "Tuxerjoch Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.089717, lon: 11.648987, elevationM: 2518, type: "berg", intervalMin: 10 },
+  TIROL_wandspitze: { adapter: "tirol", plot: "wandspitze", id: "Wandspitze Windstation", name: "Wandspitze Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.120752, lon: 11.658062, elevationM: 2580, type: "berg", intervalMin: 10 },
+  TIROL_eselruecken: { adapter: "tirol", plot: "eselruecken", id: "Kreuzspitze", name: "Kreuzspitze", source: "lawinen.report", attribution: TIROL_ATTR, lat: 47.046708, lon: 12.358958, elevationM: 3155, type: "berg", intervalMin: 10 },
+  TIROL_stveit_zischke: { adapter: "tirol", plot: "stveit_zischke", id: "St Veit Speikboden", name: "St Veit Speikboden", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.945841, lon: 12.415529, elevationM: 2630, type: "berg", intervalMin: 10 },
+  TIROL_mosesgipfel: { adapter: "tirol", plot: "mosesgipfel", id: "Mosesgipfel Windstation", name: "Mosesgipfel Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.820923, lon: 12.336998, elevationM: 2550, type: "berg", intervalMin: 10 },
+  TIROL_thurntaler: { adapter: "tirol", plot: "thurntaler", id: "Thurntaler Windstation", name: "Thurntaler Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.775000, lon: 12.383600, elevationM: 2408, type: "berg", intervalMin: 10 },
+  TIROL_raucheggen: { adapter: "tirol", plot: "raucheggen", id: "Raucheggen Windstation", name: "Raucheggen Windstation", source: "lawinen.report", attribution: TIROL_ATTR, lat: 46.803372, lon: 12.479020, elevationM: 2484, type: "berg", intervalMin: 10 },
   // ---- Meteotrentino ----
-  TN_T0372: { adapter: "trentino", id: "T0372", name: "Peio (Crozzi Taviela)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.384176, lon: 10.631957, elevationM: 2960, intervalMin: 15 },
-  TN_T0473: { adapter: "trentino", id: "T0473", name: "Ghiacciaio Del Careser", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.451278, lon: 10.718272, elevationM: 3093, intervalMin: 15 },
-  TN_T0066: { adapter: "trentino", id: "T0066", name: "Cima Cavaion", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.42302263, lon: 10.7150282, elevationM: 2895, intervalMin: 15 },
-  TN_T0065: { adapter: "trentino", id: "T0065", name: "Careser (Diga)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.422585, lon: 10.699111, elevationM: 2600, intervalMin: 15 },
-  TN_T0076: { adapter: "trentino", id: "T0076", name: "Rabbi (San Bernardo)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.401374, lon: 10.849515, elevationM: 1132, intervalMin: 15 },
-  TN_T0415: { adapter: "trentino", id: "T0415", name: "Bresimo (Malga Bordolona)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.433136, lon: 10.889328, elevationM: 1815, intervalMin: 15 },
-  TN_T0417: { adapter: "trentino", id: "T0417", name: "Rumo (Lanza)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.45391, lon: 11.008531, elevationM: 1100, intervalMin: 15 },
-  TN_T0399: { adapter: "trentino", id: "T0399", name: "Fondo", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.437705, lon: 11.129627, elevationM: 910, intervalMin: 15 },
-  TN_T0418: { adapter: "trentino", id: "T0418", name: "Castelfondo (Malga Castrin)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.510001, lon: 11.043574, elevationM: 1815, intervalMin: 15 },
-  TN_T0082: { adapter: "trentino", id: "T0082", name: "Passo Mendola", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.419179, lon: 11.189336, elevationM: 1315, intervalMin: 15 },
-  TN_T0431: { adapter: "trentino", id: "T0431", name: "Capriana", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.263079, lon: 11.33633, elevationM: 1055, intervalMin: 15 },
-  TN_T0367: { adapter: "trentino", id: "T0367", name: "Cavalese", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.284782, lon: 11.451713, elevationM: 958, intervalMin: 15 },
-  TN_T0227: { adapter: "trentino", id: "T0227", name: "Cermis (Casere)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.250369, lon: 11.491486, elevationM: 1900, intervalMin: 15 },
-  TN_T0229: { adapter: "trentino", id: "T0229", name: "Campitello (Malga Do Col D'Aura)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.490938, lon: 11.65755, elevationM: 2050, intervalMin: 15 },
-  TN_T0437: { adapter: "trentino", id: "T0437", name: "Canazei (Gries)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.478318, lon: 11.766852, elevationM: 1465, intervalMin: 15 },
-  TN_T0403: { adapter: "trentino", id: "T0403", name: "Canazei (Ciampac)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.445989, lon: 11.769081, elevationM: 2150, intervalMin: 15 },
-  TN_T0015: { adapter: "trentino", id: "T0015", name: "Bieno", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.081097, lon: 11.557174, elevationM: 843, intervalMin: 15 },
-  TN_T0421: { adapter: "trentino", id: "T0421", name: "Caoria", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.192017, lon: 11.683911, elevationM: 803, intervalMin: 15 },
-  TN_T0030: { adapter: "trentino", id: "T0030", name: "Canal San Bovo", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.14956, lon: 11.734845, elevationM: 750, intervalMin: 15 },
-  TN_T0469: { adapter: "trentino", id: "T0469", name: "Castello Tesino (Le Parti)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.056924, lon: 11.629929, elevationM: 801, intervalMin: 15 },
+  TN_T0372: { adapter: "trentino", id: "T0372", name: "Peio (Crozzi Taviela)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.384176, lon: 10.631957, elevationM: 2960, type: "berg", intervalMin: 15 },
+  TN_T0473: { adapter: "trentino", id: "T0473", name: "Ghiacciaio Del Careser", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.451278, lon: 10.718272, elevationM: 3093, type: "berg", intervalMin: 15 },
+  TN_T0066: { adapter: "trentino", id: "T0066", name: "Cima Cavaion", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.42302263, lon: 10.7150282, elevationM: 2895, type: "berg", intervalMin: 15 },
+  TN_T0065: { adapter: "trentino", id: "T0065", name: "Careser (Diga)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.422585, lon: 10.699111, elevationM: 2600, type: "berg", intervalMin: 15 },
+  TN_T0076: { adapter: "trentino", id: "T0076", name: "Rabbi (San Bernardo)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.401374, lon: 10.849515, elevationM: 1132, type: "tal", intervalMin: 15 },
+  TN_T0415: { adapter: "trentino", id: "T0415", name: "Bresimo (Malga Bordolona)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.433136, lon: 10.889328, elevationM: 1815, type: "berg", intervalMin: 15 },
+  TN_T0417: { adapter: "trentino", id: "T0417", name: "Rumo (Lanza)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.45391, lon: 11.008531, elevationM: 1100, type: "tal", intervalMin: 15 },
+  TN_T0399: { adapter: "trentino", id: "T0399", name: "Fondo", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.437705, lon: 11.129627, elevationM: 910, type: "tal", intervalMin: 15 },
+  TN_T0418: { adapter: "trentino", id: "T0418", name: "Castelfondo (Malga Castrin)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.510001, lon: 11.043574, elevationM: 1815, type: "berg", intervalMin: 15 },
+  TN_T0082: { adapter: "trentino", id: "T0082", name: "Passo Mendola", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.419179, lon: 11.189336, elevationM: 1315, type: "tal", intervalMin: 15 },
+  TN_T0431: { adapter: "trentino", id: "T0431", name: "Capriana", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.263079, lon: 11.33633, elevationM: 1055, type: "tal", intervalMin: 15 },
+  TN_T0367: { adapter: "trentino", id: "T0367", name: "Cavalese", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.284782, lon: 11.451713, elevationM: 958, type: "tal", intervalMin: 15 },
+  TN_T0227: { adapter: "trentino", id: "T0227", name: "Cermis (Casere)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.250369, lon: 11.491486, elevationM: 1900, type: "berg", intervalMin: 15 },
+  TN_T0229: { adapter: "trentino", id: "T0229", name: "Campitello (Malga Do Col D'Aura)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.490938, lon: 11.65755, elevationM: 2050, type: "berg", intervalMin: 15 },
+  TN_T0437: { adapter: "trentino", id: "T0437", name: "Canazei (Gries)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.478318, lon: 11.766852, elevationM: 1465, type: "tal", intervalMin: 15 },
+  TN_T0403: { adapter: "trentino", id: "T0403", name: "Canazei (Ciampac)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.445989, lon: 11.769081, elevationM: 2150, type: "berg", intervalMin: 15 },
+  TN_T0015: { adapter: "trentino", id: "T0015", name: "Bieno", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.081097, lon: 11.557174, elevationM: 843, type: "tal", intervalMin: 15 },
+  TN_T0421: { adapter: "trentino", id: "T0421", name: "Caoria", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.192017, lon: 11.683911, elevationM: 803, type: "tal", intervalMin: 15 },
+  TN_T0030: { adapter: "trentino", id: "T0030", name: "Canal San Bovo", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.14956, lon: 11.734845, elevationM: 750, type: "tal", intervalMin: 15 },
+  TN_T0469: { adapter: "trentino", id: "T0469", name: "Castello Tesino (Le Parti)", source: "Meteotrentino", attribution: TRENTINO_ATTR, lat: 46.056924, lon: 11.629929, elevationM: 801, type: "tal", intervalMin: 15 },
 };
 
-// GeoSphere Austria (TAWES): alle Stationen in EINER Anfrage. Hier werden die
-// Stationen eingetragen, sobald ID/Name/Koordinaten aus der Stationsliste
-// (.../tawes-v1-10min/metadata) vorliegen, Format:
-//   { key: "GS_11115", id: "11115", name: "Imst", lat: 47.24, lon: 10.74, elevationM: 828 }
-const EXTRA_GEOSPHERE = [];
-// Parameter-Codes laut TAWES: TL Lufttemperatur °C, RF rel. Feuchte %,
-// FFAM mittlere Windgeschwindigkeit m/s, FFX Windspitze m/s, DD Windrichtung °.
-// ACHTUNG: noch nicht gegen die Metadaten der API geprüft.
-const GEOSPHERE_PARAMS = { avg: "FFAM", gust: "FFX", dir: "DD", temp: "TL", hum: "RF" };
+// GeoSphere Austria (TAWES): alle Stationen in EINER Anfrage. IDs, Namen,
+// Koordinaten und Höhen stammen aus der Stationsliste der API
+// (.../tawes-v1-10min/metadata, Stand 29.10.2026, alle Stationen aktiv).
+const EXTRA_GEOSPHERE = [
+  { key: "GS_11113", id: "11113", name: "Nauders", lat: 46.891111, lon: 10.496944, type: "tal", elevationM: 1330 },
+  { key: "GS_11313", id: "11313", name: "Prutz", lat: 47.068611, lon: 10.664722, type: "tal", elevationM: 871 },
+  { key: "GS_11112", id: "11112", name: "Landeck", lat: 47.140278, lon: 10.563611, type: "tal", elevationM: 796 },
+  { key: "GS_11318", id: "11318", name: "Brunnenkogel / Ötztaler Alpen", lat: 46.912778, lon: 10.861667, type: "berg", elevationM: 3437 },
+  { key: "GS_11316", id: "11316", name: "Pitztaler Gletscher", lat: 46.926944, lon: 10.879167, type: "berg", elevationM: 2864 },
+  { key: "GS_11317", id: "11317", name: "St. Leonhard / Pitztal", lat: 47.027222, lon: 10.865556, type: "tal", elevationM: 1454 },
+  { key: "GS_11115", id: "11115", name: "Imst", lat: 47.236944, lon: 10.742222, type: "tal", elevationM: 773 },
+  { key: "GS_11309", id: "11309", name: "Haiming", lat: 47.259722, lon: 10.889444, type: "tal", elevationM: 659 },
+  { key: "GS_11119", id: "11119", name: "Seefeld", lat: 47.324722, lon: 11.175556, type: "tal", elevationM: 1182 },
+  { key: "GS_11324", id: "11324", name: "Neustift / Milders", lat: 47.102778, lon: 11.291944, type: "tal", elevationM: 1007 },
+  { key: "GS_11129", id: "11129", name: "Brenner", lat: 47.007222, lon: 11.510833, type: "tal", elevationM: 1412 },
+  { key: "GS_11329", id: "11329", name: "Steinach am Brenner", lat: 47.098333, lon: 11.466111, type: "tal", elevationM: 1036 },
+  { key: "GS_11126", id: "11126", name: "Patscherkofel", lat: 47.208889, lon: 11.462222, type: "berg", elevationM: 2251 },
+  { key: "GS_11123", id: "11123", name: "Rinn", lat: 47.249167, lon: 11.503889, type: "tal", elevationM: 924 },
+  { key: "GS_8989037", id: "8989037", name: "Innsbruck Hauptbahnhof", lat: 47.260556, lon: 11.405000, type: "tal", elevationM: 611 },
+  { key: "GS_11121", id: "11121", name: "Innsbruck Flughafen", lat: 47.260000, lon: 11.356667, type: "tal", elevationM: 578 },
+  { key: "GS_11320", id: "11320", name: "Innsbruck Universität", lat: 47.260000, lon: 11.384167, type: "tal", elevationM: 578 },
+  { key: "GS_11117", id: "11117", name: "Umhausen", lat: 47.139167, lon: 10.928889, type: "tal", elevationM: 1035 },
+  { key: "GS_11127", id: "11127", name: "Obergurgl", lat: 46.866944, lon: 11.024444, type: "tal", elevationM: 1941 },
+  { key: "GS_11326", id: "11326", name: "Schmirn", lat: 47.087222, lon: 11.580278, type: "tal", elevationM: 1464 },
+  { key: "GS_11250", id: "11250", name: "Hintertux / Zillertal", lat: 47.106389, lon: 11.675000, type: "tal", elevationM: 1505 },
+  { key: "GS_11330", id: "11330", name: "Mayrhofen", lat: 47.162500, lon: 11.851667, type: "tal", elevationM: 640 },
+  { key: "GS_11136", id: "11136", name: "Krimml", lat: 47.229167, lon: 12.181944, type: "tal", elevationM: 1009 },
+  { key: "GS_11073", id: "11073", name: "Mittersill", lat: 47.279167, lon: 12.495833, type: "tal", elevationM: 783 },
+  { key: "GS_11252", id: "11252", name: "Virgen", lat: 47.002778, lon: 12.455833, type: "tal", elevationM: 1212 },
+  { key: "GS_11300", id: "11300", name: "St. Jakob / Defereggen", lat: 46.916944, lon: 12.353889, type: "tal", elevationM: 1383 },
+  { key: "GS_11201", id: "11201", name: "Sillian", lat: 46.746389, lon: 12.423611, type: "tal", elevationM: 1081 },
+];
+// Parameter-Codes laut Metadaten der API (alle Wind in m/s): FFAM arithmetisches
+// Mittel der Windgeschwindigkeit über 10 Min. (Rückfall: FF, 10-Min-Wert),
+// FFX Windspitze, DD Windrichtung, TL Lufttemperatur °C, RF rel. Feuchte %.
+const GEOSPHERE_PARAMS = { avg: "FFAM", avgFallback: "FF", gust: "FFX", dir: "DD", temp: "TL", hum: "RF" };
 
 function num(v) {
   if (v === null || v === undefined) return null;
@@ -814,8 +849,8 @@ export function parseSlfMeasurements(arr) {
       instant: new Date(m.measure_date),
       avgKmh: kmhFromMs(m.VW_30MIN_MEAN),
       gustKmh: kmhFromMs(m.VW_30MIN_MAX),
-      dirDeg: num(m.DW_30MIN_MEAN),
-      tempC: num(m.TA_30MIN_MEAN),
+      dirDeg: num(m.DW_30MIN_MEAN) === null ? null : round1(num(m.DW_30MIN_MEAN)),
+      tempC: num(m.TA_30MIN_MEAN) === null ? null : round1(num(m.TA_30MIN_MEAN)), // SLF liefert z.B. -1.153
       humidityPct: clampPct(m.RH_30MIN_MEAN)
     }))
     .filter((r) => !isNaN(r.instant));
@@ -961,7 +996,7 @@ async function processExtraStation(windData, key, cfg, now) {
     attribution: geo?.operator ? `Quelle: ${geo.operator} (lawinen.report)` : cfg.attribution,
     stationId: cfg.adapter === "mch" ? cfg.id.toUpperCase() : cfg.id,
     lat: geo?.lat ?? cfg.lat, lon: geo?.lon ?? cfg.lon, elevationM: geo?.elevationM ?? cfg.elevationM,
-    intervalMin: cfg.intervalMin
+    intervalMin: cfg.intervalMin, type: cfg.type
   };
   const added = upsertWindRows(windData, key, rows, meta);
   // alte Zeilen außerhalb des Zeitfensters entfernen (30-Min-Quellen würden sonst
@@ -995,7 +1030,9 @@ async function fetchGeosphereExtras(windData, now) {
     try {
       const feat = (data.features || []).find((f) => String(f.properties?.station) === String(s.id));
       const series = (name) => feat?.properties?.parameters?.[name]?.data || [];
-      const avg = series(GEOSPHERE_PARAMS.avg), gust = series(GEOSPHERE_PARAMS.gust), dir = series(GEOSPHERE_PARAMS.dir);
+      const avgMain = series(GEOSPHERE_PARAMS.avg), avgAlt = series(GEOSPHERE_PARAMS.avgFallback);
+      const avg = Array.from({ length: Math.max(avgMain.length, avgAlt.length) }, (_, i) => avgMain[i] ?? avgAlt[i] ?? null);
+      const gust = series(GEOSPHERE_PARAMS.gust), dir = series(GEOSPHERE_PARAMS.dir);
       const temp = series(GEOSPHERE_PARAMS.temp), hum = series(GEOSPHERE_PARAMS.hum);
       const rows = [];
       timestamps.forEach((instant, i) => {
@@ -1010,7 +1047,7 @@ async function fetchGeosphereExtras(windData, now) {
       });
       const meta = {
         name: s.name, source: "GeoSphere Austria", attribution: GEOSPHERE_ATTR, stationId: String(s.id),
-        lat: s.lat, lon: s.lon, elevationM: s.elevationM, intervalMin: 10
+        lat: s.lat, lon: s.lon, elevationM: s.elevationM, intervalMin: 10, type: s.type
       };
       const added = upsertWindRows(windData, s.key, rows, meta);
       const st = windData.stations[s.key];
