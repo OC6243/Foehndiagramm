@@ -1,0 +1,2701 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wia schaugs aus?</title>
+<meta property="og:title" content="Wia schaugs aus?">
+<meta property="og:description" content="Föhndiagramm, Live-Windwerte und Föhnprognose für den Vinschgau">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tolwind.bz.it/">
+<meta property="og:image" content="https://tolwind.bz.it/apple-touch-icon.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Wia schaugs aus?">
+<meta name="twitter:description" content="Föhndiagramm, Live-Windwerte und Föhnprognose für den Vinschgau">
+<meta name="twitter:image" content="https://tolwind.bz.it/apple-touch-icon.png">
+<link rel="icon" type="image/x-icon" href="./favicon.ico?v=2">
+<link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png?v=2">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=2">
+<link rel="icon" type="image/png" sizes="48x48" href="./favicon-48.png?v=2">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png?v=2">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#E9EDEC">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.1.0/chartjs-plugin-annotation.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.2.0/chartjs-plugin-zoom.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root{
+    --ink:#1C2B3A;
+    --paper:#E9EDEC;
+    --panel:#FFFFFF;
+    --warm:#D68A3C;
+    --cool:#3E6E8E;
+    --alert:#C1443C;
+    --hairline:#C9CFCD;
+    --muted:#5B6B72;
+
+    --line-primary:#1C2B3A;
+    --line-secondary:#B9C2C0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    padding:32px 20px 16px;
+  }
+  .wrap{max-width:1320px;margin:0 auto;}
+
+  header{margin-bottom:17.6px;}
+  .title-row{ display:flex; align-items:center; gap:14px; position:relative; }
+  .title-row.title-wrapped img.logo{ z-index:2; }
+
+  .top-bar{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .menu-wrap{ position:relative; }
+  .menu-toggle{
+    background:none; border:none; cursor:pointer;
+    padding:8px; border-radius:8px;
+    display:flex; flex-direction:column; justify-content:center; gap:5px;
+  }
+  .menu-toggle:hover{ background:#DEE2E1; }
+  .menu-toggle .bar{
+    width:24px; height:3.5px; border-radius:2px; background:var(--ink); display:block;
+  }
+  .menu-dropdown{
+    position:absolute; top:calc(100% + 6px); right:0; z-index:50;
+    background:var(--panel); border:1px solid var(--hairline); border-radius:10px;
+    box-shadow:0 6px 20px rgba(28,43,58,0.14);
+    min-width:230px; padding:6px;
+    display:none;
+  }
+  .menu-dropdown.open{ display:block; }
+  .menu-item{
+    display:block; width:100%; text-align:left;
+    padding:10px 12px; border-radius:8px;
+    font-family:'IBM Plex Sans', sans-serif; font-size:14px; color:var(--ink);
+    background:none; border:none; cursor:pointer;
+  }
+  .menu-item + .menu-item{ margin-top:2px; }
+  .menu-item:hover{ background:#F1F3F2; }
+  .menu-item.active{ background:rgba(62,110,142,0.12); color:var(--cool); font-weight:700; }
+  .title-row img.logo{ width:51px; height:56px; object-fit:contain; flex-shrink:0; }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--cool);
+    margin-bottom:6px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:#22C55E;
+    animation:pulse 2.4s ease-in-out infinite;
+  }
+  .eyebrow.stale .dot{
+    background:#DC2626;
+    animation:fastBlink 0.6s steps(1,end) infinite;
+  }
+  .eyebrow-stale-text{
+    color:#DC2626; font-weight:700;
+    animation:fastBlink 0.6s steps(1,end) infinite;
+  }
+  @keyframes fastBlink{ 0%,49%{opacity:1;} 50%,100%{opacity:.25;} }
+  @media (prefers-reduced-motion:reduce){ .eyebrow .dot{animation:none;} .eyebrow.stale .dot{animation:none;} .eyebrow-stale-text{animation:none;} }
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  #splashScreen{
+    position:fixed; inset:0; background:#ffffff; z-index:99999;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden; transition:opacity .45s ease;
+  }
+  #splashScreen.splash-hide{ opacity:0; pointer-events:none; }
+  #splashParaglider{
+    width:156px; height:156px; will-change:transform,opacity;
+    animation:splashFly 2s cubic-bezier(.45,0,.4,1) infinite;
+  }
+  @keyframes splashFly{
+    0%   { transform:translateY(62vh) translateX(-8px) rotate(-10deg) scale(0.82); opacity:0; }
+    14%  { opacity:1; }
+    50%  { transform:translateY(0) translateX(6px) rotate(4deg) scale(1); }
+    86%  { opacity:1; }
+    100% { transform:translateY(-68vh) translateX(-6px) rotate(-7deg) scale(1.06); opacity:0; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    #splashParaglider{ animation:none; opacity:1; transform:none; }
+  }
+
+  .site-footer{
+    text-align:center; margin-top:20px; padding-top:8px;
+  }
+  .impressum-link{
+    background:none; border:none; cursor:pointer; padding:4px 8px;
+    font-family:'IBM Plex Sans', sans-serif; font-size:12px; color:var(--muted);
+    text-decoration:underline; text-underline-offset:2px; opacity:0.75;
+  }
+  .impressum-link:hover{ opacity:1; color:var(--ink); }
+  .footer-dot{ color:var(--muted); opacity:0.6; margin:0 2px; font-size:12px; }
+
+  .impressum-overlay{
+    display:none; position:fixed; inset:0; background:rgba(28,43,58,0.45);
+    z-index:9000; align-items:flex-start; justify-content:center;
+    padding:40px 16px; overflow-y:auto;
+  }
+  .impressum-overlay.open{ display:flex; }
+  .impressum-box{
+    position:relative; background:var(--panel); border-radius:14px;
+    max-width:640px; width:100%; padding:32px 28px 28px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.25);
+    font-family:'IBM Plex Sans', sans-serif; font-size:14px; line-height:1.6; color:var(--ink);
+  }
+  .impressum-box h2{ margin:0 0 4px; font-size:22px; }
+  .impressum-box h3{ margin:20px 0 4px; font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .impressum-box p{ margin:4px 0; }
+  .impressum-note{ font-size:12px; color:#C1443C; font-style:italic; }
+  .impressum-block{ margin-top:10px; }
+  .impressum-block-title{ font-weight:700; margin:0 0 2px; }
+  .impressum-emphasis{
+    margin-top:8px; padding:10px 12px; background:var(--paper); border-left:3px solid #C1443C;
+    border-radius:4px; font-weight:600;
+  }
+  .impressum-sources{ list-style:none; margin:4px 0 0; padding:0; }
+  .impressum-sources li{ margin:4px 0; }
+  .impressum-sources a{ color:var(--cool); text-decoration:underline; text-underline-offset:2px; }
+  .impressum-sources a:hover{ color:var(--ink); }
+  .impressum-close{
+    position:absolute; top:14px; right:14px; width:32px; height:32px;
+    border-radius:50%; border:1px solid var(--hairline); background:var(--paper);
+    font-size:20px; line-height:1; cursor:pointer; color:var(--muted);
+  }
+  .impressum-close:hover{ color:var(--ink); }
+
+  .why-box{ text-align:left; }
+  .why-flieger{ width:64px; height:auto; margin-bottom:6px; display:block; }
+  .why-box h2{ margin-bottom:14px; }
+  .why-box p{ margin:12px 0; }
+  .why-support-text{
+    margin-top:18px; padding:14px 16px; background:var(--paper);
+    border-left:3px solid #E8A93C; border-radius:4px; font-weight:600;
+  }
+  .paypal-row{ display:flex; flex-direction:column; gap:10px; margin-top:16px; max-width:260px; }
+  .paypal-button{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%;
+    background:#0070BA; color:#fff; font-weight:700; font-size:14.5px;
+    padding:11px 20px; border-radius:24px; text-decoration:none; box-sizing:border-box;
+    font-family:'IBM Plex Sans', sans-serif; transition:background .15s ease;
+  }
+  .paypal-button:hover{ background:#00558c; }
+  .paypal-qr-link{ display:block; }
+  .paypal-qr{
+    width:100%; height:auto; aspect-ratio:1/1; border-radius:8px; border:1px solid var(--hairline);
+    display:block;
+  }
+
+  h1{
+    font-size:clamp(28px,4vw,40px);
+    margin:0;
+    font-weight:700;
+    letter-spacing:-0.01em;
+    line-height:1.15;
+  }
+
+  .legend-note{
+    font-size:12.5px; color:var(--muted); margin-top:10px;
+    display:flex; flex-wrap:wrap; gap:16px; align-items:center;
+  }
+  .legend-note span{display:inline-flex; align-items:center; gap:6px;}
+  .swatch{width:14px;height:14px;border-radius:3px;display:inline-block;}
+  .swatch.line{width:20px;height:3px;border-radius:0;}
+
+  .table-collapse{ margin-top:4px; }
+  .table-summary{
+    cursor:pointer; list-style:none;
+    background:#F1F3F2; border-radius:8px;
+    padding:10px 16px; margin-bottom:12px;
+  }
+  .table-summary::-webkit-details-marker{ display:none; }
+  .table-summary:hover{ background:#EBEEED; }
+  .table-summary-title{ font-weight:600; font-size:14px; color:var(--ink); display:block; }
+  .table-summary-sub{ font-size:12.5px; color:var(--cool); font-weight:600; display:block; margin-top:2px; }
+  .table-collapse:not([open]) .when-open{ display:none; }
+  .table-collapse[open] .when-closed{ display:none; }
+  .table-collapse .legend-note{ margin-top:14px; }
+
+  .global-desc{
+    background:var(--panel); border:1px solid var(--hairline); border-radius:12px;
+    padding:16px 20px; margin-top:16px;
+  }
+  .global-desc p{
+    font-size:14px; line-height:1.65; color:#3A4750; max-width:80ch;
+    white-space:pre-line; margin:0;
+  }
+  .global-desc details{ margin-top:8px; }
+  .global-desc details p{ margin-top:8px; }
+  .global-desc summary{
+    cursor:pointer; color:var(--cool); font-size:13.5px; font-weight:600;
+    list-style:none; display:inline-block;
+  }
+  .global-desc summary::-webkit-details-marker{ display:none; }
+  .global-desc summary:hover{ text-decoration:underline; }
+  .global-desc summary::after{ content:'▾'; margin-left:5px; font-size:11px; }
+  .global-desc details[open] summary::after{ content:'▴'; }
+  .global-desc .desc-attr{
+    font-size:12px; color:var(--muted); font-style:italic; margin-top:12px;
+  }
+  .global-desc .desc-attr a{ color:var(--cool); }
+
+  .section{
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:24px;
+    margin-top:19.2px;
+    opacity:0; transform:translateY(6px);
+    animation:rise .5s ease forwards;
+  }
+  .section:nth-of-type(2){animation-delay:.08s; margin-top:13px;}
+  @keyframes rise{to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:reduce){ .section{opacity:1;transform:none;animation:none;} }
+
+  .section h2{
+    font-size:20px; margin:0 0 14px; font-weight:700;
+  }
+
+  .empty-state{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+    padding:72px 24px;
+    min-height:340px;
+  }
+  .empty-state-icon{
+    width:56px; height:56px; margin-bottom:22px; color:var(--hairline);
+  }
+  .empty-state h2{ margin:0 0 8px; font-size:19px; color:var(--ink); font-weight:700; }
+  .empty-state p{ margin:0; color:var(--muted); font-size:14px; max-width:38ch; line-height:1.6; }
+
+  #windMap{ height:644px; width:100%; border-radius:14px; background:#EEF1F0; }
+  @media (max-width:600px){ #windMap{ height:483px; } }
+  .windsock-icon{ cursor:pointer; transform-origin:center center; transition:transform 0.15s ease-out; }
+
+  @keyframes blinkRed{ 0%,100%{ border-color:#E5342A; box-shadow:0 1px 4px rgba(0,0,0,0.18); } 50%{ border-color:#E5342A; box-shadow:0 0 0 3px rgba(229,52,42,0.55); } }
+  @keyframes blinkOrange{ 0%,100%{ border-color:#F2994A; box-shadow:0 1px 4px rgba(0,0,0,0.18); } 50%{ border-color:#F2994A; box-shadow:0 0 0 3px rgba(242,153,74,0.55); } }
+  @keyframes blinkYellow{ 0%,100%{ border-color:#E6B800; box-shadow:0 1px 4px rgba(0,0,0,0.18); } 50%{ border-color:#E6B800; box-shadow:0 0 0 3px rgba(230,184,0,0.5); } }
+  .wr-blink-red{ animation:blinkRed 1s ease-in-out infinite; border-width:2px !important; }
+  .wr-blink-orange{ animation:blinkOrange 1s ease-in-out infinite; border-width:2px !important; }
+  .wr-blink-yellow{ animation:blinkYellow 1.3s ease-in-out infinite; border-width:2px !important; }
+
+  @keyframes staleRingBlink{ 0%,100%{ opacity:0.9; } 50%{ opacity:0.15; } }
+  .stale-ring{ animation:staleRingBlink 1.1s ease-in-out infinite; }
+
+  @keyframes compassBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.25; } }
+  .compass-newest-blink{ animation:compassBlink 1s ease-in-out infinite; }
+  .wind-note{ font-size:12px; color:var(--muted); margin-top:10px; margin-bottom:0; line-height:1.6; }
+  .wind-note a{ color:var(--cool); }
+  .wind-detail-panel{
+    display:none; margin-top:16px; padding:16px 18px;
+    background:#F7F8F8; border:1px solid var(--hairline); border-radius:12px;
+  }
+  .wind-detail-panel.open{ display:block; }
+  .wind-detail-panel h3{ margin:0 0 10px; font-size:16px; }
+  @keyframes staleTextBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.25; } }
+  .stale-warning-text{ color:#E5342A; font-weight:700; font-size:13px; animation:staleTextBlink 1s ease-in-out infinite; }
+  .stale-warning-block{ margin:-6px 0 12px; }
+  @keyframes trafficBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
+  .update-traffic-dot{ display:inline-block; width:7.2px; height:7.2px; border-radius:50%; margin:0 6px; vertical-align:middle; animation:trafficBlink 1.1s ease-in-out infinite; }
+  .wdg-date{ margin-left:8px; font-weight:400; color:var(--muted); }
+  .wind-detail-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:10px 18px; font-family:'IBM Plex Mono', monospace; font-size:13px;
+  }
+  .wind-detail-grid .wdg-label{
+    font-family:'IBM Plex Sans', sans-serif; font-size:11px; line-height:14px; color:var(--muted);
+    display:flex; flex-direction:column; justify-content:flex-end; min-height:28px; margin-bottom:2px;
+  }
+  .wdg-label-inner{ display:inline-flex; align-items:center; }
+  .station-elev-label{ font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted); margin-left:8px; }
+  .wind-detail-grid .wdg-value{ font-weight:700; color:var(--ink); }
+
+  .wind-charts-row{
+    display:flex; flex-wrap:wrap; gap:18px; margin-top:18px;
+  }
+  .wind-chart-box{
+    flex:1 1 320px; min-width:0; max-width:100%; background:var(--panel); border:1px solid var(--hairline);
+    border-radius:10px; padding:12px 14px; box-sizing:border-box; overflow:hidden;
+  }
+  .wind-chart-title{
+    font-family:'IBM Plex Sans', sans-serif; font-size:12px; font-weight:700;
+    color:var(--muted); margin-bottom:8px;
+  }
+  .wind-compass-box{ display:flex; flex-direction:column; align-items:center; }
+  .wind-compass-box .wind-chart-title{ align-self:flex-start; }
+  .wind-compass-body{
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px; width:100%;
+  }
+  #wind-compass-container, #wind-compass-container-sel{ width:100%; max-width:220px; min-width:130px; flex:1 1 150px; }
+  .wind-compass-legend{
+    display:flex; flex-direction:column; gap:4px; flex:1 1 110px; min-width:110px; max-width:220px;
+    font-family:'IBM Plex Sans', sans-serif; font-size:10.5px; color:var(--muted);
+  }
+  .wind-compass-legend .wcl-row{ display:flex; align-items:center; gap:8px; }
+  .wind-compass-legend .wcl-dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+
+  .foehn-forecast-card{ padding-top:16px; padding-bottom:14.4px; }
+  /* Live-Tracking: zwei gleich große, vollflächig klickbare Karten untereinander (XContest oben) */
+  .lt-grid{ display:grid; grid-template-columns:1fr; gap:14px; max-width:560px; margin:0 auto; }
+  .lt-card{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    padding:20px 16px 16px; background:var(--panel); border:1.5px solid var(--hairline);
+    border-radius:10px; color:var(--ink); text-decoration:none;
+    transition:border-color .15s, box-shadow .15s, transform .15s;
+  }
+  .lt-card:hover, .lt-card:focus-visible{ border-color:var(--cool); box-shadow:0 4px 14px rgba(28,43,58,0.12); transform:translateY(-1px); outline:none; }
+  .lt-card:focus-visible{ box-shadow:0 0 0 3px rgba(62,110,142,0.35); }
+  .lt-logo{ display:flex; align-items:center; justify-content:center; height:84px; width:100%; }
+  .lt-logo img{ max-height:100%; max-width:80%; width:auto; height:auto; object-fit:contain; }
+  .lt-open{ font-size:14px; font-weight:600; color:var(--cool); }
+  .foehn-forecast-card + .foehn-forecast-card{ margin-top:13px; }
+  @media (min-width:900px){
+    #page-foehnprognose{ display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch; margin-top:19.2px; }
+    /* Die allgemeine .section-Basisregel (margin-top:19.2px, für den Abstand
+       unter der Überschrift gedacht) sowie die .foehn-forecast-card +
+       .foehn-forecast-card- und .section:nth-of-type(2)-Regeln gelten
+       eigentlich nur für EINE der beiden Karten korrekt - im CSS-Grid werden
+       Ränder (anders als im normalen Blockfluss) nicht zusammengefasst,
+       wodurch die Karten unterschiedlich weit nach unten verschoben wurden.
+       Hier werden bei BEIDEN Karten sämtliche eigenen Außenabstände entfernt;
+       der Abstand zur Überschrift kommt stattdessen einheitlich vom
+       Grid-Container selbst (siehe margin-top oben). */
+    #page-foehnprognose > .foehn-forecast-card{ margin-top:0; }
+    #page-foehnprognose .foehn-forecast-card{ display:flex; flex-direction:column; height:100%; box-sizing:border-box; }
+    #page-foehnprognose .foehn-forecast-img-wrap{ height:440px; flex:0 0 auto; }
+    #page-foehnprognose .foehn-forecast-img{ width:auto; height:100%; max-width:100%; object-fit:contain; }
+    /* Die allgemeine .section:nth-of-type(2)-Regel (für den Föhndiagramm-Reiter
+       gedacht) trifft zufällig auch auf die zweite Föhnprognose-Karte zu, da
+       sie ebenfalls die Klasse "section" trägt - das verursachte hier eine
+       zusätzliche, ungewollte Höhenverschiebung. Gezielt aufgehoben. */
+    #page-foehnprognose .section:nth-of-type(2){ margin-top:0; }
+  }
+  .foehn-forecast-img-wrap{
+    border-radius:10px; overflow:hidden; border:1px solid var(--hairline);
+    background:#F4F6F5; box-shadow:0 2px 10px rgba(28,43,58,0.06);
+    display:flex; align-items:center; justify-content:center; min-height:120px;
+    padding:14px;
+  }
+  .foehn-forecast-img{ display:block; width:100%; height:auto; border-radius:4px; }
+
+  .selected-stations-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:11.2px;
+  }
+  .selected-card{
+    border:1px solid var(--hairline); border-radius:12px; padding:12px 16px;
+    background:var(--panel);
+  }
+  .ssc-clickable{ cursor:pointer; }
+  .selected-card .wind-detail-panel{ margin:14px -16px -12px; padding:14px 16px; border-top:1px solid var(--hairline); border-radius:0 0 12px 12px; }
+  .ssc-header-col{ display:flex; flex-direction:column; margin-bottom:8px; position:relative; z-index:2; }
+  .ssc-header{ display:flex; align-items:baseline; justify-content:space-between; }
+  .ssc-stale{ font-size:11px; margin-top:2px; }
+  .ssc-name{ font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:16px; color:var(--ink); }
+  .ssc-time{ display:inline-flex; align-items:center; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--muted); }
+  .ssc-body{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .ssc-values{ display:flex; gap:22px; }
+  .ssc-values .ssc-label{ display:block; font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted); margin-bottom:1px; }
+  .ssc-values .ssc-value{ font-family:'IBM Plex Mono', monospace; font-size:24px; font-weight:700; color:var(--ink); line-height:1; }
+  .ssc-values .ssc-value.ssc-gust{ color:#C1443C; }
+  .ssc-sock{ flex:0 0 auto; width:80px; height:60px; position:relative; }
+
+  .section-grid{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+
+  .table-wrap{
+    max-height:480px;
+    overflow-y:auto;
+    border:1px solid var(--hairline);
+    border-radius:10px;
+  }
+  table{
+    border-collapse:collapse;
+    width:100%;
+    font-size:12px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  thead tr.group th{
+    position:sticky; top:0; z-index:2;
+    height:28px;
+    background:#F1F3F2;
+    border-bottom:1px solid var(--hairline);
+    padding:0 7px;
+    font-weight:700; text-align:left;
+    font-size:11.5px; letter-spacing:.03em; text-transform:uppercase;
+    font-family:'IBM Plex Sans', sans-serif;
+  }
+  thead tr.sub th{
+    position:sticky; top:28px; z-index:1;
+    background:var(--panel);
+    border-bottom:1px solid var(--hairline);
+    padding:6px 7px;
+    text-align:left;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:600;
+  }
+  tbody td{
+    padding:4px 7px;
+    border-bottom:1px solid #EEF1F0;
+    white-space:nowrap;
+  }
+  tbody tr:hover td{ background:#F5F7F6; }
+  td.delta-cell{ font-weight:700; }
+  .hint-text{
+    font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:10.5px;
+  }
+
+  /* Δ-Stufen: die Delta-Zelle bekommt die volle Farbe, der Rest der Zeile ist
+     deutlich transparenter (Kontrast bewusst hoch, damit der Unterschied
+     gut sichtbar ist). Keine gesonderte Hervorhebung der aktuellsten Zeile
+     mehr - die steht durch ihre Position (oben) ohnehin heraus. */
+  tbody tr.hint-pre td{ background:rgba(62,110,142,0.04); }
+  tbody tr.hint-pre td.delta-cell{ background:rgba(62,110,142,0.19); }
+
+  tbody tr.hint-soft td{ background:rgba(62,110,142,0.25); }
+  tbody tr.hint-soft td.delta-cell{ background:rgba(62,110,142,0.40); }
+
+  tbody tr.hint-hard td{ background:rgba(46,109,164,0.72); color:#fff; }
+  tbody tr.hint-hard td.delta-cell{ background:rgba(46,109,164,0.90); }
+  tbody tr.hint-hard .hint-text{ color:#fff; }
+  tbody tr.hint-hard:hover td{ background:rgba(46,109,164,0.72); }
+
+  /* Aktuellste Zeile: eigene grüne Hervorhebung im selben Modus wie die
+     Δ-Stufen (Δ-Zelle kräftiger, Rest der Zeile transparenter) - überschreibt
+     eine eventuelle Δ-Stufenfarbe, da sie unabhängig vom Schweregrad gilt. */
+  tbody tr.current td{ background:rgba(46,163,89,0.12) !important; color:var(--ink) !important; }
+  tbody tr.current td.delta-cell{ background:rgba(46,163,89,0.32) !important; }
+  tbody tr.current .hint-text{ color:var(--ink) !important; }
+
+  .chart-wrap{ position:relative; touch-action: pan-y; height:460px; }
+  canvas.foehn-chart{ width:100% !important; height:100% !important; display:block; }
+  .arrow-svg{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+  .current-value-badge{
+    position:absolute; top:10px; right:10px; z-index:3;
+    background:rgba(255,255,255,0.94);
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    padding:7px 12px;
+    text-align:right;
+    box-shadow:0 3px 10px rgba(28,43,58,0.08);
+    pointer-events:none;
+  }
+  @keyframes badgeBorderBlink{
+    0%,100%{ border-color:var(--hairline); }
+    50%{ border-color:var(--blink-c); box-shadow:0 3px 10px rgba(28,43,58,0.08), 0 0 0 2px var(--blink-c-soft); }
+  }
+  .badge-blink-yellow{ --blink-c:#E6B800; --blink-c-soft:rgba(230,184,0,0.25); animation:badgeBorderBlink 1.6s ease-in-out infinite; }
+  .badge-blink-orange{ --blink-c:#E8871E; --blink-c-soft:rgba(232,135,30,0.28); animation:badgeBorderBlink 1.4s ease-in-out infinite; }
+  .badge-blink-red{ --blink-c:#E5342A; --blink-c-soft:rgba(229,52,42,0.3); animation:badgeBorderBlink 1.1s ease-in-out infinite; }
+  .cvb-label{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:9.5px; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--muted); display:block;
+  }
+  .cvb-time{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px; font-weight:600; color:var(--ink); margin-top:1px;
+    display:flex; align-items:center; justify-content:flex-end;
+  }
+  .cvb-delta-row{
+    display:flex; align-items:baseline; justify-content:flex-end; gap:5px; margin-top:2px;
+  }
+  .cvb-delta{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:19px; font-weight:700; color:var(--ink);
+  }
+  .cvb-delta.warn{ color:var(--cool); }
+  .cvb-delta.alert{ color:var(--alert); }
+  .cvb-unit{ font-family:'IBM Plex Sans', sans-serif; font-size:10.5px; color:var(--muted); }
+  .cvb-bang{
+    color:var(--alert); font-weight:800; font-size:14px;
+    animation:bangBlink 1s steps(1,end) infinite;
+  }
+  @keyframes bangBlink{ 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
+  @media (prefers-reduced-motion:reduce){ .cvb-bang{ animation:none; } }
+
+  .zoom-hint{
+    font-size:11px; color:var(--muted); text-align:right; margin-top:4px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .zoom-reset{
+    font-size:11px; color:var(--cool); background:none; border:1px solid var(--hairline);
+    border-radius:6px; padding:2px 8px; cursor:pointer; font-family:'IBM Plex Sans', sans-serif;
+  }
+  .zoom-reset:hover{ background:#F1F3F2; }
+
+  .sources{
+    margin-top:28px; padding-top:14px; border-top:1px solid var(--hairline);
+    font-size:12.5px; color:var(--muted); line-height:1.8;
+  }
+  .sources a{ color:var(--cool); }
+
+  /* Einklappbare Quellenangaben: "Quellen: Mehr anzeigen ▾" in einer Zeile */
+  .src-more{ margin-top:4px; }
+  .src-more summary{ cursor:pointer; list-style:none; display:block; }
+  .src-more summary::-webkit-details-marker{ display:none; }
+  .src-more .src-toggle{ color:var(--cool); font-weight:600; margin-left:4px; }
+  .src-more summary:hover .src-toggle{ text-decoration:underline; }
+  .src-more .src-toggle::after{ content:'▾'; margin-left:5px; font-size:11px; }
+  .src-more[open] .src-toggle::after{ content:'▴'; }
+  .src-more:not([open]) .when-open{ display:none; }
+  .src-more[open] .when-closed{ display:none; }
+  .src-more > .src-more-body{ margin-top:4px; }
+
+  /* Detailansicht: Definition von Mittelwind und Böe */
+  .wind-def{ margin-top:12px; font-size:12px; line-height:1.6; color:var(--muted); }
+  .wind-def-title{ font-weight:600; margin-bottom:1px; color:var(--ink); }
+
+  .page-foot{
+    text-align:center; color:var(--muted); font-size:12.5px;
+    margin-top:14px; font-family:'IBM Plex Mono', monospace;
+  }
+
+  .loading, .error{ text-align:center; padding:60px 20px; color:var(--muted); }
+  .error{ color:var(--alert); }
+</style>
+<script data-goatcounter="https://lossgeandigoas.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+  <div id="splashScreen" aria-hidden="true">
+    <img id="splashParaglider" src="./splash-paraglider.png" alt="">
+  </div>
+  <div class="wrap">
+    <header>
+      <div class="top-bar">
+        <div class="eyebrow" id="eyebrow"><span class="dot"></span><span id="onAirText">On Air</span></div>
+        <div class="menu-wrap">
+          <button class="menu-toggle" id="menuToggle" aria-label="Menü öffnen" aria-expanded="false">
+            <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          </button>
+          <div class="menu-dropdown" id="menuDropdown">
+            <button class="menu-item active" data-page="foehndiagramm">Föhndiagramm</button>
+            <button class="menu-item" data-page="livewerte">Live-Windwerte</button>
+            <button class="menu-item" data-page="selected">Ausgewählte Stationen</button>
+            <button class="menu-item" data-page="foehnprognose">Föhnprognose</button>
+            <button class="menu-item" data-page="livetracking">Live-Tracking</button>
+          </div>
+        </div>
+      </div>
+      <div class="title-row">
+        <h1 id="pageTitle">Föhndiagramm</h1>
+        <img class="logo" src="./logo-flieger.png" alt="Gleitschirmflieger">
+      </div>
+    </header>
+
+    <div id="page-foehndiagramm">
+      <div class="global-desc">
+        <p id="descFirst"></p>
+        <details>
+          <summary>Mehr erfahren…</summary>
+          <p id="descRest"></p>
+          <p class="desc-attr">Textgrundlage: Föhndiagramm der <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Wetterseite der Autonomen Provinz Bozen – Südtirol</a>.</p>
+        </details>
+      </div>
+
+      <div id="content" class="loading">Lade aktuelle Messwerte …</div>
+
+      <div class="sources">
+        <details class="src-more">
+          <summary>Quellen Messdaten: <span class="src-toggle"><span class="when-closed">Mehr anzeigen</span><span class="when-open">Weniger anzeigen</span></span></summary>
+          <div class="src-more-body">
+            Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a><br>
+            Tirol: <a href="https://www.geosphere.at/de" target="_blank" rel="noopener">GeoSphere Austria</a>
+          </div>
+        </details>
+      </div>
+      <div class="page-foot" id="pageFoot"></div>
+    </div>
+
+    <div id="page-livewerte" style="display:none;">
+      <div class="section">
+        <div id="windMap"></div>
+        <div class="wind-detail-panel" id="windDetailPanel"></div>
+        <details class="src-more wind-note">
+          <summary>Quellen: <span class="src-toggle"><span class="when-closed">Mehr anzeigen</span><span class="when-open">Weniger anzeigen</span></span></summary>
+          <div class="src-more-body">
+            <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a> ·
+            <a href="https://www.meteoschweiz.admin.ch" target="_blank" rel="noopener">MeteoSchweiz</a> ·
+            <a href="https://www.slf.ch" target="_blank" rel="noopener">WSL-Institut für Schnee- und Lawinenforschung SLF</a> ·
+            <a href="https://lawinen.report" target="_blank" rel="noopener">Lawinenwarndienst Tirol / lawinen.report</a> ·
+            <a href="https://www.geosphere.at" target="_blank" rel="noopener">GeoSphere Austria</a> ·
+            <a href="https://www.meteotrentino.it" target="_blank" rel="noopener">Meteotrentino</a>
+          </div>
+        </details>
+        <p class="wind-note">Messintervalle und Böen-Definitionen unterscheiden sich je nach Quelle, Böenwerte sind daher nicht direkt vergleichbar.</p>
+      </div>
+    </div>
+
+    <div id="page-selected" style="display:none;">
+      <div class="section">
+        <div class="selected-stations-grid" id="selectedStationsGrid"></div>
+        <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
+      </div>
+    </div>
+
+    <div id="page-livetracking" style="display:none;">
+      <div class="section">
+        <div class="lt-grid">
+          <a class="lt-card" href="https://www.xcontest.org/world/de/fluge/live/:fp" target="_blank" rel="noopener">
+            <span class="lt-logo"><img src="logo-xcontest.png" alt="XContest"></span>
+            <span class="lt-open">Live-Tracking ↗</span>
+          </a>
+          <a class="lt-card" href="https://www.livetracking.burnair.cloud/?layers=snt%2Cto%2Clz%2Clp%2Cpz%2Cfp%2Cna%2Cle%2Cca%2Cvw%2Ccc%2Ctt%2Cpt%2Ctl%2Ctp%2Cpp%2Cmp%2Cw-ch-jb%2Cw-ch-uw%2Cw-ch-wr%2Cmw%2Ctodhv%2Clzp%2Csnm&amp;visibility=auto%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Coff%2Cauto&amp;base=bbt#9/46.7314/10.7968" target="_blank" rel="noopener">
+            <span class="lt-logo"><img src="logo-burnair.png" alt="Burnair"></span>
+            <span class="lt-open">Live-Tracking ↗</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-foehnprognose" style="display:none;">
+      <div class="section foehn-forecast-card">
+        <div class="foehn-forecast-img-wrap"><img id="foehnImgBz" class="foehn-forecast-img" alt="Föhnprognose Provinz Bozen - Luftdruckdifferenz Bozen/Innsbruck"></div>
+        <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/foehndiagramm" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
+      </div>
+      <div class="section foehn-forecast-card">
+        <div class="foehn-forecast-img-wrap"><img id="foehnImgWr" class="foehn-forecast-img" alt="Föhnprognose Wetterring - Druckdifferenz Bozen/Innsbruck"></div>
+        <p class="wind-note">Quelle: <a href="https://wetterring.at/profiwetter/foehndiagramm-tirol" target="_blank" rel="noopener">Wetterring.at</a></p>
+      </div>
+    </div>
+
+    <footer class="site-footer">
+      <button type="button" class="impressum-link" id="whyOpen">Warum tolwind.bz.it?</button>
+      <span class="footer-dot">·</span>
+      <button type="button" class="impressum-link" id="impressumOpen">Impressum</button>
+    </footer>
+  </div>
+
+  <div class="impressum-overlay" id="impressumOverlay" aria-hidden="true">
+    <div class="impressum-box" role="dialog" aria-modal="true" aria-labelledby="impressumTitle">
+      <button type="button" class="impressum-close" id="impressumClose" aria-label="Schließen">×</button>
+      <h2 id="impressumTitle">Impressum</h2>
+
+      <h3>Betreiber</h3>
+      <p>
+        Oswald Gunsch<br>
+        Schulgasse 8<br>
+        39024 Mals, Italien
+      </p>
+
+      <h3>Kontakt</h3>
+      <p>E-Mail: tolwind.bz.it@gmail.com</p>
+
+      <h3>Verantwortlich für den Inhalt</h3>
+      <p>Oswald Gunsch (Anschrift wie oben)</p>
+
+      <h3>Hinweis</h3>
+      <p>Diese Website wird privat und nicht gewerblich betrieben.</p>
+
+      <h3>Haftungsausschluss</h3>
+      <div class="impressum-block">
+        <p class="impressum-block-title">Inhalte</p>
+        <p>
+          Trotz sorgfältiger inhaltlicher Kontrolle wird keine Haftung für die Richtigkeit, Vollständigkeit und
+          Aktualität der dargestellten Wetter- und Winddaten übernommen. Diese Website dient ausschließlich der
+          unverbindlichen Information und ersetzt keine offizielle Wettervorhersage oder Flugwetterberatung.
+        </p>
+        <p class="impressum-emphasis">
+          Eine ordentliche eigene Flugvorbereitung ist durch diese Seite nicht ersetzbar. Für die angezeigten
+          Daten wird keine Garantie übernommen. Die Nutzung erfolgt auf eigene Gefahr.
+        </p>
+      </div>
+      <div class="impressum-block">
+        <p class="impressum-block-title">Links</p>
+        <p>
+          Für Inhalte externer, verlinkter Websites sind ausschließlich deren jeweilige Betreiber verantwortlich.
+        </p>
+      </div>
+
+      <h3>Datenquellen</h3>
+      <ul class="impressum-sources">
+        <li><a href="https://wetter.provinz.bz.it" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a></li>
+        <li><a href="https://www.geosphere.at" target="_blank" rel="noopener">GeoSphere Austria</a></li>
+        <li><a href="https://www.meteoschweiz.admin.ch" target="_blank" rel="noopener">MeteoSchweiz</a></li>
+        <li><a href="https://www.slf.ch" target="_blank" rel="noopener">WSL-Institut für Schnee- und Lawinenforschung SLF</a> (IMIS-Messnetz, <a href="https://whiterisk.ch" target="_blank" rel="noopener">whiterisk.ch</a>)</li>
+        <li><a href="https://lawinen.report" target="_blank" rel="noopener">Lawinenwarndienst Tirol / lawinen.report</a> (Messdaten der jeweils genannten Betreiber)</li>
+        <li><a href="https://www.meteotrentino.it" target="_blank" rel="noopener">Provincia autonoma di Trento – Meteotrentino</a></li>
+        <li><a href="https://wetterring.at" target="_blank" rel="noopener">Wetterring.at</a></li>
+      </ul>
+
+      <h3>Urheberrecht</h3>
+      <p>
+        Struktur und Code dieser Website unterliegen dem Urheberrecht. Wetterdaten Dritter werden im Rahmen der
+        jeweiligen Lizenzbedingungen der genannten Datenquellen verwendet.
+      </p>
+
+      <h3>Datenschutz</h3>
+      <p>
+        Diese Website verwendet keine Cookies. Zur anonymen Reichweitenmessung kommt
+        <a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>
+        zum Einsatz, ein datenschutzfreundlicher Open-Source-Dienst, der ohne Cookies auskommt und keine
+        personenbezogenen Nutzerprofile erstellt. Weitere Informationen:
+        <a href="https://www.goatcounter.com/help/privacy" target="_blank" rel="noopener">Datenschutzerklärung von GoatCounter</a>.
+      </p>
+    </div>
+  </div>
+
+  <div class="impressum-overlay" id="whyOverlay" aria-hidden="true">
+    <div class="impressum-box why-box" role="dialog" aria-modal="true" aria-labelledby="whyTitle">
+      <button type="button" class="impressum-close" id="whyClose" aria-label="Schließen">×</button>
+      <img class="why-flieger" src="./logo-flieger-white.png" alt="">
+      <h2 id="whyTitle">Warum tolwind.bz.it?</h2>
+
+      <p>Servus,</p>
+      <p>
+        ja warum ist diese Seite entstanden? Eigentlich ganz einfach. Ich wollte für mich selbst ein Föhndiagramm
+        bauen, das mir den aktuellen Föhn Ist-Stand und den der letzten Stunden anzeigt. Angefangen in Excel,
+        wollte ich etwas bauen, auf das jeder zugreifen kann. Und so hat das angefangen. Das Ganze hat dann seinen
+        Lauf genommen, und nun sind hier auf dieser Seite die wichtigsten Informationen zum Ist-Stand der
+        Situation dargestellt. Ich hoffe ich kann damit einiges erleichtern.
+      </p>
+      <p class="why-support-text">
+        Falls du diese Webseite nun öfters nutzt bzw. du mich mit der Zahlung der Domain (36&nbsp;€/Jahr)
+        unterstützen möchtest, würde ich mich darüber sehr freuen!
+      </p>
+
+      <div class="paypal-row">
+        <a class="paypal-button" href="https://www.paypal.me/OswaldGunsch" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7.5 20.5H4.8c-.4 0-.7-.3-.6-.7L6.6 4.2c.1-.5.5-.8 1-.8h6.2c2.9 0 4.9 1.4 4.5 4.1-.4 3-2.6 4.6-5.7 4.6H10c-.4 0-.8.3-.9.7l-1 6.9c-.1.4-.3.6-.6.6zm9-13.7c.2 2-.9 3.3-2.9 3.3h-1.9l.6-3.9c0-.2.2-.4.4-.4h1.3c1.2 0 2.2.3 2.5 1z"/></svg>
+          Über PayPal unterstützen
+        </a>
+        <a href="https://www.paypal.me/OswaldGunsch" target="_blank" rel="noopener" class="paypal-qr-link">
+          <img class="paypal-qr" src="./paypal-qr.png" alt="PayPal QR-Code">
+        </a>
+      </div>
+    </div>
+  </div>
+
+<script>
+  (function initSplashScreen(){
+    var splash = document.getElementById('splashScreen');
+    var paraglider = document.getElementById('splashParaglider');
+    if (!splash || !paraglider) return;
+    var minTimeDone = false;
+    var pageReady = false;
+    var hidden = false;
+
+    function tryHide(){
+      if (hidden || !minTimeDone || !pageReady) return;
+      hidden = true;
+      splash.classList.add('splash-hide');
+      setTimeout(function(){ if (splash.parentNode) splash.parentNode.removeChild(splash); }, 500);
+    }
+
+    // Mindestens eine volle Flugrunde (2s) abwarten, auch wenn die Seite
+    // schneller fertig ist - danach sofort ausblenden, sobald auch die Seite
+    // bereit ist.
+    setTimeout(function(){ minTimeDone = true; tryHide(); }, 2000);
+
+    // Dauert das Laden länger als 2s, fliegt die Figur einfach weiter (CSS
+    // animation ist "infinite") - am Ende jeder weiteren vollen Runde wird
+    // erneut geprüft, ob die Seite inzwischen bereit ist, damit sauber mit
+    // der Landung (statt mitten im Flug) ausgeblendet wird.
+    paraglider.addEventListener('animationiteration', tryHide);
+
+    window.markPageReady = function(){
+      pageReady = true;
+      tryHide();
+    };
+  })();
+
+  function initMenu(){
+    var toggle = document.getElementById('menuToggle');
+    var dropdown = document.getElementById('menuDropdown');
+    var items = dropdown.querySelectorAll('.menu-item');
+    var pages = { foehndiagramm: document.getElementById('page-foehndiagramm'), livewerte: document.getElementById('page-livewerte'), selected: document.getElementById('page-selected'), foehnprognose: document.getElementById('page-foehnprognose'), livetracking: document.getElementById('page-livetracking') };
+    var titles = { foehndiagramm: 'Föhndiagramm', livewerte: 'Live-Windwerte', selected: 'Ausgewählte Stationen', foehnprognose: 'Föhnprognose', livetracking: 'Live-Tracking' };
+    var titleEl = document.getElementById('pageTitle');
+
+    function updateTitleWrapState(){
+      var titleRow = document.querySelector('.title-row');
+      var logo = titleRow ? titleRow.querySelector('img.logo') : null;
+      if (!titleEl || !titleRow || !logo) return;
+
+      var LOGO_WIDTH = 51; // feste Logo-Breite, siehe .title-row img.logo in CSS
+      var GAP = 14;
+      var availableForText = titleRow.offsetWidth - LOGO_WIDTH - GAP;
+
+      var cs = getComputedStyle(titleEl);
+      var measurer = document.createElement('span');
+      measurer.style.cssText = 'position:absolute; visibility:hidden; white-space:nowrap; top:-9999px;' +
+        'font-family:' + cs.fontFamily + '; font-size:' + cs.fontSize + ';' +
+        'font-weight:' + cs.fontWeight + '; letter-spacing:' + cs.letterSpacing + ';';
+      measurer.textContent = titleEl.textContent;
+      document.body.appendChild(measurer);
+      var fullTextWidth = measurer.offsetWidth;
+
+      // Passt der GESAMTE Titel (einzeilig) neben das Logo? Diese eine
+      // Messung entscheidet alles - unabhängig davon, ob das Logo gerade
+      // normal oder absolut positioniert ist. Das ist wichtig: würde man
+      // stattdessen live an der aktuellen Flexbox-Höhe von h1 messen, gäbe
+      // es eine Rückkopplung (Logo rausnehmen -> h1 bekommt mehr Platz ->
+      // Messung ändert sich -> Logo-Position ändert sich -> usw.), die bei
+      // bestimmten Fensterbreiten zu einem Hin-und-Her-Flackern und sogar zu
+      // einer Überlappung von Logo und Text führen konnte.
+      var isWrapped = fullTextWidth > availableForText;
+
+      if (!isWrapped) {
+        document.body.removeChild(measurer);
+        titleRow.classList.remove('title-wrapped');
+        titleEl.style.maxWidth = '';
+        logo.style.position = '';
+        logo.style.left = '';
+        logo.style.top = '';
+        return;
+      }
+
+      var firstWord = (titleEl.textContent || '').split(' ')[0];
+      measurer.textContent = firstWord;
+      var firstWordWidth = measurer.offsetWidth;
+      document.body.removeChild(measurer);
+
+      // h1 explizit auf genau die geprüfte Breite begrenzen - sonst bekäme
+      // h1 durch das absolut positionierte (= aus dem Fluss genommene) Logo
+      // die VOLLE Zeilenbreite und würde eventuell doch einzeilig bleiben,
+      // während das Logo bereits von einem Umbruch ausgehend platziert
+      // wurde. Damit stimmen Berechnung und tatsächliches Umbruchverhalten
+      // immer exakt überein.
+      titleRow.classList.add('title-wrapped');
+      titleEl.style.maxWidth = availableForText + 'px';
+      logo.style.position = 'absolute';
+      logo.style.left = (firstWordWidth + GAP) + 'px';
+      logo.style.top = '0';
+    }
+
+    function activatePage(page){
+      if (!pages[page]) page = 'foehndiagramm';
+      items.forEach(function(i){ i.classList.toggle('active', i.getAttribute('data-page') === page); });
+      Object.keys(pages).forEach(function(key){
+        pages[key].style.display = (key === page) ? '' : 'none';
+      });
+      titleEl.textContent = titles[page];
+      updateTitleWrapState();
+      if (page === 'livewerte' && window.initWindMap) window.initWindMap();
+      if (page === 'selected' && window.renderSelectedStations) window.renderSelectedStations();
+      if (page === 'foehnprognose' && window.renderFoehnprognose) window.renderFoehnprognose();
+      try { sessionStorage.setItem('foehn-active-page', page); } catch (e) { /* z.B. privater Modus - dann einfach nicht merken */ }
+    }
+    window.addEventListener('resize', updateTitleWrapState);
+    // Falls Google Fonts beim ersten Aufruf noch nicht fertig geladen war
+    // (z.B. bei langsamer Verbindung), lief die Prüfung oben eventuell noch
+    // mit einer Ersatzschrift mit anderen Maßen. Sobald die echte Schrift
+    // bestätigt geladen ist, hier sicherheitshalber nochmal neu prüfen.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(updateTitleWrapState);
+    }
+
+    toggle.addEventListener('click', function(e){
+      e.stopPropagation();
+      var isOpen = dropdown.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    items.forEach(function(item){
+      item.addEventListener('click', function(){
+        activatePage(item.getAttribute('data-page'));
+        dropdown.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    document.addEventListener('click', function(e){
+      if (!dropdown.contains(e.target) && e.target !== toggle && !toggle.contains(e.target)) {
+        dropdown.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    window.restoreActivePage = function(){
+      // Bei manuellem Neuladen der Seite (F5) den zuletzt gewählten Reiter
+      // wiederherstellen - aber NICHT, wenn der Tab/Browser komplett
+      // geschlossen und später neu geöffnet wird (dann wieder Föhndiagramm
+      // als Start). Deshalb bewusst sessionStorage statt localStorage: bleibt
+      // nur für die Dauer der aktuellen Browser-Sitzung erhalten.
+      // Bewusst erst ganz am Ende des Skripts aufgerufen (siehe unten) - hier
+      // in initMenu() wären initWindMap/renderSelectedStations noch gar nicht
+      // definiert, der jeweilige Reiter bliebe dann leer.
+      var savedPage = 'foehndiagramm';
+      try { savedPage = sessionStorage.getItem('foehn-active-page') || 'foehndiagramm'; } catch (e) { /* ignorieren */ }
+      if (savedPage !== 'foehndiagramm') activatePage(savedPage);
+    };
+  }
+  initMenu();
+
+  // Schwellenwerte, abgeglichen mit dem offiziellen Beschreibungstext (3 / 6 hPa).
+  var TABLE_PRE = -2.5;
+  var TABLE_SOFT = -3;
+  var TABLE_HARD = -6;
+  var CHART_LINE_SOFT = -3;
+  var CHART_LINE_HARD = -6;
+  var CHART_Y_MIN = -10, CHART_Y_MAX = 10;
+  var MIN_LABEL_PX = 55; // Mindestabstand zwischen zwei X-Achsen-Beschriftungen
+  var DESKTOP_UNIT_PX = 46; // Pixelabstand für 2 Y-Einheiten bei Laptop-Breite - fixer Referenzwert (u.a. für die Pfeil-Mindestbreite), unabhängig von der responsiven Y-Skalierung
+
+  var DESC_FIRST =
+    "Die Grafik zeigt die aktuelle und vergangene Luftdruckdifferenz in Hektopascal [hPa] zwischen den jeweiligen Stationspaaren.";
+  var DESC_REST =
+    "Das jeweils andere Stationspaar wird mit einer hellgrauen Linie im Diagramm dargestellt.\n" +
+    "Die Druckdifferenz gibt an, welche Windverhältnisse in den Alpen zu erwarten sind.\n" +
+    "Bei negativen Werten, d.h. die Südtiroler Station hat den tieferen Druck als die Tiroler Station, ist in Südtirol Nordföhn zu erwarten. Je größer die Druckdifferenz, desto stärker weht der Föhn und desto weiter greift er in die südlichen Täler durch.\n" +
+    "Erfahrungsgemäß muss die Druckdifferenz mindestens 3 hPa betragen, damit der Föhn die Täler nahe am Alpenhauptkamm (Obervinschgau, Wipptal) erfasst. Bei einer Differenz von über 6 hPa schafft es der Föhnwind in den meisten Fällen bis ins Unterland.\n" +
+    "Im umgekehrten Fall, also bei positiven Werten, ist mit Südföhn an der Alpennordseite zu rechnen. Gleichzeitig frischt des Öfteren starker Taleinwind/Südwind auf Südtiroler Seite auf.";
+
+  document.getElementById('descFirst').textContent = DESC_FIRST;
+  document.getElementById('descRest').textContent = DESC_REST;
+
+  var SHORT_CODES = { Bozen: 'BZ', Innsbruck: 'IBK', Meran: 'MER', Imst: 'IMST' };
+  function shortCode(name){ return SHORT_CODES[name] || name; }
+
+  var charts = {};
+  var resizeObservers = {}; // canvasId -> ResizeObserver - hält die Höhe live synchron mit der Breite
+  var savedZoomRange = {};   // canvasId -> {min,max} - bleibt über Datenaktualisierungen erhalten, nicht über Seiten-Reload
+  var syncingZoom = false;   // Schutz gegen Endlosschleife beim gegenseitigen Zoom-Abgleich
+  var CHART_PAIR = { 'chart-bi': 'chart-im', 'chart-im': 'chart-bi' };
+
+  // Wie viele Stunden standardmäßig sichtbar sein sollen, abhängig von der
+  // Chart-Breite: schmal (Handy) -> 6h, breit (Desktop) -> volle 16h.
+  // Pixelabstand für 2 Y-Achsen-Einheiten: am Laptop wie bisher (460px Höhe /
+  // 10 Zwei-Einheiten-Schritte = 46px), am Handy auf 70% davon gestaucht,
+  // dazwischen linear interpoliert.
+  function computeChartHeight(containerWidth){
+    var minW = 380, maxW = 900; // Handy .. Laptop
+    var mobileUnitPx = DESKTOP_UNIT_PX * 0.7; // 32,2px pro 2pt bei Handy-Breite (70%)
+    var w = Math.max(minW, Math.min(maxW, containerWidth));
+    var t = (w - minW) / (maxW - minW); // 0 = Handy, 1 = Laptop
+    var unitPx = mobileUnitPx + t * (DESKTOP_UNIT_PX - mobileUnitPx);
+    return Math.round(unitPx * 10);
+  }
+
+  function computeDefaultVisibleHours(containerWidth){
+    var minW = 380, maxW = 900, minH = 6, maxH = 16;
+    var w = Math.max(minW, Math.min(maxW, containerWidth));
+    var t = (w - minW) / (maxW - minW);
+    return minH + t * (maxH - minH);
+  }
+
+  // Sucht, von der Zielanzahl Stunden rückwärts gerechnet, die nächste volle
+  // Stunde (damit der linke Rand immer auf :00 beginnt) und liefert den
+  // passenden Index-Bereich für die Kategorie-Achse.
+  function computeDefaultRange(labels, targetHours){
+    if (!labels.length) return null;
+    var pointsPerHour = 6; // 10-Minuten-Takt
+    var idealStart = labels.length - 1 - Math.round(targetHours * pointsPerHour);
+    var startIdx = -1;
+    for (var i = Math.max(0, idealStart); i >= 0; i--){
+      var label = labels[i];
+      if (label && label.slice(-2) === '00') { startIdx = i; break; }
+    }
+    if (startIdx === -1) startIdx = 0;
+    return { min: startIdx, max: labels.length - 1 };
+  }
+
+  function clearChartTooltip(chart){
+    if (!chart) return;
+    chart.setActiveElements([]);
+    if (chart.tooltip) chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+    chart.update('none');
+  }
+
+  // Klick/Tipp außerhalb der eigentlichen Plot-Fläche (x/y-Achsen-Bereich)
+  // blendet ein evtl. noch offenes Tooltip-Detailfeld wieder aus.
+  document.addEventListener('click', function(e){
+    Object.keys(charts).forEach(function(id){
+      var chart = charts[id];
+      if (!chart) return;
+      var canvas = chart.canvas;
+      var withinArea = false;
+      if (e.target === canvas) {
+        var rect = canvas.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var y = e.clientY - rect.top;
+        var area = chart.chartArea;
+        withinArea = !!area && x >= area.left && x <= area.right && y >= area.top && y <= area.bottom;
+      }
+      if (!withinArea) clearChartTooltip(chart);
+    });
+  });
+
+  if (window.Chart && window['chartjs-plugin-annotation']) {
+    Chart.register(window['chartjs-plugin-annotation']);
+  }
+  if (window.Chart && window.ChartZoom) {
+    Chart.register(window.ChartZoom);
+  }
+
+  function num(v){
+    var n = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.'));
+    return isNaN(n) ? null : n;
+  }
+  function fmt(v, digits){
+    var n = num(v);
+    if (n === null) return '—';
+    return (n > 0 ? '+' : '') + n.toFixed(digits === undefined ? 1 : digits).replace('.', ',');
+  }
+  function getVar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#999';
+  }
+
+  // Tabelle: Δ zuerst (wichtigster Wert), Datum/Uhrzeit nur einmal (stimmen für
+  // beide Stationen überein), neueste Messung oben.
+  function buildTable(pair){
+    var rows = (pair.rows || []).slice().reverse(); // neueste zuerst
+    var html = '<table><thead>' +
+      '<tr class="group"><th colspan="3"></th><th>' + pair.leftLabel.toUpperCase() + '</th><th>' + pair.rightLabel.toUpperCase() + '</th><th></th></tr>' +
+      '<tr class="sub"><th>ΔhPa</th><th></th><th>Uhrzeit</th><th>Luftdruck [hPa]</th><th>Luftdruck [hPa]</th><th>Datum</th></tr>' +
+      '</thead><tbody>';
+
+    rows.forEach(function(r, i){
+      var d = num(r.delta);
+      var tier = '';
+      var hint = '';
+      if (d !== null && d <= TABLE_HARD) { tier = 'hint-hard'; hint = 'Nordföhn!'; }
+      else if (d !== null && d <= TABLE_SOFT) { tier = 'hint-soft'; }
+      else if (d !== null && d <= TABLE_PRE) { tier = 'hint-pre'; }
+      var cls = tier + (i === 0 ? ' current' : '');
+
+      html += '<tr class="' + cls + '">' +
+        '<td class="delta-cell">' + fmt(r.delta) + '</td>' +
+        '<td class="hint-text">' + hint + '</td>' +
+        '<td>' + (r.zeitLeft || '—') + '</td>' +
+        '<td>' + fmt(r.wertLeft) + '</td><td>' + fmt(r.wertRight) + '</td>' +
+        '<td>' + (r.datumLeft || '—') + '</td>' +
+        '</tr>';
+    });
+
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function pctOfXAxisInPx(chart, pct){
+    var area = chart.chartArea;
+    if (!area) return 20;
+    var width = area.right - area.left;
+    return Math.max(6, width * pct);
+  }
+
+  function buildChart(canvasId, primary, secondary, yAxisTitle, primaryCode, secondaryCode){
+    var rows = primary.rows || [];
+    var secRows = (secondary && secondary.rows) || [];
+    var labels = rows.map(function(r){ return r.zeitLeft; });
+    var primaryData = rows.map(function(r){ return num(r.delta); });
+    var offset = secRows.length - rows.length;
+    var secondaryData = labels.map(function(_, i){
+      var idx = i + offset;
+      return (idx >= 0 && idx < secRows.length) ? num(secRows[idx].delta) : null;
+    });
+
+    var blueFill = 'rgba(62,110,142,0.2)';
+    var redFill = 'rgba(193,68,60,0.2)';
+
+    var annotations = {
+      lineSoft: { type: 'line', yMin: CHART_LINE_SOFT, yMax: CHART_LINE_SOFT, borderColor: '#3399FF', borderWidth: 2 },
+      lineHard: { type: 'line', yMin: CHART_LINE_HARD, yMax: CHART_LINE_HARD, borderColor: '#0000FF', borderWidth: 2.5 }
+    };
+
+    // Pfeil als eigenes SVG-Overlay (nicht über das Annotation-Plugin - dessen
+    // arrowHeads-Funktion war unzuverlässig bei Breite/Transparenz).
+    function updateArrowSvg(chart){
+      var svg = document.getElementById('svg-' + canvasId);
+      if (!svg) return;
+      var area = chart.chartArea;
+      var yScale = chart.scales.y;
+      if (!area || !yScale || labels.length === 0) { svg.innerHTML = ''; return; }
+
+      var centerX = (area.left + area.right) / 2;
+      var y3 = yScale.getPixelForValue(-3);
+      var y6 = yScale.getPixelForValue(-6);
+      var y8 = yScale.getPixelForValue(-8);
+      var y10 = yScale.getPixelForValue(-10);
+      var textY = (y8 + y10) / 2; // exakt mittig zwischen y=-8 und y=-10, unabhängig von der Y-Skala
+      var totalW = area.right - area.left;
+      var shaftW = Math.max(totalW * 0.09, DESKTOP_UNIT_PX);
+      var headW = Math.max(totalW * 0.156, DESKTOP_UNIT_PX * 1.7);
+      var color = 'rgba(51,153,255,0.2)';   // #3399FF bei 80% Transparenz (20% Deckkraft)
+      var textColor = 'rgba(51,153,255,0.4)'; // 20%-Punkte weniger transparent als der Pfeil (Alpha 0,2 -> 0,4)
+
+      svg.setAttribute('width', chart.width);
+      svg.setAttribute('height', chart.height);
+      svg.innerHTML =
+        '<rect x="' + (centerX - shaftW / 2) + '" y="' + y3 + '" width="' + shaftW + '" height="' + (y6 - y3) + '" fill="' + color + '"></rect>' +
+        '<polygon points="' + (centerX - headW / 2) + ',' + y6 + ' ' + (centerX + headW / 2) + ',' + y6 + ' ' + centerX + ',' + y8 + '" fill="' + color + '"></polygon>' +
+        '<text x="' + centerX + '" y="' + textY + '" text-anchor="middle" dominant-baseline="middle" font-family="\'IBM Plex Sans\', sans-serif" font-weight="500" font-size="16.8" fill="' + textColor + '">NORDFÖHN</text>';
+    }
+
+    var arrowSvgPlugin = {
+      id: 'arrowSvgSync-' + canvasId,
+      afterLayout: function(chart){
+        updateArrowSvg(chart);
+        // Hammer.js (für Pinch-Zoom) setzt touch-action="none" per Inline-Style
+        // auf das Canvas - das blockiert vertikales Scrollen mit dem Finger.
+        // Hier zurück auf pan-y erzwingen: vertikales Scrollen bleibt möglich,
+        // horizontales Ziehen/Pinch wird weiterhin vom Zoom-Plugin abgefangen.
+        if (chart.canvas.style.touchAction !== 'pan-y') {
+          chart.canvas.style.touchAction = 'pan-y';
+        }
+      }
+    };
+
+    // Kurze Tick-Striche auf der X-Achse an JEDEM tatsächlichen Datenpunkt
+    // (nicht nur an den beschrifteten Stunden) - reine Positionsmarkierung.
+    var tickMarksPlugin = {
+      id: 'tickMarks-' + canvasId,
+      afterDraw: function(chart){
+        var xScale = chart.scales.x;
+        var yScale = chart.scales.y;
+        var area = chart.chartArea;
+        if (!area) return;
+        var ctx = chart.ctx;
+        ctx.save();
+        ctx.strokeStyle = '#9AA3A0';
+        ctx.lineWidth = 1;
+
+        // X-Achse: kurze Striche an JEDEM tatsächlichen Datenpunkt (nicht nur
+        // an den beschrifteten Stunden).
+        if (xScale) {
+          for (var i = 0; i < labels.length; i++){
+            var x = xScale.getPixelForValue(i);
+            if (x < area.left - 1 || x > area.right + 1) continue; // nur im sichtbaren (ggf. gezoomten) Bereich
+            ctx.beginPath();
+            ctx.moveTo(x, area.bottom);
+            ctx.lineTo(x, area.bottom + 4);
+            ctx.stroke();
+          }
+        }
+
+        // Y-Achse: kurze Striche an jeder beschrifteten Stelle (alle 2 Einheiten).
+        if (yScale) {
+          for (var v = CHART_Y_MIN; v <= CHART_Y_MAX; v += 2){
+            var y = yScale.getPixelForValue(v);
+            ctx.beginPath();
+            ctx.moveTo(area.left - 4, y);
+            ctx.lineTo(area.left, y);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
+    };
+
+    // Zoom-Zustand bei Datenaktualisierung erhalten (nicht bei Seiten-Reload,
+    // da savedZoomRange ein reines JS-Objekt im Speicher ist): falls schon ein
+    // Bereich gemerkt wurde, den wiederverwenden - sonst responsiven
+    // Standardbereich berechnen (schmal -> 6h, breit -> 16h, links auf volle
+    // Stunde ausgerichtet).
+    var containerEl = document.getElementById(canvasId).parentElement;
+    // Fällt bewusst auf window.innerWidth zurück (nicht auf einen festen
+    // Desktop-Wert), falls der Container gerade unsichtbar ist (clientWidth
+    // liefert dann 0) - z.B. wenn das automatische 3-Minuten-Update im
+    // Hintergrund läuft, während man gerade auf einem anderen Reiter ist.
+    // Sonst würde die Standardansicht fälschlich für einen breiten
+    // Desktop-Bildschirm berechnet, selbst am schmalen Handy-Display.
+    var containerWidth = (containerEl && containerEl.clientWidth) || window.innerWidth || 800;
+    var initialRange = savedZoomRange[canvasId];
+    if (!initialRange && labels.length) {
+      initialRange = computeDefaultRange(labels, computeDefaultVisibleHours(containerWidth));
+    }
+
+    var computedHeight = computeChartHeight(containerWidth);
+    if (containerEl) containerEl.style.height = computedHeight + 'px';
+
+    // Höhe bleibt sonst nur beim (Neu-)Erstellen des Charts aktuell (z.B. alle
+    // 3 Min. beim Datenrefresh) - reagiert aber nicht, wenn der Nutzer das
+    // Browserfenster live verkleinert/vergrößert oder das Handy dreht. Der
+    // ResizeObserver hält die Höhe deshalb kontinuierlich synchron zur
+    // tatsächlichen Breite.
+    if (containerEl && window.ResizeObserver) {
+      if (resizeObservers[canvasId]) resizeObservers[canvasId].disconnect();
+      var lastObservedWidth = containerWidth;
+      var ro = new ResizeObserver(function(entries){
+        var w = entries[0].contentRect.width;
+        if (Math.abs(w - lastObservedWidth) < 2) return; // nur bei echter Breitenänderung reagieren (verhindert Endlosschleife durchs eigene Höhensetzen)
+        lastObservedWidth = w;
+        var newHeight = computeChartHeight(w) + 'px';
+        if (containerEl.style.height !== newHeight) containerEl.style.height = newHeight;
+      });
+      ro.observe(containerEl);
+      resizeObservers[canvasId] = ro;
+    }
+
+    function handleZoomOrPan(ctx){
+      var chart = ctx.chart;
+      savedZoomRange[canvasId] = { min: chart.scales.x.min, max: chart.scales.x.max };
+      if (syncingZoom) return;
+      var otherId = CHART_PAIR[canvasId];
+      var otherChart = charts[otherId];
+      if (otherChart) {
+        syncingZoom = true;
+        otherChart.zoomScale('x', { min: chart.scales.x.min, max: chart.scales.x.max }, 'none');
+        savedZoomRange[otherId] = { min: chart.scales.x.min, max: chart.scales.x.max };
+        syncingZoom = false;
+      }
+    }
+
+    var ctx = document.getElementById(canvasId).getContext('2d');
+    if (charts[canvasId]) charts[canvasId].destroy();
+    charts[canvasId] = new Chart(ctx, {
+      type: 'line',
+      plugins: labels.length ? [arrowSvgPlugin, tickMarksPlugin] : [],
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: secondaryCode,
+            data: secondaryData,
+            borderColor: 'rgba(185,194,192,0.6)',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0.35,
+            cubicInterpolationMode: 'monotone',
+            fill: false
+          },
+          {
+            label: primaryCode,
+            data: primaryData,
+            borderColor: getVar('--line-primary'),
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.35,
+            cubicInterpolationMode: 'monotone',
+            fill: 'origin',
+            segment: {
+              backgroundColor: function(segCtx){
+                var y0 = segCtx.p0.parsed.y, y1 = segCtx.p1.parsed.y;
+                return ((y0 + y1) / 2 < 0) ? blueFill : redFill;
+              }
+            }
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            mode: 'index', intersect: false,
+            callbacks: {
+              label: function(ctx){
+                return ctx.dataset.label + ': ' + fmt(ctx.parsed.y) + ' hPa';
+              }
+            }
+          },
+          annotation: { annotations: annotations },
+          zoom: {
+            pan: { enabled: true, mode: 'x', onPanComplete: handleZoomOrPan },
+            zoom: {
+              wheel: { enabled: true },
+              pinch: { enabled: true },
+              mode: 'x',
+              onZoomComplete: handleZoomOrPan
+            },
+            limits: { x: { min: 0, max: labels.length - 1 } }
+          }
+        },
+        scales: {
+          x: {
+            min: initialRange ? initialRange.min : undefined,
+            max: initialRange ? initialRange.max : undefined,
+            grid: { display: false, drawTicks: false },
+            afterBuildTicks: function(axis){
+              var allTicks = axis.ticks;
+              var chartWidth = (axis.chart && axis.chart.width) || 600;
+              var n = allTicks.length;
+              if (n > 1 && (chartWidth / n) >= MIN_LABEL_PX) {
+                return; // genug Platz für jeden sichtbaren Punkt (auch 20-Min-Werte)
+              }
+              var hourTicks = allTicks.filter(function(t){
+                var label = axis.getLabelForValue(t.value);
+                var parts = label ? label.split(':') : [];
+                return parts.length === 2 && parts[1] === '00';
+              });
+              if (!hourTicks.length) { axis.ticks = []; return; }
+              var maxLabels = Math.max(1, Math.floor(chartWidth / MIN_LABEL_PX));
+              var step = Math.max(1, Math.ceil(hourTicks.length / maxLabels));
+              axis.ticks = hourTicks.filter(function(t, i){ return i % step === 0; });
+            },
+            ticks: {
+              maxRotation: 0,
+              font: { family: "'IBM Plex Mono', monospace", size: 10 }, color: '#5B6B72'
+            }
+          },
+          y: {
+            min: CHART_Y_MIN, max: CHART_Y_MAX,
+            title: { display: true, text: yAxisTitle, font: { size: 11, family: "'IBM Plex Sans', sans-serif" }, color: '#5B6B72' },
+            grid: { color: '#EEF1F0', drawTicks: true, tickLength: 4 },
+            ticks: { stepSize: 2, font: { family: "'IBM Plex Mono', monospace", size: 10 }, color: '#5B6B72' }
+          }
+        }
+      }
+    });
+  }
+
+  var latestInstants = {}; // pairKey -> Date - für den On-Air-Verzögerungscheck
+
+  function buildCurrentValueBadge(primary){
+    var rows = primary.rows || [];
+    if (!rows.length) return '';
+    var last = rows[rows.length - 1];
+    var d = num(last.delta);
+    var deltaClass = '';
+    var bangs = '';
+    if (d !== null && d <= TABLE_HARD) {
+      deltaClass = 'alert';
+      bangs = '<span class="cvb-bang" style="animation-delay:0s">!</span>' +
+              '<span class="cvb-bang" style="animation-delay:.15s">!</span>' +
+              '<span class="cvb-bang" style="animation-delay:.3s">!</span>';
+    } else if (d !== null && d <= TABLE_SOFT) {
+      deltaClass = 'warn';
+      bangs = '<span class="cvb-bang">!</span>';
+    }
+    var badgeAgeMin = last.instantUTC ? (Date.now() - new Date(last.instantUTC).getTime()) / 60000 : null;
+    var badgeTrafficColor = '#B9C2C0';
+    if (badgeAgeMin !== null) {
+      if (badgeAgeMin <= 35) badgeTrafficColor = '#22C55E';
+      else if (badgeAgeMin <= 60) badgeTrafficColor = '#F2C94C';
+      else badgeTrafficColor = '#E5342A';
+    }
+    var badgeTrafficDot = '<span class="update-traffic-dot" style="background:' + badgeTrafficColor + ';"></span>';
+    return '<span class="cvb-label">Aktuellster Wert</span>' +
+      '<span class="cvb-time">' + badgeTrafficDot + (last.zeitLeft || '—') + '</span>' +
+      '<div class="cvb-delta-row"><span class="cvb-delta ' + deltaClass + '">' + fmt(last.delta) + '</span><span class="cvb-unit">hPa</span>' + bangs + '</div>';
+  }
+
+  function renderSection(primary, secondary, tableElId, chartElId, chartInstId, yAxisTitle){
+    if (!primary || !primary.rows || !primary.rows.length){
+      document.getElementById(tableElId).innerHTML = '<div class="error" style="padding:24px;">Noch keine Daten für diese Passroute.</div>';
+      return;
+    }
+    document.getElementById(tableElId).innerHTML = buildTable(primary);
+    var badgeEl = document.getElementById('badge-' + chartElId);
+    if (badgeEl) {
+      badgeEl.innerHTML = buildCurrentValueBadge(primary);
+      var lastForBadge = primary.rows[primary.rows.length - 1];
+      var dForBadge = num(lastForBadge.delta);
+      var badgeBlinkClass = '';
+      if (dForBadge !== null) {
+        if (dForBadge <= -6) badgeBlinkClass = 'badge-blink-red';
+        else if (dForBadge <= -4.5) badgeBlinkClass = 'badge-blink-orange';
+        else if (dForBadge <= -3) badgeBlinkClass = 'badge-blink-yellow';
+      }
+      badgeEl.classList.remove('badge-blink-yellow', 'badge-blink-orange', 'badge-blink-red');
+      if (badgeBlinkClass) badgeEl.classList.add(badgeBlinkClass);
+    }
+    var lastRow = primary.rows[primary.rows.length - 1];
+    if (lastRow && lastRow.instantUTC) latestInstants[chartInstId] = new Date(lastRow.instantUTC);
+    var primaryCode = shortCode(primary.leftLabel) + '-' + shortCode(primary.rightLabel);
+    var secondaryCode = secondary ? (shortCode(secondary.leftLabel) + '-' + shortCode(secondary.rightLabel)) : '';
+    buildChart(chartElId, primary, secondary, yAxisTitle, primaryCode, secondaryCode);
+  }
+
+  // Prüft regelmäßig (unabhängig vom Datenrefresh, da die Zeit ja
+  // weiterläuft), ob der aktuellste bekannte Wert mehr als 1h alt ist.
+  function checkDataFreshness(){
+    var eyebrow = document.getElementById('eyebrow');
+    var textEl = document.getElementById('onAirText');
+    if (!eyebrow || !textEl) return;
+    var now = Date.now();
+    var maxAgeMs = 60 * 60 * 1000;
+    var isStale = Object.keys(latestInstants).some(function(k){
+      var t = latestInstants[k];
+      return t && (now - t.getTime()) > maxAgeMs;
+    });
+    if (isStale) {
+      eyebrow.classList.add('stale');
+      textEl.innerHTML = 'On Air <span class="eyebrow-stale-text">· Zeitverzögerung &gt; 1<span style="font-size:0.68em;">h</span>!</span>';
+    } else {
+      eyebrow.classList.remove('stale');
+      textEl.textContent = 'On Air';
+    }
+  }
+  setInterval(checkDataFreshness, 30 * 1000);
+
+
+  function resetZoom(chartInstId){
+    if (!charts[chartInstId]) return;
+    var full = { min: 0, max: charts[chartInstId].data.labels.length - 1 };
+    charts[chartInstId].zoomScale('x', full, 'default');
+    charts[chartInstId].update();
+    delete savedZoomRange[chartInstId];
+    var otherId = CHART_PAIR[chartInstId];
+    if (charts[otherId]) {
+      var fullOther = { min: 0, max: charts[otherId].data.labels.length - 1 };
+      charts[otherId].zoomScale('x', fullOther, 'default');
+      charts[otherId].update();
+      delete savedZoomRange[otherId];
+    }
+  }
+  window.resetZoom = resetZoom;
+
+  function legendHtml(){
+    return '<div class="legend-note">' +
+      '<span><span class="swatch" style="background:rgba(62,110,142,0.19)"></span>Δ ≤ -2,5 hPa</span>' +
+      '<span><span class="swatch" style="background:rgba(62,110,142,0.40)"></span>Δ ≤ -3 hPa</span>' +
+      '<span><span class="swatch" style="background:rgba(46,109,164,0.90)"></span>Δ ≤ -6 hPa (starker Nordföhn)</span>' +
+      '<span><span class="swatch" style="background:rgba(46,163,89,0.32)"></span>aktuellster Wert</span>' +
+      '</div>';
+  }
+
+  function render(data){
+    var content = document.getElementById('content');
+    content.className = '';
+    var bi = data.bozenInnsbruck || { leftLabel: 'Bozen', rightLabel: 'Innsbruck' };
+    var im = data.imstMeran || { leftLabel: 'Meran', rightLabel: 'Imst' };
+
+    content.innerHTML =
+      '<div class="section">' +
+        '<h2>' + bi.leftLabel + ' - ' + bi.rightLabel + '</h2>' +
+        '<div class="section-grid">' +
+          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-bi"></canvas><svg class="arrow-svg" id="svg-chart-bi"></svg><div class="current-value-badge" id="badge-chart-bi"></div></div>' +
+          '<div class="zoom-hint"><button class="zoom-reset" onclick="resetZoom(\'chart-bi\')">Zoom zurücksetzen</button> · Mausrad/Pinch zum Zoomen, Ziehen zum Verschieben</div>' +
+          '<details class="table-collapse">' +
+            '<summary class="table-summary">' +
+              '<span class="table-summary-title">Details Luftdruckwerte</span>' +
+              '<span class="table-summary-sub"><span class="when-closed">Mehr anzeigen…</span><span class="when-open">Weniger anzeigen…</span></span>' +
+            '</summary>' +
+            '<div class="table-wrap" id="table-bi"></div>' +
+            legendHtml() +
+          '</details>' +
+        '</div>' +
+      '</div>' +
+      '<div class="section">' +
+        '<h2>' + im.leftLabel + ' - ' + im.rightLabel + '</h2>' +
+        '<div class="section-grid">' +
+          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-im"></canvas><svg class="arrow-svg" id="svg-chart-im"></svg><div class="current-value-badge" id="badge-chart-im"></div></div>' +
+          '<div class="zoom-hint"><button class="zoom-reset" onclick="resetZoom(\'chart-im\')">Zoom zurücksetzen</button> · Mausrad/Pinch zum Zoomen, Ziehen zum Verschieben</div>' +
+          '<details class="table-collapse">' +
+            '<summary class="table-summary">' +
+              '<span class="table-summary-title">Details Luftdruckwerte</span>' +
+              '<span class="table-summary-sub"><span class="when-closed">Mehr anzeigen…</span><span class="when-open">Weniger anzeigen…</span></span>' +
+            '</summary>' +
+            '<div class="table-wrap" id="table-im"></div>' +
+            legendHtml() +
+          '</details>' +
+        '</div>' +
+      '</div>';
+
+    renderSection(data.bozenInnsbruck, data.imstMeran, 'table-bi', 'chart-bi', 'chart-bi', 'Druckdifferenz  ' + bi.leftLabel + ' - ' + bi.rightLabel + '  [hPa]');
+    renderSection(data.imstMeran, data.bozenInnsbruck, 'table-im', 'chart-im', 'chart-im', 'Druckdifferenz  ' + im.leftLabel + ' - ' + im.rightLabel + '  [hPa]');
+
+    document.getElementById('pageFoot').textContent = data.generatedAt
+      ? ('Zuletzt aktualisiert: ' + data.generatedAt)
+      : 'Noch kein Datenstand';
+
+    checkDataFreshness();
+  }
+
+  function showError(err){
+    var content = document.getElementById('content');
+    content.className = 'error';
+    content.textContent = 'Fehler beim Laden der Daten: ' + (err && err.message ? err.message : err);
+  }
+
+  var firstLoadDone = false;
+  function load(){
+    fetch('./data/history.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(render)
+      .catch(showError)
+      .then(function(){
+        // Nur beim allerersten Laden relevant für den Splash-Screen - egal ob
+        // erfolgreich oder fehlgeschlagen (sonst bliebe man bei einem Fehler
+        // für immer auf dem Splash-Screen hängen und würde die Fehlermeldung
+        // nie sehen).
+        if (!firstLoadDone) {
+          firstLoadDone = true;
+          if (window.markPageReady) window.markPageReady();
+        }
+      });
+    if (window.refreshFoehnprognoseIfVisited) window.refreshFoehnprognoseIfVisited();
+  }
+
+  load();
+  setInterval(load, 3 * 60 * 1000);
+
+  /* ---------- Live-Windwerte Karte (Südtirol) ---------- */
+  // Namen, Codes und Koordinaten verifiziert gegen die offizielle Quelle
+  // (wetter.provinz.bz.it + daten.buergernetz.bz.it), Stand 15.08.2026.
+  // Alle 97 Stationen Südtirols vollständig verifiziert (57 Tal + 40 Berg).
+  var ALL_STATIONS = [
+    { code: '37100MS', name: 'Sterzing', lat: 46.8850, lon: 11.4386, type: 'tal', elev: 939 },
+    { code: '20500MS', name: 'Pfelders', lat: 46.7965, lon: 11.0883, type: 'tal', elev: 1622 },
+    { code: '19300MS', name: 'Naturns', lat: 46.6477, lon: 10.9912, type: 'tal', elev: 537 },
+    { code: '80300MS', name: 'Pens', lat: 46.78078, lon: 11.4166, type: 'tal', elev: 1452 },
+    { code: '50500MS', name: 'Prettau', lat: 47.0366, lon: 12.0991, type: 'tal', elev: 1448 },
+    { code: '34500MS', name: 'Ridnaun', lat: 46.9091, lon: 11.3068, type: 'tal', elev: 1365 },
+    { code: '56900MS', name: 'Sand i.T. Mühlen', lat: 46.9003, lon: 11.9474, type: 'tal', elev: 850 },
+    { code: '54500MS', name: 'Rein in Taufers', lat: 46.9428, lon: 12.0825, type: 'tal', elev: 1562 },
+    { code: '09700MS', name: 'Schlanders', lat: 46.6238, lon: 10.7803, type: 'tal', elev: 698 },
+    { code: '82200MS', name: 'Sarnthein', lat: 46.6406, lon: 11.3551, type: 'tal', elev: 970 },
+    { code: '88820MS', name: 'Salurn', lat: 46.2362, lon: 11.1855, type: 'tal', elev: 214 },
+    { code: '59700MS', name: 'Bruneck', lat: 46.8043, lon: 11.9315, type: 'tal', elev: 831 },
+    { code: '85120MS', name: 'Deutschnofen', lat: 46.4205, lon: 11.4269, type: 'tal', elev: 1470 },
+    { code: '83200MS', name: 'Bozen', lat: 46.4977, lon: 11.3128, type: 'tal', elev: 245 },
+    { code: '86900MS', name: 'Auer', lat: 46.3469, lon: 11.3050, type: 'tal', elev: 254 },
+    { code: '39100MS', name: 'Brixen - Vahrn', lat: 46.7310, lon: 11.6451, type: 'tal', elev: 585 },
+    { code: '08200MS', name: 'Laas Eyrs', lat: 46.6249, lon: 10.6496, type: 'tal', elev: 874 },
+    { code: '23200MS', name: 'Meran', lat: 46.6880, lon: 11.1366, type: 'tal', elev: 333 },
+    { code: '47400MS', name: 'Antholz Obertal', lat: 46.8704, lon: 12.1166, type: 'tal', elev: 1327 },
+    { code: '86600MS', name: 'Laimburg', lat: 46.3825, lon: 11.2887, type: 'tal', elev: 224 },
+    { code: '37700MS', name: 'Franzensfeste Grasstein', lat: 46.8125, lon: 11.5488, type: 'tal', elev: 833 },
+    { code: '74900MS', name: 'Barbian Kollmann', lat: 46.5951, lon: 11.5291, type: 'tal', elev: 463 },
+    { code: '89190MS', name: 'Kaltern Oberplanitzing', lat: 46.4423, lon: 11.2525, type: 'tal', elev: 492 },
+    { code: '22210MS', name: 'St. Martin in Passeier', lat: 46.7822, lon: 11.2294, type: 'tal', elev: 588 },
+    { code: '25900MS', name: 'St. Walburg', lat: 46.5417, lon: 10.9898, type: 'tal', elev: 1142 },
+    { code: '73500MS', name: 'Wolkenstein', lat: 46.5456, lon: 11.7684, type: 'tal', elev: 1594 },
+    { code: '68600MS', name: 'Vals', lat: 46.8483, lon: 11.6272, type: 'tal', elev: 1409 },
+    { code: '02200MS', name: 'St. Valentin a.d. Haide', lat: 46.7759, lon: 10.5289, type: 'tal', elev: 1500 },
+    { code: '41000MS', name: 'Toblach', lat: 46.7299, lon: 12.2191, type: 'tal', elev: 1218 },
+    { code: '75600MS', name: 'Völs am Schlern', lat: 46.5134, lon: 11.5060, type: 'tal', elev: 840 },
+    { code: '62600MS', name: 'St. Martin in Thurn', lat: 46.6792, lon: 11.8979, type: 'tal', elev: 1151 },
+    { code: '11400MS', name: 'Hintermartell', lat: 46.5169, lon: 10.7269, type: 'tal', elev: 1714 },
+    { code: '02500MS', name: 'Marienberg', lat: 46.7057, lon: 10.5213, type: 'tal', elev: 1312 },
+    { code: '33500MS', name: 'Pfitsch St. Jakob', lat: 46.9656, lon: 11.5981, type: 'tal', elev: 1438 },
+    { code: '44500MS', name: 'St. Magdalena in Gsies', lat: 46.8353, lon: 12.2427, type: 'tal', elev: 1414 },
+    { code: '06400MS', name: 'Sulden', lat: 46.5159, lon: 10.5953, type: 'tal', elev: 1902 },
+    { code: '65600MS', name: 'Terenten', lat: 46.8345, lon: 11.7856, type: 'tal', elev: 1350 },
+    { code: '24400MS', name: 'Ulten Weißbrunn', lat: 46.4868, lon: 10.8318, type: 'tal', elev: 1883 },
+    { code: '43200MS', name: 'Welsberg', lat: 46.7431, lon: 12.1289, type: 'tal', elev: 1129 },
+    { code: '78305MS', name: 'Welschnofen', lat: 46.4289, lon: 11.5366, type: 'tal', elev: 1126 },
+    { code: '56500MS', name: 'Mühlwald', lat: 46.8901, lon: 11.8744, type: 'tal', elev: 1140 },
+    { code: '42700MS', name: 'St. Veit in Prags', lat: 46.7119, lon: 12.1000, type: 'tal', elev: 1350 },
+    { code: '15800MS', name: 'Schnals Vernagt', lat: 46.7357, lon: 10.8493, type: 'tal', elev: 1697 },
+    { code: '65350MS', name: 'Obervintl', lat: 46.8111, lon: 11.7534, type: 'tal', elev: 747 },
+    { code: '82910MS', name: 'Jenesien', lat: 46.5304, lon: 11.3319, type: 'tal', elev: 972 },
+    { code: '27100MS', name: 'Gargazon', lat: 46.5767, lon: 11.2008, type: 'tal', elev: 253 },
+    { code: '85700MS', name: 'Branzoll', lat: 46.4065, lon: 11.3111, type: 'tal', elev: 227 },
+    { code: '87300MS', name: 'Radein', lat: 46.3465, lon: 11.3968, type: 'tal', elev: 1550 },
+    { code: '66500MS', name: 'Pfunders', lat: 46.8872, lon: 11.7029, type: 'tal', elev: 1169 },
+    { code: '20910MS', name: 'Platt in Passeier', lat: 46.8215, lon: 11.1762, type: 'tal', elev: 1143 },
+    { code: '31410MS', name: 'Pflersch', lat: 46.9557, lon: 11.3793, type: 'tal', elev: 1152 },
+    { code: '78110MS', name: 'Karerpass', lat: 46.4092, lon: 11.6017, type: 'tal', elev: 1713 },
+    { code: '61300MS', name: 'Corvara', lat: 46.5504, lon: 11.8733, type: 'tal', elev: 1530 },
+    { code: '01110MS', name: 'Langtaufers Grub', lat: 46.8365, lon: 10.6330, type: 'tal', elev: 1844 },
+    { code: '71510MS', name: 'Villnöss', lat: 46.6479, lon: 11.6894, type: 'tal', elev: 1327 },
+    { code: '79300MS', name: 'Ritten Siffian', lat: 46.5290, lon: 11.4638, type: 'tal', elev: 989 },
+    { code: '91510MS', name: 'Sexten', lat: 46.6915, lon: 12.3577, type: 'tal', elev: 1322 },
+    { code: '82500WS', name: 'Rittner Horn', lat: 46.615564, lon: 11.460353, type: 'berg', elev: 2261 },
+    { code: '00390SF', name: 'Graun Schöneben', lat: 46.806492, lon: 10.497973, type: 'berg', elev: 2037 },
+    { code: '31810SF', name: 'Ladurns', lat: 46.934775, lon: 11.366330, type: 'berg', elev: 1959 },
+    { code: '69900MS', name: 'Plose', lat: 46.698630, lon: 11.733841, type: 'berg', elev: 2477 },
+    { code: '06040WS', name: 'Sulden Schöntaufspitze', lat: 46.502882, lon: 10.628586, type: 'berg', elev: 3326 },
+    { code: '24300SF', name: 'Ulten Rossbänke', lat: 46.469351, lon: 10.819436, type: 'berg', elev: 2299 },
+    { code: '24170WS', name: 'Ulten Weißbrunnspitz', lat: 46.493978, lon: 10.773983, type: 'berg', elev: 3252 },
+    { code: '15050WS', name: 'Schnals Grawand', lat: 46.770253, lon: 10.796645, type: 'berg', elev: 3192 },
+    { code: '61690SF', name: 'Abtei Piz La Ila', lat: 46.5650, lon: 11.9036, type: 'berg', elev: 1997 },
+    { code: '61720WS', name: 'Abtei Piz Pisciadù', lat: 46.5314, lon: 11.8250, type: 'berg', elev: 2981 },
+    { code: '62270SF', name: 'Campill Kreuzkofeljoch', lat: 46.637689, lon: 11.812249, type: 'berg', elev: 2295 },
+    { code: '78480SF', name: 'Deutschnofen Obereggen', lat: 46.363591, lon: 11.546658, type: 'berg', elev: 2123 },
+    { code: '90200MS', name: 'Gantkofel', lat: 46.493928, lon: 11.209039, type: 'berg', elev: 1860 },
+    { code: '00700WS', name: 'Graun Elferspitze', lat: 46.776711, lon: 10.48782, type: 'berg', elev: 2922 },
+    { code: '45200SF', name: 'Gsies Pfinnalm', lat: 46.841694, lon: 12.209582, type: 'berg', elev: 2152 },
+    { code: '45100WS', name: 'Gsies Regelspitze', lat: 46.856083, lon: 12.200338, type: 'berg', elev: 2741 },
+    { code: '35100WS', name: 'Jaufenkamm', lat: 46.840776, lon: 11.318418, type: 'berg', elev: 2145 },
+    { code: '01080SF', name: 'Melag Pratznerberg', lat: 46.846816, lon: 10.624749, type: 'berg', elev: 2420 },
+    { code: '80100SF', name: 'Pens Tramintal', lat: 46.795037, lon: 11.477397, type: 'berg', elev: 2127 },
+    { code: '20690SF', name: 'Pfelders Grünboden', lat: 46.791993, lon: 11.101611, type: 'berg', elev: 2011 },
+    { code: '20720WS', name: 'Pfelders Rauhjoch', lat: 46.828627, lon: 11.113961, type: 'berg', elev: 2911 },
+    { code: '66000WS', name: 'Pfunders Dannelspitz', lat: 46.943359, lon: 11.687125, type: 'berg', elev: 2804 },
+    { code: '66100SF', name: 'Pfunders Stutzenalm', lat: 46.925397, lon: 11.688222, type: 'berg', elev: 2045 },
+    { code: '42830SF', name: 'Prags Rossalm', lat: 46.671192, lon: 12.111498, type: 'berg', elev: 2345 },
+    { code: '50400WS', name: 'Prettau Lengspitze', lat: 47.015929, lon: 12.131038, type: 'berg', elev: 3104 },
+    { code: '50360SF', name: 'Prettau Merbalm', lat: 47.036179, lon: 12.122127, type: 'berg', elev: 2002 },
+    { code: '90005SF', name: 'Proveis Samerberg', lat: 46.495779, lon: 10.99867, type: 'berg', elev: 2144 },
+    { code: '35205SF', name: 'Ratschings Wasserfaller Alm', lat: 46.84561, lon: 11.298729, type: 'berg', elev: 1904 },
+    { code: '54100SF', name: 'Rein i.T. Tristenboden', lat: 46.920859, lon: 12.106939, type: 'berg', elev: 2445 },
+    { code: '02700SF', name: 'Schleis Kloangruebes', lat: 46.700401, lon: 10.432431, type: 'berg', elev: 2459 },
+    { code: '15590SF', name: 'Schnals Finail', lat: 46.741173, lon: 10.822462, type: 'berg', elev: 1950 },
+    { code: '15000SF', name: 'Schnals Teufelsegg', lat: 46.7847, lon: 10.76466, type: 'berg', elev: 3033 },
+    { code: '74200MS', name: 'Seiser Alm Zallinger', lat: 46.511879, lon: 11.688789, type: 'berg', elev: 2050 },
+    { code: '91180SF', name: 'Sexten Rotwandwiesen', lat: 46.663555, lon: 12.370372, type: 'berg', elev: 1906 },
+    { code: '34200WS', name: 'Signalgipfel Wilder Freiger', lat: 46.968378, lon: 11.19286, type: 'berg', elev: 3389 },
+    { code: '06090SF', name: 'Sulden Madritsch', lat: 46.49375, lon: 10.614383, type: 'berg', elev: 2825 },
+    { code: '20050SF', name: 'Timmelsalm', lat: 46.913574, lon: 11.148675, type: 'berg', elev: 2231 },
+    { code: '91210WS', name: 'Toblach Hochebenkofel', lat: 46.680173, lon: 12.257258, type: 'berg', elev: 2901 },
+    { code: '07740WS', name: 'Trafoi Zaufenkofel', lat: 46.555582, lon: 10.539728, type: 'berg', elev: 2485 },
+    { code: '53200SF', name: 'Weissenbach Fadner Alm', lat: 46.92556, lon: 11.861432, type: 'berg', elev: 2154 }
+  ];
+
+  var windMapInstance = null;
+
+  // Zusatzstationen (MeteoSchweiz, SLF, Tirol, Trentino, GeoSphere): kommen
+  // zusammen mit ihren Stammdaten ("meta") aus data/wind.json. Blinken der
+  // Windwerte-Rechtecke ist dort aus, weil die Böen-Messverfahren der Quellen
+  // nicht vergleichbar sind (siehe Hinweis in der Datenbeschreibung). Zum
+  // Einschalten einfach auf true setzen.
+  var EXTRA_STATIONS_BLINK = false;
+
+  function escHtml(s){
+    return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function(c){
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // Ampel-/Verzögerungsgrenzen in Minuten (grün bis 35, orange bis 65, rot darüber).
+  function staleLimits(station){
+    // Bewusst für ALLE Quellen gleich (unabhängig vom Messintervall): so sieht man
+    // auf einen Blick, was gerade aktuell "in der Luft" ist und was nicht.
+    return { green: 35, stale: 65 };
+  }
+
+  // Stationen, die seit über 30 Tagen keinen einzigen Messwert mehr geliefert
+  // haben, werden auf der Karte nicht mehr angezeigt (Stufe nach der
+  // Transparenz). Die Abfrage läuft im Hintergrund weiter; liefert die Station
+  // wieder Werte, erscheint sie beim nächsten Laden der Seite wieder.
+  var HIDE_AFTER_DAYS = 30;
+  // Zeitpunkt (ms) des letzten Messwerts einer Station aus data/wind.json:
+  // bevorzugt das vom Abruf-Skript mitgeführte "lastValueUTC", sonst die jüngste
+  // Zeile mit irgendeinem Wert, sonst "noValueSince" bzw. die jüngste Zeile.
+  // null = unbekannt (dann wird die Station vorsichtshalber NICHT ausgeblendet).
+  function stationLastValueMs(entry){
+    if (!entry) return null;
+    var best = null;
+    function take(iso){
+      var t = iso ? new Date(iso).getTime() : NaN;
+      if (!isNaN(t) && (best === null || t > best)) best = t;
+    }
+    take(entry.lastValueUTC);
+    var rows = entry.rows || [];
+    for (var i = rows.length - 1; i >= 0; i--) {
+      var r = rows[i];
+      if (r && ['avgKmh','gustKmh','dirDeg','tempC','humidityPct'].some(function(f){ return r[f] !== null && r[f] !== undefined; })) { take(r.instantUTC); break; }
+    }
+    if (best === null) take(entry.noValueSince);
+    if (best === null && rows.length) take(rows[rows.length - 1].instantUTC);
+    return best;
+  }
+  function isLongInactive(entry){
+    var t = stationLastValueMs(entry);
+    return t !== null && (Date.now() - t) > HIDE_AFTER_DAYS * 24 * 60 * 60 * 1000;
+  }
+
+  // Wie werden Mittelwind (Ø) und Böe bei der jeweiligen Quelle ermittelt?
+  // Kurz und allgemein verständlich. Belegt sind: MeteoSchweiz (Böenspitze 1 s,
+  // Maximum der 10 Min.), SLF (höchster 5-s-Wert der 30 Min.), GeoSphere
+  // (Windspitze der letzten 10 Min.). Bei Südtirol, Tirol und Trentino gibt der
+  // Betreiber keine genaue Böendauer an - dort steht deshalb nur die allgemeine
+  // Bedeutung (höchste kurzzeitige Windspitze im Messintervall).
+  var SOURCE_LINKS = {
+    'Südtirol': 'https://wetter.provinz.bz.it/de/messungen',
+    'MeteoSchweiz': 'https://www.meteoschweiz.admin.ch',
+    'SLF': 'https://www.slf.ch',
+    'lawinen.report': 'https://lawinen.report',
+    'GeoSphere Austria': 'https://www.geosphere.at',
+    'Meteotrentino': 'https://www.meteotrentino.it'
+  };
+  function sourceKey(station){
+    if (!station.extra) return 'Südtirol';
+    var src = station.source || '';
+    return src.indexOf('SLF') === 0 ? 'SLF' : src;
+  }
+  function windDefinition(station){
+    var k = sourceKey(station);
+    if (k === 'MeteoSchweiz') return { avg: 'Mittelwert über 10 Minuten', gust: 'stärkste 1-Sekunden-Spitze der letzten 10 Minuten' };
+    if (k === 'SLF') return { avg: 'Mittelwert über 30 Minuten', gust: 'höchster 5-Sekunden-Wert innerhalb dieser 30 Minuten' };
+    if (k === 'GeoSphere Austria') return { avg: 'Mittelwert über 10 Minuten', gust: 'Windspitze (Maximum) der letzten 10 Minuten' };
+    if (k === 'Meteotrentino') return { avg: 'Mittelwert über 15 Minuten', gust: 'höchste kurzzeitige Windspitze in diesen 15 Minuten' };
+    if (k === 'lawinen.report') return { avg: 'Mittelwert über das Messintervall der Station', gust: 'höchste kurzzeitige Windspitze in diesem Intervall' };
+    return { avg: 'Mittelwert über 10 Minuten', gust: 'höchste kurzzeitige Windspitze innerhalb dieser 10 Minuten' };
+  }
+  // "Quelle: <Name>" als Link, genauso wie die Quellenangaben unter der Karte.
+  function sourceLineHtml(station){
+    var k = sourceKey(station);
+    var url = SOURCE_LINKS[k];
+    var label;
+    if (!station.extra) label = 'Autonome Provinz Bozen - Südtirol';
+    else label = String(station.attribution || station.source || 'unbekannt').replace(/^Quelle:\s*/, '');
+    var inner = escHtml(label);
+    return 'Quelle: ' + (url ? '<a href="' + url + '" target="_blank" rel="noopener">' + inner + '</a>' : inner);
+  }
+  function windDefinitionHtml(station){
+    var d = windDefinition(station);
+    return '<div class="wind-def"><div class="wind-def-title">Definition Windgeschwindigkeit:</div>' +
+      '<div><b>Ø</b> = ' + d.avg + '</div>' +
+      '<div><b>Böe</b> = ' + d.gust + '</div></div>';
+  }
+
+  function windDirLabel(deg){
+    if (deg === null || deg === undefined || isNaN(deg)) return '—';
+    var dirs = ['N','NO','O','SO','S','SW','W','NW'];
+    return dirs[Math.round(deg / 45) % 8];
+  }
+
+  // Windsack-Symbol: dunkler Punkt = exakte Stationsposition (Drehpunkt), das
+  // gestreifte Segel zeigt in die Richtung, in die der Wind BLÄST (also 180°
+  // gegenüber der meteorologischen "Windrichtung", die angibt, WOHER der Wind
+  // kommt). Auf der gegenüberliegenden Seite (also dort, WOHER der Wind kommt)
+  // steht ein kleines Rechteck mit Geschwindigkeit (oben) und Böe (unten).
+  // Farbe: Bergstationen rot/weiß, Talstationen orange/weiß.
+  function buildWindsockIcon(station, last, hasWindSensor, hasDirSensor){
+    if (hasDirSensor === undefined) hasDirSensor = true;
+    var cx = 45, cy = 45;
+
+    // Stationen, die (soweit die vorhandene Historie zeigt) nie Windwerte
+    // liefern: statisches Thermometer-Symbol statt drehendem Windsack, kein
+    // Werte-Rechteck (es gäbe ja nichts Passendes anzuzeigen). Punkt halb so
+    // groß wie beim Windsack, Thermometer immer rechts daneben (nicht
+    // darüber), transparent dargestellt wie Stationen ohne aktuelle Daten.
+    if (!hasWindSensor) {
+      var dotR = 2.75;
+      var tX = cx + dotR + 5;
+      return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;opacity:0.5;">' +
+        '<svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;">' +
+          '<circle cx="' + cx + '" cy="' + cy + '" r="' + dotR + '" fill="#2B2B2B"/>' +
+          '<rect x="' + tX + '" y="' + (cy - 13.5) + '" width="6.3" height="18" rx="3.15" fill="none" stroke="#3A4750" stroke-width="1.44"/>' +
+          '<rect x="' + (tX + 1.575) + '" y="' + (cy - 5.4) + '" width="3.15" height="9.9" fill="#3A4750"/>' +
+          '<circle cx="' + (tX + 3.15) + '" cy="' + (cy + 4.5) + '" r="5.4" fill="#3A4750"/>' +
+          '<line x1="' + (tX + 8.1) + '" y1="' + (cy - 9.9) + '" x2="' + (tX + 11.7) + '" y2="' + (cy - 9.9) + '" stroke="#3A4750" stroke-width="1.17" stroke-linecap="round"/>' +
+          '<line x1="' + (tX + 8.1) + '" y1="' + (cy - 6.3) + '" x2="' + (tX + 12.6) + '" y2="' + (cy - 6.3) + '" stroke="#3A4750" stroke-width="1.17" stroke-linecap="round"/>' +
+          '<line x1="' + (tX + 8.1) + '" y1="' + (cy - 2.7) + '" x2="' + (tX + 11.25) + '" y2="' + (cy - 2.7) + '" stroke="#3A4750" stroke-width="1.17" stroke-linecap="round"/>' +
+        '</svg>' +
+      '</div>';
+    }
+
+    var dirDeg = last ? last.dirDeg : null;
+    var avgKmh = last ? last.avgKmh : null;
+    var gustKmh = last ? last.gustKmh : null;
+
+    // Stationen, die zwar grundsätzlich Windsensoren haben, aber seit mehr
+    // als 3 Tagen keinen neuen Wert mehr geliefert haben: als endgültig
+    // "aufgegeben" behandeln - transparent wie "keine Daten", aber OHNE das
+    // rote Blinken (das ist für vorübergehende Verzögerung gedacht, nicht
+    // für seit Tagen tote Stationen) und Werte auf "–" gestellt, egal wie
+    // alt der zuletzt gespeicherte Wert war.
+    var ageMin = null;
+    if (last && last.instantUTC) {
+      ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
+    }
+    var isAbandoned = (ageMin !== null && ageMin > 3 * 24 * 60);
+    if (isAbandoned) { avgKmh = null; gustKmh = null; dirDeg = null; }
+
+    var hasData = (avgKmh !== null && avgKmh !== undefined) || (gustKmh !== null && gustKmh !== undefined);
+    var hasDir = (dirDeg !== null && dirDeg !== undefined && !isNaN(dirDeg));
+
+    var bearing = hasDir ? (dirDeg + 180) % 360 : 90;
+    var rotation = bearing - 90; // 0° im SVG zeigt nach rechts = Osten (90°) -> Differenz ausgleichen
+    var rectAngle = hasDir ? dirDeg : 270; // Gegenüberliegende Seite = woher der Wind kommt
+    var rad = rectAngle * Math.PI / 180;
+    var radius = 24;
+    var rx = cx + radius * Math.sin(rad);
+    var ry = cy - radius * Math.cos(rad);
+    var rectW = 34, rectH = 36;
+    var avgTxt = (avgKmh !== null && avgKmh !== undefined) ? Math.round(avgKmh) : '–';
+    var gustTxt = (gustKmh !== null && gustKmh !== undefined) ? Math.round(gustKmh) : '–';
+
+    var blinkClass = '';
+    // Bewusst mit den GERUNDETEN, angezeigten Werten prüfen (nicht den rohen
+    // Nachkommastellen) - sonst könnte z.B. eine angezeigte "30" (die
+    // tatsächlich 29,6 war) die 30er-Schwelle knapp verfehlen, obwohl es für
+    // den Betrachter wie 30 aussieht.
+    var avgRounded = (avgKmh !== null && avgKmh !== undefined) ? Math.round(avgKmh) : null;
+    var gustRounded = (gustKmh !== null && gustKmh !== undefined) ? Math.round(gustKmh) : null;
+    var overThreshold = (avgRounded !== null && avgRounded >= 30) || (gustRounded !== null && gustRounded >= 30);
+    var deviation = (avgRounded !== null && gustRounded !== null) ? Math.abs(gustRounded - avgRounded) : null;
+    if (overThreshold || (deviation !== null && deviation >= 15)) blinkClass = 'wr-blink-red';
+    else if (deviation !== null && deviation >= 13) blinkClass = 'wr-blink-orange';
+    else if (deviation !== null && deviation >= 10) blinkClass = 'wr-blink-yellow';
+    if (station.extra && !EXTRA_STATIONS_BLINK) blinkClass = '';
+
+    var sockColor = (station.type === 'tal') ? '#F2994A' : '#E5342A';
+
+    // Ring um den Stationspunkt: orange ab 35 Min. ("nicht mehr aktuell"),
+    // rot ab 65 Min. ("verzögert") - für alle Quellen gleich.
+    var staleLim = staleLimits(station);
+    var isStale = !isAbandoned && ageMin !== null && ageMin > staleLim.stale;
+    var isLate = !isAbandoned && !isStale && ageMin !== null && ageMin > staleLim.green;
+
+    var opacity = (hasData && !isAbandoned) ? 1 : 0.5;
+
+    // Liefert die Station nie eine Windrichtung (laut gespeicherter Historie),
+    // wäre ein drehender Windsack irreführend: dann nur der Stationspunkt
+    // (Drehpunkt des Windsacks, gleiche Größe) plus das Werte-Rechteck.
+    var sockSvg;
+    if (hasDirSensor) {
+      sockSvg = '<svg width="38" height="16" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
+        'style="position:absolute;left:' + (cx - 3.8) + 'px;top:' + (cy - 8) + 'px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;">' +
+        '<line x1="6" y1="12" x2="18" y2="5" stroke="#3A4750" stroke-width="1.3"/>' +
+        '<line x1="6" y1="12" x2="18" y2="19" stroke="#3A4750" stroke-width="1.3"/>' +
+        '<polygon points="18,5 18,19 31,17 31,7" fill="' + sockColor + '"/>' +
+        '<polygon points="31,7 31,17 45,15 45,9" fill="#ffffff" stroke="#cfd3d2" stroke-width="0.4"/>' +
+        '<polygon points="45,9 45,15 58,13.5 58,10.5" fill="' + sockColor + '"/>' +
+        '<circle cx="6" cy="12" r="5" fill="#2B2B2B"/>' +
+      '</svg>';
+    } else {
+      sockSvg = '<svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;pointer-events:none;">' +
+        '<circle cx="' + cx + '" cy="' + cy + '" r="3.2" fill="#2B2B2B"/></svg>';
+    }
+    var staleRingSvg = (isStale || isLate)
+      ? '<circle class="stale-ring" cx="' + cx + '" cy="' + cy + '" r="7.2" fill="none" stroke="' + (isStale ? '#E5342A' : '#F2994A') + '" stroke-width="1.28"></circle>'
+      : '';
+
+    return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;opacity:' + opacity + ';">' +
+      (staleRingSvg ? '<svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;pointer-events:none;">' + staleRingSvg + '</svg>' : '') +
+      sockSvg +
+      '<div class="' + blinkClass + '" style="position:absolute;left:' + (rx - rectW / 2) + 'px;top:' + (ry - rectH / 2) + 'px;width:' + rectW + 'px;height:' + rectH + 'px;box-sizing:border-box;padding:3px 0;' +
+        'background:rgba(255,255,255,0.96);border:1px solid #C9CFCD;border-radius:5px;box-shadow:0 1px 4px rgba(0,0,0,0.18);' +
+        'display:flex;flex-direction:column;align-items:center;justify-content:space-between;' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:11px;line-height:1;color:#1C2B3A;font-weight:700;">' +
+        '<span style="line-height:1;">' + avgTxt + '</span>' +
+        '<span style="width:70%;border-top:1px solid #D5D9D8;"></span>' +
+        '<span style="line-height:1;color:#C1443C;">' + gustTxt + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // ---- Geschwindigkeitsverlauf (Chart.js, wie Föhndiagramm) ----
+  function buildWindSpeedChart(rows, elId){
+    elId = elId || 'wind-speed-chart';
+    var labels = rows.map(function(r){ return r.time; });
+    var avgData = rows.map(function(r){ return r.avgKmh; });
+    var gustData = rows.map(function(r){ return r.gustKmh; });
+    // Einzelner Messpunkt (z.B. Tirol-Stationen direkt nach dem Start, ihr Verlauf
+    // baut sich erst über die Abrufe auf): Punkt anzeigen, sonst bliebe das Diagramm leer.
+    var singlePoint = rows.length === 1;
+    if (charts[elId]) charts[elId].destroy();
+    var ctx = document.getElementById(elId).getContext('2d');
+    charts[elId] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Böe', data: gustData, borderColor: '#C1443C', backgroundColor: '#C1443C', borderWidth: 1.5, pointRadius: singlePoint ? 3 : 0, tension: 0.3 },
+          { label: 'Mittel', data: avgData, borderColor: '#1C2B3A', backgroundColor: '#1C2B3A', borderWidth: 2, pointRadius: singlePoint ? 3 : 0, tension: 0.3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { right: 4 } },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true, position: 'top',
+            labels: { usePointStyle: true, pointStyle: 'line', pointStyleWidth: 40, boxHeight: 2, font: { size: 11, family: "'IBM Plex Sans', sans-serif" } }
+          },
+          tooltip: { mode: 'index', intersect: false, callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + (ctx.parsed.y === null ? '—' : ctx.parsed.y) + ' km/h'; } } }
+        },
+        scales: {
+          x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 6, font: { size: 9, family: "'IBM Plex Mono', monospace" } } },
+          y: { beginAtZero: true, title: { display: true, text: 'km/h', font: { size: 10 } }, ticks: { font: { size: 9, family: "'IBM Plex Mono', monospace" } } }
+        }
+      }
+    });
+  }
+
+  // ---- Windrichtungs-Kompass der letzten 6h ----
+  // Radius = Minute innerhalb der Stunde, zu der der Wert aufgenommen wurde
+  // (:10 -> innerster Ring, :20 -> zweiter, ... :00 -> äußerster von 6 Ringen).
+  // Winkel = Windrichtung. Farbe = Stunden-Zugehörigkeit (wie viele Stunden
+  // her), unabhängig vom Ring. Neuere Punkte werden über älteren gezeichnet.
+  // Aktuellster Punkt blinkt grün.
+  var COMPASS_BUCKET_COLORS = ['#22C55E', '#1B7A3D', '#1C2B3A', '#6B7573', '#A8B0AE', '#D5D9D8'];
+  var COMPASS_RING_MINUTE_ORDER = [10, 20, 30, 40, 50, 0]; // Ring 1..6
+
+  function buildWindCompassSvg(rows){
+    var totalRings = 6;
+    var size = 240, center = 120, rMax = 92;
+    var ringColor = '#9AA3A1';
+    var now = new Date();
+    var nowHourStart = new Date(now); nowHourStart.setUTCMinutes(0, 0, 0);
+
+    var svg = '<svg width="100%" height="100%" viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg">';
+    for (var k = 1; k <= totalRings; k++){
+      var r = (k / totalRings) * rMax;
+      svg += '<circle cx="' + center + '" cy="' + center + '" r="' + r.toFixed(1) + '" fill="none" stroke="' + ringColor + '" stroke-width="0.8"/>';
+    }
+    // Ring-Beschriftung (Minutenmarken) entlang der Nordachse
+    for (var m = 0; m < totalRings; m++){
+      var rr = ((m + 1) / totalRings) * rMax;
+      var lbl = COMPASS_RING_MINUTE_ORDER[m] === 0 ? ':00' : ':' + COMPASS_RING_MINUTE_ORDER[m];
+      svg += '<text x="' + center + '" y="' + (center - rr - 2).toFixed(1) + '" text-anchor="middle" font-family="\'IBM Plex Mono\', monospace" font-size="8" fill="#7C8683">' + lbl + '</text>';
+    }
+
+    svg += '<line x1="' + center + '" y1="' + (center - rMax) + '" x2="' + center + '" y2="' + (center + rMax) + '" stroke="#D5D9D8" stroke-width="1"/>';
+    svg += '<line x1="' + (center - rMax) + '" y1="' + center + '" x2="' + (center + rMax) + '" y2="' + center + '" stroke="#D5D9D8" stroke-width="1"/>';
+    [{ t: 'N', a: 0 }, { t: 'O', a: 90 }, { t: 'S', a: 180 }, { t: 'W', a: 270 }].forEach(function(l){
+      var rad = l.a * Math.PI / 180;
+      var lx = center + (rMax + 14) * Math.sin(rad);
+      var ly = center - (rMax + 14) * Math.cos(rad);
+      svg += '<text x="' + lx.toFixed(1) + '" y="' + (ly + 4).toFixed(1) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-size="12" font-weight="700" fill="#5B6B72">' + l.t + '</text>';
+    });
+
+    // Punkte aufbereiten: Ring aus Minute-der-Stunde, Farbe aus Stunden-Differenz
+    var pts = [];
+    rows.forEach(function(row){
+      var dir = row.dirDeg;
+      if (dir === null || dir === undefined || isNaN(dir)) return;
+      var instant = new Date(row.instantUTC);
+      var minutesAgo = (now - instant) / 60000;
+      if (minutesAgo < 0 || minutesAgo > 360) return; // außerhalb 6h-Fenster oder in der Zukunft
+      var minuteOfHour = instant.getUTCMinutes();
+      var ringIndex = COMPASS_RING_MINUTE_ORDER.indexOf(minuteOfHour) + 1; // 1-basiert
+      if (ringIndex <= 0) {
+        // Nicht auf dem 10-Minuten-Raster (z.B. :15/:45 bei den 15-Minuten-
+        // Werten von Meteotrentino): dem nächstgelegenen Ring zuordnen.
+        var nearestMinute = (Math.round(minuteOfHour / 10) * 10) % 60;
+        ringIndex = COMPASS_RING_MINUTE_ORDER.indexOf(nearestMinute) + 1;
+      }
+      if (ringIndex <= 0) return;
+      // 1ms abziehen vor dem Abrunden auf die volle Stunde: ein Wert exakt um
+      // :00 soll damit zur VORHERIGEN Stunde gehören (gleiche Farbe wie die
+      // Werte um :10 bis :50 davor), nicht zur gerade erst beginnenden neuen
+      // Stunde. Werte um :10-:50 sind davon unberührt.
+      var pointHourStart = new Date(instant.getTime() - 1); pointHourStart.setUTCMinutes(0, 0, 0);
+      var hourBucket = Math.round((nowHourStart - pointHourStart) / 3600000);
+      hourBucket = Math.max(0, Math.min(5, hourBucket));
+      pts.push({ dir: dir, ringIndex: ringIndex, hourBucket: hourBucket, minutesAgo: minutesAgo });
+    });
+
+    // Älteste zuerst zeichnen, damit neuere Punkte optisch darüberliegen
+    pts.sort(function(a, b){ return b.minutesAgo - a.minutesAgo; });
+
+    pts.forEach(function(pt, idx){
+      var r = (pt.ringIndex / totalRings) * rMax;
+      var rad = pt.dir * Math.PI / 180;
+      var x = center + r * Math.sin(rad);
+      var y = center - r * Math.cos(rad);
+      var isNewest = (idx === pts.length - 1);
+      var fill = COMPASS_BUCKET_COLORS[pt.hourBucket];
+      var radius = isNewest ? 4.4 : 3.4;
+      var cls = isNewest ? ' class="compass-newest-blink"' : '';
+      svg += '<circle' + cls + ' cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + radius + '" fill="' + fill + '"' + (isNewest ? ' stroke="#fff" stroke-width="1.2"' : '') + '/>';
+    });
+
+    svg += '</svg>';
+    return svg;
+  }
+
+  function buildWindCompassLegend(){
+    var fmt = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    var now = new Date();
+    var nowHourStart = new Date(now); nowHourStart.setUTCMinutes(0, 0, 0);
+    var rowsHtml = '';
+    for (var h = 0; h < 6; h++){
+      var rangeEnd = new Date(nowHourStart.getTime() - h * 3600000 + 3600000);
+      var rangeStart = new Date(nowHourStart.getTime() - h * 3600000);
+      var label = fmt.format(rangeStart) + ' – ' + fmt.format(rangeEnd);
+      rowsHtml += '<div class="wcl-row"><span class="wcl-dot" style="background:' + COMPASS_BUCKET_COLORS[h] + '"></span><span>' + label + '</span></div>';
+    }
+    return '<div class="wind-compass-legend">' + rowsHtml + '</div>';
+  }
+
+  function showWindDetail(station, rows, panelId){
+    panelId = panelId || 'windDetailPanel';
+    var suffix = (panelId === 'windDetailPanel') ? '' : ('-' + panelId);
+    var panel = document.getElementById(panelId);
+    var last = (rows && rows.length) ? rows[rows.length - 1] : null;
+    var gust = last ? last.gustKmh : null;
+    var avg = last ? last.avgKmh : null;
+    var dir = last ? last.dirDeg : null;
+    var temp = last ? last.tempC : null;
+    var hum = last ? last.humidityPct : null;
+    var time = (last && last.instantUTC) ? (last.time || '—') : '—';
+
+    var ageMin = null;
+    var dateStr = '';
+    if (last && last.instantUTC) {
+      ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
+      dateStr = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(last.instantUTC));
+    }
+    var limits = staleLimits(station);
+    var isStale = (ageMin !== null && ageMin > limits.stale);
+    var trafficColor = '#B9C2C0';
+    if (ageMin !== null) {
+      if (ageMin <= limits.green) trafficColor = '#22C55E';
+      else if (ageMin <= limits.stale) trafficColor = '#F2C94C';
+      else trafficColor = '#E5342A';
+    }
+    var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
+
+    var speedChartId = 'wind-speed-chart' + suffix;
+    var compassContainerId = 'wind-compass-container' + suffix;
+
+    // Was liefert die Station laut Historie überhaupt? Ohne Windwerte entfallen
+    // beide Diagramme (sie wären leer), ohne Richtung nur der Kompass.
+    var hasRows = !!(rows && rows.length);
+    var anyWind = hasRows && rows.some(function(r){ return (r.avgKmh !== null && r.avgKmh !== undefined) || (r.gustKmh !== null && r.gustKmh !== undefined); });
+    var anyDir = hasRows && rows.some(function(r){ return r.dirDeg !== null && r.dirDeg !== undefined && !isNaN(r.dirDeg); });
+    var showSpeedChart = !hasRows || anyWind;
+    var showCompass = !hasRows || anyDir;
+    var chartsHtml = '';
+    if (showSpeedChart) {
+      chartsHtml += '<div class="wind-chart-box">' +
+          '<div class="wind-chart-title">Windgeschwindigkeit</div>' +
+          '<div style="height:200px;"><canvas id="' + speedChartId + '"></canvas></div>' +
+        '</div>';
+    }
+    if (showCompass) {
+      chartsHtml += '<div class="wind-chart-box wind-compass-box">' +
+          '<div class="wind-chart-title">Windrichtung</div>' +
+          '<div class="wind-compass-body">' +
+            '<div id="' + compassContainerId + '"></div>' +
+            buildWindCompassLegend() +
+          '</div>' +
+        '</div>';
+    }
+    if (hasRows && !anyWind) {
+      chartsHtml = '<p class="wind-note">Diese Station liefert derzeit keine Windwerte (nur Temperatur bzw. Luftfeuchte).</p>';
+    }
+
+    // Zusatzstationen: Name/Quelle stammen aus fremden Datenquellen -> maskieren
+    var stationTitle = station.extra ? escHtml(station.name) : station.name;
+    // Quelle + kurze Erklärung, wie Mittelwind und Böe bei dieser Quelle ermittelt werden.
+    var sourceNote = '<p class="wind-note wind-source-note">' + sourceLineHtml(station) + '</p>' + windDefinitionHtml(station);
+
+    panel.innerHTML =
+      '<h3>' + stationTitle + (station.elev ? ' <span class="station-elev-label">' + station.elev + ' m</span>' : '') + '</h3>' +
+      (isStale ? '<div class="stale-warning-text stale-warning-block">Aktualisierung verzögert!</div>' : '') +
+      '<div class="wind-detail-grid">' +
+        '<div><span class="wdg-label">Mittlere Windgeschwindigkeit</span><span class="wdg-value">' + (avg !== null && avg !== undefined ? avg + ' km/h' : '—') + '</span></div>' +
+        '<div><span class="wdg-label">Windböe</span><span class="wdg-value">' + (gust !== null && gust !== undefined ? gust + ' km/h' : '—') + '</span></div>' +
+        '<div><span class="wdg-label">Windrichtung</span><span class="wdg-value">' + windDirLabel(dir) + (dir !== null && dir !== undefined ? ' (' + Math.round(dir) + '°)' : '') + '</span></div>' +
+        '<div><span class="wdg-label">Lufttemperatur</span><span class="wdg-value">' + (temp !== null && temp !== undefined ? temp.toFixed(1) + ' °C' : '—') + '</span></div>' +
+        '<div><span class="wdg-label">Luftfeuchte</span><span class="wdg-value">' + (hum !== null && hum !== undefined ? hum.toFixed(0) + ' %' : '—') + '</span></div>' +
+        '<div><span class="wdg-label"><span class="wdg-label-inner">Letztes Update' + trafficDot + '</span></span><span class="wdg-value">' + time + (dateStr ? '<span class="wdg-date">' + dateStr + '</span>' : '') + '</span></div>' +
+      '</div>' +
+      '<div class="wind-charts-row">' + chartsHtml + '</div>' + sourceNote;
+    panel.classList.add('open');
+
+    if (rows && rows.length){
+      if (showSpeedChart) buildWindSpeedChart(rows.slice(-36), speedChartId);
+      if (showCompass) document.getElementById(compassContainerId).innerHTML = buildWindCompassSvg(rows);
+    }
+  }
+
+  // Icons sind in der Startansicht kleiner (weniger Gedränge bei 97 Stationen)
+  // und wachsen erst beim Heranzoomen auf 120% der Basisgröße.
+  var ICON_MIN_SCALE = 0.55;
+  var ICON_MAX_SCALE = 1.2;
+  var ICON_MIN_ZOOM = 8;   // bei diesem Zoom (oder darunter) kleinste Größe
+  var ICON_FULL_ZOOM = 12; // ab diesem Zoom (oder darüber) volle (120%) Größe
+
+  function updateIconScale(){
+    if (!windMapInstance) return;
+    var zoom = windMapInstance.getZoom();
+    var t = Math.max(0, Math.min(1, (zoom - ICON_MIN_ZOOM) / (ICON_FULL_ZOOM - ICON_MIN_ZOOM)));
+    var scale = ICON_MIN_SCALE + t * (ICON_MAX_SCALE - ICON_MIN_SCALE);
+    document.querySelectorAll('.windsock-icon').forEach(function(el){
+      el.style.transform = 'scale(' + scale.toFixed(3) + ')';
+    });
+  }
+
+  window.initWindMap = function(){
+    if (windMapInstance) {
+      setTimeout(function(){ windMapInstance.invalidateSize(); }, 50);
+      return; // schon initialisiert - Tab war nur unsichtbar, Größe neu berechnen reicht
+    }
+
+    // Startansicht: am Handy enger auf den Obervinschgau zugeschnitten (wie im
+    // Referenzbild), am Desktop weiterhin der ganze Vinschgau. Marker für ganz
+    // Südtirol werden trotzdem geladen - man kann jederzeit rauszoomen.
+    //
+    // Auf Touch-Geräten übernimmt weiter unten eine eigene, robuste
+    // Einzel-/Doppeltipp-Erkennung direkt über rohe touchend-Events (iOS
+    // Safari liefert sonst keine zuverlässigen dblclick-Events aus Touch-
+    // Gesten). Damit sich Leaflets eigene Touch-Verarbeitung dabei nicht in
+    // die Quere kommt (sonst würde ein Doppeltipp doppelt hineinzoomen -
+    // einmal durch die eigene Logik, einmal durch Leaflet selbst), werden
+    // tap und doubleClickZoom hier gezielt nur auf Touch-Geräten
+    // deaktiviert. Am Desktop (Maus) bleiben beide wie gehabt aktiv.
+    var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    windMapInstance = L.map('windMap', {
+      scrollWheelZoom: true,
+      doubleClickZoom: !isTouchDevice,
+      tap: !isTouchDevice
+    });
+    var isMobileView = window.innerWidth <= 600;
+    if (isMobileView) {
+      windMapInstance.setView([46.657391, 10.588955], 10); // Schluderns
+    } else {
+      windMapInstance.setView([46.670971, 11.210294], 10); // Meran 2000 Talstation
+    }
+    windMapInstance.on('zoomend', updateIconScale);
+
+    // Einzeltipp auf eine leere Kartenfläche (kein Symbol) zoomt heraus,
+    // Doppeltipp zoomt hinein. Zwei getrennte Wege, je nach Gerät:
+    //
+    // TOUCH-GERÄTE (Handy/Tablet): eigene Erkennung direkt über rohe
+    // touchend-Events, NICHT über Leaflets abstrahierte click/dblclick-
+    // Events. Grund: iOS Safari synthetisiert Maus-Events aus Touch-Gesten
+    // bekanntermaßen unzuverlässig (u.a. dokumentiert in Leaflets eigenem
+    // Issue-Tracker, github.com/Leaflet/Leaflet/issues/6817) - das führte
+    // dazu, dass Doppeltipp-zum-Hineinzoomen auf dem iPhone nicht
+    // zuverlässig funktionierte. Rohe Touch-Events sind plattformübergreifend
+    // zuverlässig.
+    //
+    // DESKTOP (Maus, kein Touch): bewährte Klick/Doppelklick-Logik bleibt
+    // unverändert bestehen.
+    //
+    // Eigene, zusätzliche Absicherung (window.__zoomHandlersAttached) nur für
+    // diese Zoom-Handler: verhindert zuverlässig doppelt registrierte
+    // Listener (die sich sonst gegenseitig durcheinanderbringen könnten),
+    // unabhängig vom allgemeinen Schutz weiter oben in dieser Funktion.
+    if (!window.__zoomHandlersAttached) {
+      window.__zoomHandlersAttached = true;
+
+      if (isTouchDevice) {
+        var mapContainer = windMapInstance.getContainer();
+        var lastTapTime = 0;
+        var lastTapX = 0, lastTapY = 0;
+        var singleTapTimer = null;
+        var TAP_DELAY = 300; // Zeitfenster, in dem ein zweiter Tipp als Doppeltipp zählt
+        var TAP_DIST = 40; // Pixel-Toleranz, damit zwei Tipps an unterschiedlichen Stellen nicht als Doppeltipp gelten
+
+        var touchStartX = 0, touchStartY = 0;
+        var DRAG_THRESHOLD = 10; // Pixel-Bewegung, ab der es als Verschieben zählt statt als Tipp
+
+        mapContainer.addEventListener('touchstart', function(e){
+          if (e.touches.length !== 1) return;
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        mapContainer.addEventListener('touchend', function(e){
+          // Nur bei genau einem Finger (kein Zwei-Finger-Pinch) auswerten
+          if (e.touches.length > 0 || e.changedTouches.length !== 1) return;
+          // Nicht auslösen, wenn der Tipp auf einem Stations-Symbol war -
+          // Marker haben ihren eigenen Klick-Handler für die Detailansicht.
+          var target = e.target;
+          if (target.closest && target.closest('.windsock-icon')) return;
+
+          var touch = e.changedTouches[0];
+
+          // Hat sich der Finger seit dem Berühren deutlich bewegt? Dann war
+          // es ein Verschieben (Karte ziehen), kein Tipp - dabei soll beim
+          // Loslassen weder rein- noch rausgezoomt werden.
+          var moveDx = touch.clientX - touchStartX;
+          var moveDy = touch.clientY - touchStartY;
+          var moveDist = Math.sqrt(moveDx * moveDx + moveDy * moveDy);
+          if (moveDist > DRAG_THRESHOLD) return;
+
+          var now = Date.now();
+          var dx = touch.clientX - lastTapX;
+          var dy = touch.clientY - lastTapY;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (now - lastTapTime < TAP_DELAY && dist < TAP_DIST) {
+            // Doppeltipp erkannt: sofort an der getippten Stelle hineinzoomen,
+            // den noch ausstehenden Einzeltipp-Timer (Herauszoomen) abbrechen.
+            if (singleTapTimer) { clearTimeout(singleTapTimer); singleTapTimer = null; }
+            e.preventDefault();
+            var point = windMapInstance.mouseEventToContainerPoint(touch);
+            var latlng = windMapInstance.containerPointToLatLng(point);
+            windMapInstance.setZoomAround(latlng, windMapInstance.getZoom() + 1);
+            lastTapTime = 0; // zurücksetzen, damit ein direkt folgender dritter Tipp nicht sofort wieder als Doppeltipp zählt
+          } else {
+            lastTapTime = now;
+            lastTapX = touch.clientX;
+            lastTapY = touch.clientY;
+            if (singleTapTimer) clearTimeout(singleTapTimer);
+            singleTapTimer = setTimeout(function(){
+              singleTapTimer = null;
+              windMapInstance.setZoom(windMapInstance.getZoom() - 1);
+            }, TAP_DELAY);
+          }
+        }, { passive: false });
+      } else {
+        var mapClickTimer = null;
+        windMapInstance.on('click', function(){
+          if (mapClickTimer) clearTimeout(mapClickTimer);
+          mapClickTimer = setTimeout(function(){
+            mapClickTimer = null;
+            windMapInstance.setZoom(windMapInstance.getZoom() - 1);
+          }, 250);
+        });
+        windMapInstance.on('dblclick', function(){
+          if (mapClickTimer) { clearTimeout(mapClickTimer); mapClickTimer = null; }
+        });
+      }
+    }
+
+    var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'Karte: © OpenStreetMap · Daten: Autonome Provinz Bozen – Südtirol',
+      maxZoom: 19
+    });
+    // OpenTopoMap zeichnet ab Zoomstufe 11 deutlich anders (mehr Details) als
+    // darunter. Damit die Karte beim Öffnen (Stufe 10) und eine Stufe weiter weg
+    // (Stufe 9) schon so aussieht wie in Stufe 11, werden dort die Kacheln von
+    // Stufe 11 geladen und verkleinert dargestellt (wie bei Retina-Displays).
+    // Darunter (Stufe 8 und weiter weg) gilt wieder die normale Darstellung, damit
+    // man wie gewohnt weit herauszoomen kann (die Stufen 9 und 10 brauchen schon
+    // ca. 9- bzw. 3-mal so viele Kacheln, weiter hinaus wären es hunderte bis
+    // tausende pro Ansicht).
+    // Eintrag: Karten-Zoomstufe -> wie viele Stufen tiefer die Kacheln geholt werden.
+    var TOPO_NEAR_LOOK = { 10: 1, 9: 2 };
+    var TopoNearLayer = L.TileLayer.extend({
+      getTileSize: function(){
+        var base = L.TileLayer.prototype.getTileSize.call(this);
+        var k = TOPO_NEAR_LOOK[this._tileZoom];
+        return k ? base.divideBy(Math.pow(2, k)) : base;
+      },
+      _getZoomForUrl: function(){
+        var z = L.TileLayer.prototype._getZoomForUrl.call(this);
+        var k = TOPO_NEAR_LOOK[this._tileZoom];
+        return k ? Math.min(z + k, this.options.maxNativeZoom || this.options.maxZoom) : z;
+      }
+    });
+    var topoLayer = new TopoNearLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      attribution: 'Karte: © OpenTopoMap (CC-BY-SA) · Daten: Autonome Provinz Bozen – Südtirol',
+      maxZoom: 16
+    });
+    // Satellitenbild: Esri World Imagery (weltweit, im Alpenraum hoch aufgelöst)
+    // plus durchsichtige Ortsbeschriftung darüber, damit man sich auf dem
+    // Luftbild zurechtfindet. Beide zusammen als EIN wählbarer Layer.
+    var satImageLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Satellitenbild: © Esri, Maxar, Earthstar Geographics, GIS User Community · Daten: Autonome Provinz Bozen – Südtirol',
+      maxNativeZoom: 18,
+      maxZoom: 19
+    });
+    var satLabelLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 18,
+      maxZoom: 19
+    });
+    var satelliteLayer = L.layerGroup([satImageLayer, satLabelLayer]);
+
+    // Helligkeits-/Kontrastausgleich fürs Satellitenbild: Esri setzt je Zoomstufe
+    // andere Bildmosaike zusammen, die beim Herauszoomen dunkler oder kontrast-
+    // reicher bzw. -ärmer wirken. Statt feste Werte zu raten, misst die Seite das
+    // einmalig selbst: an zwei Orten wird je Stufe die Kachel mit ihren vier
+    // Unterkacheln der nächsthöheren Stufe verglichen (gleiches Gebiet, auf das
+    // gleiche Raster heruntergerechnet, nur anderes Mosaik). Aus Mittelwert und
+    // Streuung der Helligkeit ergibt sich je Stufe eine Umrechnung, die das Bild
+    // an die hineingezoomte Ansicht (ab Stufe SAT_REF_ZOOM) angleicht. Klappt die
+    // Messung nicht (z.B. Kacheln ohne Freigabe zum Auslesen), bleibt das Bild
+    // unverändert.
+    var SAT_REF_ZOOM = 16, SAT_MIN_CAL_ZOOM = 8;
+    var SAT_CAL_POINTS = [[46.70, 10.60], [47.00, 11.25]];
+    var SAT_CACHE_KEY = 'satToneV2';
+    var satTone = null;              // { zoom: { b: Helligkeit, c: Kontrast } }
+    var satCalibrating = false;
+    function satTileUrl(z, x, y){
+      return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + z + '/' + y + '/' + x;
+    }
+    function satTileXY(lat, lon, z){
+      var n = Math.pow(2, z), latR = lat * Math.PI / 180;
+      return {
+        x: Math.floor((lon + 180) / 360 * n),
+        y: Math.floor((1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n)
+      };
+    }
+    function satLoadImg(z, x, y){
+      return new Promise(function(resolve, reject){
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function(){ resolve(img); };
+        img.onerror = function(){ reject(new Error('Kachel nicht ladbar')); };
+        img.src = satTileUrl(z, x, y);
+      });
+    }
+    // Mittelwert und Streuung der Helligkeit auf einem 16x16-Raster. Die vier
+    // Unterkacheln werden in die vier Quadranten (je 8x8) gelegt, damit ein
+    // Rasterpunkt bei Kachel und Unterkacheln dieselbe Fläche abdeckt.
+    function satStats(draw){
+      var c = document.createElement('canvas'); c.width = 16; c.height = 16;
+      var g = c.getContext('2d');
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+      draw(g);
+      var d = g.getImageData(0, 0, 16, 16).data, n = d.length / 4, sum = 0, sq = 0;
+      for (var i = 0; i < d.length; i += 4) {
+        var v = 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+        sum += v; sq += v * v;
+      }
+      var mean = sum / n;
+      return { mean: mean, sd: Math.sqrt(Math.max(0, sq / n - mean * mean)) };
+    }
+    function satCompare(z, t){
+      var offs = [[0,0],[1,0],[0,1],[1,1]];
+      return Promise.all([satLoadImg(z, t.x, t.y), Promise.all(offs.map(function(o){ return satLoadImg(z + 1, t.x * 2 + o[0], t.y * 2 + o[1]); }))]).then(function(res){
+        var par = satStats(function(g){ g.drawImage(res[0], 0, 0, 16, 16); });
+        var kid = satStats(function(g){ res[1].forEach(function(im, i){ g.drawImage(im, offs[i][0] * 8, offs[i][1] * 8, 8, 8); }); });
+        return { par: par, kid: kid };
+      });
+    }
+    function satApplyToTile(img, z){
+      var t = null;
+      if (satTone && z !== undefined) t = satTone[z] || (z < SAT_MIN_CAL_ZOOM ? satTone[SAT_MIN_CAL_ZOOM] : null);
+      img.style.filter = (t && (Math.abs(t.b - 1) > 0.005 || Math.abs(t.c - 1) > 0.005))
+        ? 'brightness(' + t.b.toFixed(3) + ') contrast(' + t.c.toFixed(3) + ')' : '';
+    }
+    function satApplyAll(){
+      var container = satImageLayer.getContainer && satImageLayer.getContainer();
+      if (!container) return;
+      Array.prototype.forEach.call(container.querySelectorAll('img.leaflet-tile'), function(img){ satApplyToTile(img, img.__satZ); });
+    }
+    satImageLayer.on('tileload', function(e){
+      e.tile.__satZ = e.coords.z;
+      satApplyToTile(e.tile, e.coords.z);
+    });
+    function satCalibrate(){
+      if (satTone || satCalibrating) return;
+      try {
+        var cached = JSON.parse(localStorage.getItem(SAT_CACHE_KEY) || 'null');
+        if (cached && cached.f && (Date.now() - cached.t) < 7 * 24 * 3600 * 1000) { satTone = cached.f; satApplyAll(); return; }
+      } catch (e) { /* Zwischenspeicher nicht verfügbar - dann eben messen */ }
+      satCalibrating = true;
+      var steps = {}; // zoom -> Liste von { a, b } (kachelweise Umrechnung y = a*x + b)
+      var jobs = SAT_CAL_POINTS.map(function(pt){
+        var chain = Promise.resolve();
+        for (var z = SAT_REF_ZOOM - 1; z >= SAT_MIN_CAL_ZOOM; z--) {
+          (function(z){
+            chain = chain.then(function(){
+              return satCompare(z, satTileXY(pt[0], pt[1], z)).then(function(r){
+                if (r.par.mean < 1 || r.par.sd < 0.5) return; // leere/einfarbige Kachel: nichts aussagekräftig
+                var a = r.kid.sd / r.par.sd;
+                (steps[z] = steps[z] || []).push({ a: a, b: r.kid.mean - a * r.par.mean });
+              });
+            });
+          })(z);
+        }
+        return chain;
+      });
+      Promise.all(jobs).then(function(){
+        var tone = {}, A = 1, B = 0; // Gesamtumrechnung von Stufe z bis zur Referenzstufe: y = A*x + B
+        for (var z = SAT_REF_ZOOM - 1; z >= SAT_MIN_CAL_ZOOM; z--) {
+          var list = steps[z];
+          if (list && list.length) {
+            var a = Math.exp(list.reduce(function(s, v){ return s + Math.log(Math.max(0.2, v.a)); }, 0) / list.length);
+            var b = list.reduce(function(s, v){ return s + v.b; }, 0) / list.length;
+            a = Math.max(0.8, Math.min(1.35, a));
+            b = Math.max(-40, Math.min(40, b));
+            if (Math.abs(a - 1) < 0.03) a = 1;     // Messrauschen ignorieren
+            if (Math.abs(b) < 3) b = 0;
+            // Stufe z -> z+1 -> ... -> Referenz:  y = A*(a*x + b) + B
+            B = A * b + B;
+            A = A * a;
+            A = Math.max(0.7, Math.min(1.6, A));
+            B = Math.max(-60, Math.min(60, B));
+          }
+          // y = A*x + B als CSS: contrast(C) nach brightness(Br):  C*Br*x + 128*(1-C)
+          var C = Math.max(0.7, Math.min(1.6, 1 - B / 128));
+          tone[z] = { b: A / C, c: C };
+        }
+        satTone = tone;
+        try { localStorage.setItem(SAT_CACHE_KEY, JSON.stringify({ t: Date.now(), f: tone })); } catch (e) { /* egal */ }
+        satApplyAll();
+      }).catch(function(){ /* Messung nicht möglich: Bild bleibt unverändert */ })
+        .then(function(){ satCalibrating = false; });
+    }
+    satImageLayer.on('add', function(){ setTimeout(satCalibrate, 1500); });
+    osmLayer.addTo(windMapInstance); // Standard-Ansicht
+    L.control.layers(
+      { 'Straßenkarte': osmLayer, 'Topografisch': topoLayer, 'Satellit': satelliteLayer },
+      null,
+      { position: 'topright', collapsed: true }
+    ).addTo(windMapInstance);
+
+    // Klick ins Leere (neben die Karte, auf eine freie Stelle der Seite oder auf
+    // eine leere Kartenfläche) schließt die Detailansicht der Live-Karte wieder.
+    // Nicht geschlossen wird bei Klicks auf Stationssymbole, Kartenbedienelemente
+    // und innerhalb der Detailansicht selbst.
+    document.addEventListener('click', function(e){
+      var panel = document.getElementById('windDetailPanel');
+      if (!panel || !panel.classList.contains('open')) return;
+      var path = e.composedPath ? e.composedPath() : [];
+      for (var i = 0; i < path.length; i++) {
+        var n = path[i];
+        if (n === panel) return;
+        if (n.classList && (n.classList.contains('windsock-icon') || n.classList.contains('leaflet-marker-icon') || n.classList.contains('leaflet-control') || n.classList.contains('leaflet-popup') || n.classList.contains('menu-dropdown') || n.classList.contains('menu-toggle'))) return;
+      }
+      panel.classList.remove('open');
+    });
+
+    fetch('./data/wind.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.json() : { stations: {} }; })
+      .then(function(payload){
+        var stations = payload.stations || {};
+
+        // Darstellungsreihenfolge: diese vier Stationen zuerst (in dieser
+        // Reihenfolge), damit sie bei Überlappungen über den anderen liegen.
+        var PRIORITY_CODES = ['00700WS', '06040WS', '02200MS', '08200MS']; // Graun Elferspitze, Sulden Schöntaufspitze, St. Valentin a.d. Haide, Laas Eyrs
+        var orderedStations = ALL_STATIONS.slice().sort(function(a, b){
+          var pa = PRIORITY_CODES.indexOf(a.code); var pb = PRIORITY_CODES.indexOf(b.code);
+          if (pa === -1) pa = PRIORITY_CODES.length;
+          if (pb === -1) pb = PRIORITY_CODES.length;
+          return pa - pb;
+        });
+
+        // Zusatzstationen anderer Quellen: alles in data/wind.json, was einen
+        // "meta"-Block mit Koordinaten hat und keine Südtiroler Station ist.
+        var knownCodes = {};
+        ALL_STATIONS.forEach(function(s){ knownCodes[s.code] = true; });
+        Object.keys(stations).forEach(function(key){
+          var e = stations[key];
+          if (knownCodes[key] || !e || !e.meta) return;
+          var m = e.meta;
+          if (typeof m.lat !== 'number' || typeof m.lon !== 'number') return;
+          var elev = (typeof m.elevationM === 'number') ? Math.round(m.elevationM) : null;
+          orderedStations.push({
+            code: key, name: m.name || key, lat: m.lat, lon: m.lon, elev: elev,
+            // Tal/Berg (Farbe des Windsacks): bevorzugt die Einstufung aus dem
+            // Abruf-Skript (nach Lage und Höhe festgelegt), sonst nur nach Höhe.
+            type: (m.type === 'tal' || m.type === 'berg') ? m.type : ((elev !== null && elev >= 1850) ? 'berg' : 'tal'),
+            extra: true, source: m.source || '', attribution: m.attribution || '',
+            intervalMin: m.intervalMin || 10
+          });
+        });
+
+        orderedStations.forEach(function(station){
+          var entry = stations[station.code];
+          var rows = (entry && entry.rows) ? entry.rows : [];
+          var last = rows.length ? rows[rows.length - 1] : null;
+          // Seit über 30 Tagen keine Werte mehr: gar nicht auf der Karte zeigen.
+          if (isLongInactive(entry)) return;
+          // Hat diese Station laut vorhandener Historie überhaupt je Windwerte
+          // geliefert? Nur wenn mindestens eine Zeile existiert UND darunter
+          // keine einzige echte Windangabe war, gilt sie als "kein Windsensor".
+          // Ausnahme: die 4 "Ausgewählte Stationen"-Stationen sind bekanntermaßen
+          // echte Windstationen - das gespeicherte Zeitfenster ist mit ca. 6,5h
+          // begrenzt, bei längerer Funkstille könnten darin zufällig nur
+          // Nullwerte stehen, was sonst fälschlich als "kein Windsensor" (=
+          // Thermometer-Symbol) interpretiert würde statt korrekt als
+          // "seit längerem keine Werte" (transparent, -/-).
+          var hasWindSensor = PRIORITY_CODES.indexOf(station.code) !== -1 || rows.length === 0 || rows.some(function(r){
+            return (r.avgKmh !== null && r.avgKmh !== undefined) || (r.gustKmh !== null && r.gustKmh !== undefined);
+          });
+
+          // Für die Zeichenreihenfolge: dieselbe "transparent oder nicht"-Logik
+          // wie in buildWindsockIcon (Thermometer-Symbol, fehlende Daten oder
+          // seit >3 Tagen aufgegeben zählen alle als transparent).
+          var ageMin = (last && last.instantUTC) ? (Date.now() - new Date(last.instantUTC).getTime()) / 60000 : null;
+          var isAbandoned = hasWindSensor && ageMin !== null && ageMin > 3 * 24 * 60;
+          var hasCurrentData = hasWindSensor && !isAbandoned && last &&
+            ((last.avgKmh !== null && last.avgKmh !== undefined) || (last.gustKmh !== null && last.gustKmh !== undefined));
+          var isTransparent = !hasWindSensor || !hasCurrentData;
+
+          // Leaflet sortiert Marker standardmäßig nach geografischer Breite
+          // (weiter südlich = optisch "vorne") statt nach Erstellungsreihenfolge -
+          // deshalb hier ein expliziter zIndexOffset statt uns auf die
+          // forEach-Reihenfolge zu verlassen.
+          var priorityIdx = PRIORITY_CODES.indexOf(station.code);
+          var zIndexOffset;
+          if (priorityIdx !== -1) {
+            zIndexOffset = 4000 - priorityIdx * 1000; // 4000,3000,2000,1000 - garantiert ganz vorne
+          } else if (station.extra) {
+            // Zusatzstationen: je höher die Station liegt, desto weiter vorne
+            // (aussagekräftiger für die Flugpraxis). 3 Punkte pro Höhenmeter
+            // überwiegen sicher den Breitengrad-Unterschied überlappender Symbole.
+            // Stationen mit Daten liegen immer vor solchen ohne. Insgesamt bleiben
+            // die Zusatzstationen hinter den Südtiroler Stationen, damit sie keine
+            // bestehenden Symbole verdecken.
+            zIndexOffset = (isTransparent ? -30000 : -20000) + (station.elev || 0) * 3;
+          } else {
+            zIndexOffset = isTransparent ? 0 : 200; // nicht-transparent immer vor transparent
+          }
+
+          // Hat die Station laut Historie je eine Windrichtung geliefert? Wenn nicht
+          // (z.B. Latschbloder), wird statt des Windsacks nur der Stationspunkt
+          // gezeichnet. Ohne Historie oder bei den Prioritätsstationen: Windsack.
+          var hasDirSensor = PRIORITY_CODES.indexOf(station.code) !== -1 || rows.length === 0 || rows.some(function(r){
+            return r.dirDeg !== null && r.dirDeg !== undefined && !isNaN(r.dirDeg);
+          });
+          var icon = L.divIcon({ className: '', html: buildWindsockIcon(station, last, hasWindSensor, hasDirSensor), iconSize: [90, 90], iconAnchor: [45, 45] });
+          var marker = L.marker([station.lat, station.lon], { icon: icon, zIndexOffset: zIndexOffset }).addTo(windMapInstance);
+          marker.on('click', function(){
+            showWindDetail(station, rows);
+            setTimeout(function(){
+              var panel = document.getElementById('windDetailPanel');
+              var rect = panel.getBoundingClientRect();
+              // Nur scrollen, wenn das Panel noch nicht brauchbar sichtbar ist
+              // (z.B. beim allerersten Klick). Ist man durch einen früheren
+              // Klick schon runtergescrollt, bleibt die Position unverändert -
+              // sonst würde jeder weitere Stationsklick nochmal weiter nach
+              // unten scrollen.
+              if (rect.top > window.innerHeight * 0.7) {
+                window.scrollBy({ top: 184, left: 0, behavior: 'smooth' });
+              }
+            }, 80);
+          });
+        });
+        updateIconScale();
+      })
+      .catch(function(){ /* Karte bleibt ohne Marker, still fehlschlagen */ });
+  };
+
+  /* ---------- Ausgewählte Stationen (kompakte Übersicht) ---------- */
+  var SELECTED_STATION_CODES = ['00700WS', '02200MS', '06040WS', '08200MS'];
+
+  function buildCompassBackgroundSvg(cx, cy, r){
+    return '<svg width="80" height="60" viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;">' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#E4E7E6" stroke-width="1"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r * 0.58).toFixed(1) + '" fill="none" stroke="#EDEFEE" stroke-width="1"/>' +
+      '<line x1="' + cx + '" y1="' + (cy - r) + '" x2="' + cx + '" y2="' + (cy + r) + '" stroke="#E4E7E6" stroke-width="1"/>' +
+      '<line x1="' + (cx - r) + '" y1="' + cy + '" x2="' + (cx + r) + '" y2="' + cy + '" stroke="#E4E7E6" stroke-width="1"/>' +
+      '<text x="' + cx + '" y="' + (cy - r + 7).toFixed(1) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-size="7" font-weight="700" fill="#C3C9C7">N</text>' +
+      '<text x="' + cx + '" y="' + (cy + r + 1).toFixed(1) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-size="7" font-weight="700" fill="#C3C9C7">S</text>' +
+      '<text x="' + (cx + r - 2).toFixed(1) + '" y="' + (cy + 2.5).toFixed(1) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-size="7" font-weight="700" fill="#C3C9C7">O</text>' +
+      '<text x="' + (cx - r + 2).toFixed(1) + '" y="' + (cy + 2.5).toFixed(1) + '" text-anchor="middle" font-family="\'IBM Plex Sans\', sans-serif" font-size="7" font-weight="700" fill="#C3C9C7">W</text>' +
+    '</svg>';
+  }
+
+  function buildCompactWindsockSvg(dirDeg, stationType){
+    var hasDir = (dirDeg !== null && dirDeg !== undefined && !isNaN(dirDeg));
+    var bearing = hasDir ? (dirDeg + 180) % 360 : 90;
+    var rotation = bearing - 90;
+    var sockColor = (stationType === 'tal') ? '#F2994A' : '#E5342A';
+    // Drehpunkt der Windfahne (Punkt bei lokal x=6,y=12 im 60x24-Viewbox) soll
+    // exakt mit der Mitte des Kompass-Hintergrunds zusammenfallen. Nur der
+    // Kompass-Radius ist 30% größer - die Windsack-Größe bleibt unverändert.
+    var pivotX = 28, pivotY = 29;
+    var sockRenderW = 44.1, sockRenderH = 17.6;
+    var svgLeft = pivotX - 6 * (sockRenderW / 60), svgTop = pivotY - 12 * (sockRenderH / 24);
+    return buildCompassBackgroundSvg(pivotX, pivotY, 27) +
+      '<svg width="' + sockRenderW + '" height="' + sockRenderH + '" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
+      'style="position:absolute;left:' + svgLeft.toFixed(1) + 'px;top:' + svgTop.toFixed(1) + 'px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;opacity:' + (hasDir ? 1 : 0.4) + ';">' +
+      '<line x1="6" y1="12" x2="18" y2="5" stroke="#3A4750" stroke-width="1.3"/>' +
+      '<line x1="6" y1="12" x2="18" y2="19" stroke="#3A4750" stroke-width="1.3"/>' +
+      '<polygon points="18,5 18,19 31,17 31,7" fill="' + sockColor + '"/>' +
+      '<polygon points="31,7 31,17 45,15 45,9" fill="#ffffff" stroke="#cfd3d2" stroke-width="0.4"/>' +
+      '<polygon points="45,9 45,15 58,13.5 58,10.5" fill="' + sockColor + '"/>' +
+      '<circle cx="6" cy="12" r="5" fill="#2B2B2B"/>' +
+    '</svg>';
+  }
+
+  window.renderSelectedStations = function(){
+    var grid = document.getElementById('selectedStationsGrid');
+    fetch('./data/wind.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.json() : { stations: {} }; })
+      .then(function(payload){
+        var stations = payload.stations || {};
+        grid.innerHTML = SELECTED_STATION_CODES.map(function(code){
+          var station = ALL_STATIONS.filter(function(s){ return s.code === code; })[0];
+          if (!station) return '';
+          var entry = stations[code];
+          var rows = (entry && entry.rows) ? entry.rows : [];
+          var last = rows.length ? rows[rows.length - 1] : null;
+          var avg = last ? last.avgKmh : null;
+          var gust = last ? last.gustKmh : null;
+          var dir = last ? last.dirDeg : null;
+          var time = last ? last.time : '—';
+          var avgTxt = (avg !== null && avg !== undefined) ? Math.round(avg) : '–';
+          var gustTxt = (gust !== null && gust !== undefined) ? Math.round(gust) : '–';
+
+          var isStale = false;
+          var trafficColor = '#B9C2C0';
+          if (last && last.instantUTC) {
+            var ageMin = (Date.now() - new Date(last.instantUTC).getTime()) / 60000;
+            isStale = ageMin > 65;
+            if (ageMin <= 35) trafficColor = '#22C55E';
+            else if (ageMin <= 65) trafficColor = '#F2C94C';
+            else trafficColor = '#E5342A';
+          }
+          var trafficDot = '<span class="update-traffic-dot" style="background:' + trafficColor + ';"></span>';
+
+          // Gleiche Schwellenwert-Logik wie bei den Windwerte-Rechtecken auf
+          // der Karte: >=30 km/h (Ø oder Böe) blinkt rot. Zusätzlich
+          // Abweichung Böe/Ø: 10-12 km/h gelb, 13-14 km/h orange, ab 15 km/h rot.
+          // Bewusst mit den gerundeten, angezeigten Werten (avgTxt/gustTxt),
+          // damit Anzeige und Blink-Logik immer übereinstimmen.
+          var cardBlinkClass = '';
+          var avgR = (typeof avgTxt === 'number') ? avgTxt : null;
+          var gustR = (typeof gustTxt === 'number') ? gustTxt : null;
+          var cardOverThreshold = (avgR !== null && avgR >= 30) || (gustR !== null && gustR >= 30);
+          var cardDeviation = (avgR !== null && gustR !== null) ? Math.abs(gustR - avgR) : null;
+          if (cardOverThreshold || (cardDeviation !== null && cardDeviation >= 15)) cardBlinkClass = 'wr-blink-red';
+          else if (cardDeviation !== null && cardDeviation >= 13) cardBlinkClass = 'wr-blink-orange';
+          else if (cardDeviation !== null && cardDeviation >= 10) cardBlinkClass = 'wr-blink-yellow';
+
+          var panelId = 'windDetailPanelSel-' + code;
+
+          return '<div class="selected-card ' + cardBlinkClass + '" data-code="' + code + '">' +
+            '<div class="ssc-clickable">' +
+              '<div class="ssc-header-col">' +
+                '<div class="ssc-header"><span class="ssc-name">' + station.name + '</span><span class="ssc-time">' + trafficDot + time + '</span></div>' +
+                (isStale ? '<div class="stale-warning-text ssc-stale">Aktualisierung verzögert!</div>' : '') +
+              '</div>' +
+              '<div class="ssc-body">' +
+                '<div class="ssc-values">' +
+                  '<div><span class="ssc-label">Ø km/h</span><span class="ssc-value">' + avgTxt + '</span></div>' +
+                  '<div><span class="ssc-label">Böe km/h</span><span class="ssc-value ssc-gust">' + gustTxt + '</span></div>' +
+                '</div>' +
+                '<div class="ssc-sock">' + buildCompactWindsockSvg(dir, station.type) + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="wind-detail-panel" id="' + panelId + '"></div>' +
+          '</div>';
+        }).join('');
+
+        // Gleiche Detailansicht wie bei Live-Windwerte, aber direkt unter der
+        // jeweiligen Station eingebettet (eigenes Panel pro Karte) und als
+        // Auf-/Zuklapp-Akkordeon: erneutes Antippen klappt wieder ein. Der
+        // Klick-Bereich ist bewusst auf Kopf+Werte begrenzt (.ssc-clickable),
+        // damit ein Klick INNERHALB des bereits geöffneten Diagramms es nicht
+        // versehentlich wieder zuklappt.
+        grid.querySelectorAll('.selected-card').forEach(function(card){
+          var clickable = card.querySelector('.ssc-clickable');
+          clickable.addEventListener('click', function(){
+            var code = card.getAttribute('data-code');
+            var panelId = 'windDetailPanelSel-' + code;
+            var panel = document.getElementById(panelId);
+            if (panel.classList.contains('open')) {
+              panel.classList.remove('open');
+              return;
+            }
+            var station = ALL_STATIONS.filter(function(s){ return s.code === code; })[0];
+            var entry = stations[code];
+            var rows = (entry && entry.rows) ? entry.rows : [];
+            if (station) showWindDetail(station, rows, panelId);
+          });
+        });
+      })
+      .catch(function(){ grid.innerHTML = '<p class="wind-note">Daten konnten nicht geladen werden.</p>'; });
+  };
+  /* ---------- Föhnprognose (zwei externe Diagramme) ---------- */
+  var foehnprognoseVisited = false;
+  function refreshFoehnprognoseImages(){
+    var cacheBuster = Date.now();
+    document.getElementById('foehnImgBz').src = 'https://static-weather.services.siag.it/sys/pgradient_de.png?t=' + cacheBuster;
+    document.getElementById('foehnImgWr').src = 'https://stations.wetterring.at/wetterkarten/foehndiagramm_ibk.png?t=' + cacheBuster;
+  }
+  window.renderFoehnprognose = function(){
+    foehnprognoseVisited = true;
+    refreshFoehnprognoseImages();
+  };
+  // Zusätzlich bei jedem load()-Zyklus auffrischen (Start + alle 3 Min., deckt
+  // auch ein manuelles Neuladen der Seite ab) - aber nur, wenn der Reiter
+  // schon mindestens einmal besucht wurde, damit für Besucher, die ihn nie
+  // öffnen, keine unnötigen Anfragen an die externen Server gehen.
+  window.refreshFoehnprognoseIfVisited = function(){
+    if (foehnprognoseVisited) refreshFoehnprognoseImages();
+  };
+
+  function initModal(overlayId, openBtnId, closeBtnId){
+    var overlay = document.getElementById(overlayId);
+    var openBtn = document.getElementById(openBtnId);
+    var closeBtn = document.getElementById(closeBtnId);
+    if (!overlay || !openBtn || !closeBtn) return;
+
+    function open(){ overlay.classList.add('open'); overlay.setAttribute('aria-hidden', 'false'); }
+    function close(){ overlay.classList.remove('open'); overlay.setAttribute('aria-hidden', 'true'); }
+
+    openBtn.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+  }
+  initModal('impressumOverlay', 'impressumOpen', 'impressumClose');
+  initModal('whyOverlay', 'whyOpen', 'whyClose');
+
+  // Erst jetzt, ganz am Ende - nachdem initWindMap und renderSelectedStations
+  // tatsächlich definiert sind - den beim letzten Besuch aktiven Reiter
+  // wiederherstellen (siehe restoreActivePage in initMenu()).
+  if (window.restoreActivePage) window.restoreActivePage();
+</script>
+</body>
+</html>
