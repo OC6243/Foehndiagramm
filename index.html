@@ -545,20 +545,22 @@
   }
   .sources a{ color:var(--cool); }
 
-  /* Einklappbare Quellenangaben ("Mehr anzeigen" mit Pfeil) */
+  /* Einklappbare Quellenangaben: "Quellen: Mehr anzeigen ▾" in einer Zeile */
   .src-more{ margin-top:4px; }
-  .src-more summary{
-    cursor:pointer; color:var(--cool); font-size:12.5px; font-weight:600;
-    list-style:none; display:inline-block;
-  }
+  .src-more summary{ cursor:pointer; list-style:none; display:block; }
   .src-more summary::-webkit-details-marker{ display:none; }
-  .src-more summary:hover{ text-decoration:underline; }
-  .src-more summary::after{ content:'▾'; margin-left:5px; font-size:11px; }
-  .src-more[open] summary::after{ content:'▴'; }
+  .src-more .src-toggle{ color:var(--cool); font-weight:600; margin-left:4px; }
+  .src-more summary:hover .src-toggle{ text-decoration:underline; }
+  .src-more .src-toggle::after{ content:'▾'; margin-left:5px; font-size:11px; }
+  .src-more[open] .src-toggle::after{ content:'▴'; }
   .src-more:not([open]) .when-open{ display:none; }
   .src-more[open] .when-closed{ display:none; }
-  .src-more > .src-more-body{ margin-top:6px; }
-  .src-more > .src-more-body p{ margin:0 0 6px; }
+  .src-more > .src-more-body{ margin-top:4px; }
+
+  /* Detailansicht: Definition von Mittelwind und Böe */
+  .wind-def{ margin-top:12px; font-size:12px; line-height:1.6; color:var(--muted); }
+  .wind-def-title{ font-weight:600; margin-bottom:1px; }
+  .wind-def b{ color:var(--ink); }
 
   .page-foot{
     text-align:center; color:var(--muted); font-size:12.5px;
@@ -610,10 +612,12 @@
       <div id="content" class="loading">Lade aktuelle Messwerte …</div>
 
       <div class="sources">
-        Quelle Messdaten Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a>
         <details class="src-more">
-          <summary><span class="when-closed">Mehr anzeigen</span><span class="when-open">Weniger anzeigen</span></summary>
-          <div class="src-more-body">Quelle Messdaten Tirol: <a href="https://www.geosphere.at/de" target="_blank" rel="noopener">GeoSphere Austria</a></div>
+          <summary>Quellen Messdaten: <span class="src-toggle"><span class="when-closed">Mehr anzeigen</span><span class="when-open">Weniger anzeigen</span></span></summary>
+          <div class="src-more-body">
+            Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a><br>
+            Tirol: <a href="https://www.geosphere.at/de" target="_blank" rel="noopener">GeoSphere Austria</a>
+          </div>
         </details>
       </div>
       <div class="page-foot" id="pageFoot"></div>
@@ -623,19 +627,18 @@
       <div class="section">
         <div id="windMap"></div>
         <div class="wind-detail-panel" id="windDetailPanel"></div>
-        <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
         <details class="src-more wind-note">
-          <summary><span class="when-closed">Mehr anzeigen</span><span class="when-open">Weniger anzeigen</span></summary>
+          <summary>Quellen: <span class="src-toggle"><span class="when-closed">Mehr anzeigen</span><span class="when-open">Weniger anzeigen</span></span></summary>
           <div class="src-more-body">
-            <p>Weitere Quellen:
-              <a href="https://www.meteoschweiz.admin.ch" target="_blank" rel="noopener">MeteoSchweiz</a> ·
-              <a href="https://www.slf.ch" target="_blank" rel="noopener">WSL-Institut für Schnee- und Lawinenforschung SLF</a> ·
-              <a href="https://lawinen.report" target="_blank" rel="noopener">Lawinenwarndienst Tirol / lawinen.report</a> ·
-              <a href="https://www.geosphere.at" target="_blank" rel="noopener">GeoSphere Austria</a> ·
-              <a href="https://www.meteotrentino.it" target="_blank" rel="noopener">Meteotrentino</a></p>
-            <p>Messintervalle und Böen-Definitionen unterscheiden sich je nach Quelle, Böenwerte sind daher nicht direkt vergleichbar.</p>
+            <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a> ·
+            <a href="https://www.meteoschweiz.admin.ch" target="_blank" rel="noopener">MeteoSchweiz</a> ·
+            <a href="https://www.slf.ch" target="_blank" rel="noopener">WSL-Institut für Schnee- und Lawinenforschung SLF</a> ·
+            <a href="https://lawinen.report" target="_blank" rel="noopener">Lawinenwarndienst Tirol / lawinen.report</a> ·
+            <a href="https://www.geosphere.at" target="_blank" rel="noopener">GeoSphere Austria</a> ·
+            <a href="https://www.meteotrentino.it" target="_blank" rel="noopener">Meteotrentino</a>
           </div>
         </details>
+        <p class="wind-note">Messintervalle und Böen-Definitionen unterscheiden sich je nach Quelle, Böenwerte sind daher nicht direkt vergleichbar.</p>
       </div>
     </div>
 
@@ -1691,20 +1694,43 @@
   // (Windspitze der letzten 10 Min.). Bei Südtirol, Tirol und Trentino gibt der
   // Betreiber keine genaue Böendauer an - dort steht deshalb nur die allgemeine
   // Bedeutung (höchste kurzzeitige Windspitze im Messintervall).
-  function gustMethodHtml(station){
-    var src = station.extra ? (station.source || '') : 'Südtirol';
-    var t;
-    if (src === 'MeteoSchweiz') t = 'Ø = Mittel über 10 Minuten. Böe = stärkste 1-Sekunden-Spitze der letzten 10 Minuten.';
-    else if (src.indexOf('SLF') === 0) t = 'Ø = Mittel über 30 Minuten. Böe = höchster 5-Sekunden-Wert innerhalb dieser 30 Minuten.';
-    else if (src === 'GeoSphere Austria') t = 'Ø = Mittel über 10 Minuten. Böe = Windspitze (Maximum) der letzten 10 Minuten.';
-    else if (src === 'Meteotrentino') t = 'Ø = Mittel über 15 Minuten. Böe = höchste kurzzeitige Windspitze in diesen 15 Minuten.';
-    else if (src === 'lawinen.report') t = 'Ø = Mittel über das Messintervall der Station. Böe = höchste kurzzeitige Windspitze in diesem Intervall.';
-    else t = 'Ø = Mittel über 10 Minuten. Böe = höchste kurzzeitige Windspitze innerhalb dieser 10 Minuten.';
-    return 'So wird gemessen: ' + t;
+  var SOURCE_LINKS = {
+    'Südtirol': 'https://wetter.provinz.bz.it/de/messungen',
+    'MeteoSchweiz': 'https://www.meteoschweiz.admin.ch',
+    'SLF': 'https://www.slf.ch',
+    'lawinen.report': 'https://lawinen.report',
+    'GeoSphere Austria': 'https://www.geosphere.at',
+    'Meteotrentino': 'https://www.meteotrentino.it'
+  };
+  function sourceKey(station){
+    if (!station.extra) return 'Südtirol';
+    var src = station.source || '';
+    return src.indexOf('SLF') === 0 ? 'SLF' : src;
   }
+  function windDefinition(station){
+    var k = sourceKey(station);
+    if (k === 'MeteoSchweiz') return { avg: 'Mittelwert über 10 Minuten', gust: 'stärkste 1-Sekunden-Spitze der letzten 10 Minuten' };
+    if (k === 'SLF') return { avg: 'Mittelwert über 30 Minuten', gust: 'höchster 5-Sekunden-Wert innerhalb dieser 30 Minuten' };
+    if (k === 'GeoSphere Austria') return { avg: 'Mittelwert über 10 Minuten', gust: 'Windspitze (Maximum) der letzten 10 Minuten' };
+    if (k === 'Meteotrentino') return { avg: 'Mittelwert über 15 Minuten', gust: 'höchste kurzzeitige Windspitze in diesen 15 Minuten' };
+    if (k === 'lawinen.report') return { avg: 'Mittelwert über das Messintervall der Station', gust: 'höchste kurzzeitige Windspitze in diesem Intervall' };
+    return { avg: 'Mittelwert über 10 Minuten', gust: 'höchste kurzzeitige Windspitze innerhalb dieser 10 Minuten' };
+  }
+  // "Quelle: <Name>" als Link, genauso wie die Quellenangaben unter der Karte.
   function sourceLineHtml(station){
-    if (!station.extra) return 'Quelle: Autonome Provinz Bozen – Südtirol';
-    return escHtml(station.attribution || ('Quelle: ' + (station.source || 'unbekannt')));
+    var k = sourceKey(station);
+    var url = SOURCE_LINKS[k];
+    var label;
+    if (!station.extra) label = 'Autonome Provinz Bozen - Südtirol';
+    else label = String(station.attribution || station.source || 'unbekannt').replace(/^Quelle:\s*/, '');
+    var inner = escHtml(label);
+    return 'Quelle: ' + (url ? '<a href="' + url + '" target="_blank" rel="noopener">' + inner + '</a>' : inner);
+  }
+  function windDefinitionHtml(station){
+    var d = windDefinition(station);
+    return '<div class="wind-def"><div class="wind-def-title">Definition Windgeschwindigkeit:</div>' +
+      '<div><b>Ø</b> = ' + d.avg + '</div>' +
+      '<div><b>Böe</b> = ' + d.gust + '</div></div>';
   }
 
   function windDirLabel(deg){
@@ -2032,7 +2058,7 @@
     // Zusatzstationen: Name/Quelle stammen aus fremden Datenquellen -> maskieren
     var stationTitle = station.extra ? escHtml(station.name) : station.name;
     // Quelle + kurze Erklärung, wie Mittelwind und Böe bei dieser Quelle ermittelt werden.
-    var sourceNote = '<p class="wind-note wind-source-note">' + sourceLineHtml(station) + '<br>' + gustMethodHtml(station) + '</p>';
+    var sourceNote = '<p class="wind-note wind-source-note">' + sourceLineHtml(station) + '</p>' + windDefinitionHtml(station);
 
     panel.innerHTML =
       '<h3>' + stationTitle + (station.elev ? ' <span class="station-elev-label">' + station.elev + ' m</span>' : '') + '</h3>' +
@@ -2371,6 +2397,33 @@
       null,
       { position: 'topright', collapsed: true }
     ).addTo(windMapInstance);
+
+    // Topo-Karte: Die Darstellung "wie beim Hineinzoomen" (Kacheln von Stufe 11)
+    // wird bis Stufe TOPO_MIN_ZOOM hinaus erzeugt. Noch weiter weg würde sie
+    // hunderte bis tausende Kacheln pro Ansicht brauchen (Stufe 8: ca. 700,
+    // Stufe 7: ca. 2800 am Desktop) und die Server von OpenTopoMap unnötig
+    // belasten. Solange die Topo-Karte aktiv ist, geht Herauszoomen daher nur bis
+    // Stufe 9; bei Straßenkarte und Satellit gilt wieder die volle Zoomweite.
+    var TOPO_MIN_ZOOM = 9;
+    windMapInstance.on('baselayerchange', function(e){
+      windMapInstance.setMinZoom(e.layer === topoLayer ? TOPO_MIN_ZOOM : 0);
+    });
+
+    // Klick ins Leere (neben die Karte, auf eine freie Stelle der Seite oder auf
+    // eine leere Kartenfläche) schließt die Detailansicht der Live-Karte wieder.
+    // Nicht geschlossen wird bei Klicks auf Stationssymbole, Kartenbedienelemente
+    // und innerhalb der Detailansicht selbst.
+    document.addEventListener('click', function(e){
+      var panel = document.getElementById('windDetailPanel');
+      if (!panel || !panel.classList.contains('open')) return;
+      var path = e.composedPath ? e.composedPath() : [];
+      for (var i = 0; i < path.length; i++) {
+        var n = path[i];
+        if (n === panel) return;
+        if (n.classList && (n.classList.contains('windsock-icon') || n.classList.contains('leaflet-marker-icon') || n.classList.contains('leaflet-control') || n.classList.contains('leaflet-popup') || n.classList.contains('menu-dropdown') || n.classList.contains('menu-toggle'))) return;
+      }
+      panel.classList.remove('open');
+    });
 
     fetch('./data/wind.json?t=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.ok ? r.json() : { stations: {} }; })
