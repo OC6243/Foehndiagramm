@@ -545,23 +545,6 @@
   }
   .sources a{ color:var(--cool); }
 
-  /* Einklappbare Quellenangaben: "Quellen: Mehr anzeigen ▾" in einer Zeile */
-  .src-more{ margin-top:4px; }
-  .src-more summary{ cursor:pointer; list-style:none; display:block; }
-  .src-more summary::-webkit-details-marker{ display:none; }
-  .src-more .src-toggle{ color:var(--cool); font-weight:600; margin-left:4px; }
-  .src-more summary:hover .src-toggle{ text-decoration:underline; }
-  .src-more .src-toggle::after{ content:'▾'; margin-left:5px; font-size:11px; }
-  .src-more[open] .src-toggle::after{ content:'▴'; }
-  .src-more:not([open]) .when-open{ display:none; }
-  .src-more[open] .when-closed{ display:none; }
-  .src-more > .src-more-body{ margin-top:4px; }
-
-  /* Detailansicht: Definition von Mittelwind und Böe */
-  .wind-def{ margin-top:12px; font-size:12px; line-height:1.6; color:var(--muted); }
-  .wind-def-title{ font-weight:600; margin-bottom:1px; }
-  .wind-def b{ color:var(--ink); }
-
   .page-foot{
     text-align:center; color:var(--muted); font-size:12.5px;
     margin-top:14px; font-family:'IBM Plex Mono', monospace;
@@ -612,13 +595,8 @@
       <div id="content" class="loading">Lade aktuelle Messwerte …</div>
 
       <div class="sources">
-        <details class="src-more">
-          <summary>Quellen Messdaten: <span class="src-toggle"><span class="when-closed">Mehr anzeigen</span><span class="when-open">Weniger anzeigen</span></span></summary>
-          <div class="src-more-body">
-            Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a><br>
-            Tirol: <a href="https://www.geosphere.at/de" target="_blank" rel="noopener">GeoSphere Austria</a>
-          </div>
-        </details>
+        Quelle Messdaten Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a><br>
+        Quelle Messdaten Tirol: <a href="https://www.geosphere.at/de" target="_blank" rel="noopener">GeoSphere Austria</a>
       </div>
       <div class="page-foot" id="pageFoot"></div>
     </div>
@@ -627,18 +605,14 @@
       <div class="section">
         <div id="windMap"></div>
         <div class="wind-detail-panel" id="windDetailPanel"></div>
-        <details class="src-more wind-note">
-          <summary>Quellen: <span class="src-toggle"><span class="when-closed">Mehr anzeigen</span><span class="when-open">Weniger anzeigen</span></span></summary>
-          <div class="src-more-body">
-            <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a> ·
-            <a href="https://www.meteoschweiz.admin.ch" target="_blank" rel="noopener">MeteoSchweiz</a> ·
-            <a href="https://www.slf.ch" target="_blank" rel="noopener">WSL-Institut für Schnee- und Lawinenforschung SLF</a> ·
-            <a href="https://lawinen.report" target="_blank" rel="noopener">Lawinenwarndienst Tirol / lawinen.report</a> ·
-            <a href="https://www.geosphere.at" target="_blank" rel="noopener">GeoSphere Austria</a> ·
-            <a href="https://www.meteotrentino.it" target="_blank" rel="noopener">Meteotrentino</a>
-          </div>
-        </details>
-        <p class="wind-note">Messintervalle und Böen-Definitionen unterscheiden sich je nach Quelle, Böenwerte sind daher nicht direkt vergleichbar.</p>
+        <p class="wind-note">Quellen: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a> ·
+          <a href="https://www.meteoschweiz.admin.ch" target="_blank" rel="noopener">MeteoSchweiz</a> ·
+          <a href="https://www.slf.ch" target="_blank" rel="noopener">WSL-Institut für Schnee- und Lawinenforschung SLF</a> ·
+          <a href="https://lawinen.report" target="_blank" rel="noopener">Lawinenwarndienst Tirol / lawinen.report</a> ·
+          <a href="https://www.geosphere.at" target="_blank" rel="noopener">GeoSphere Austria</a> ·
+          <a href="https://www.meteotrentino.it" target="_blank" rel="noopener">Meteotrentino</a><br>
+          Messintervalle und Böen-Definitionen unterscheiden sich je nach Quelle, Böenwerte sind daher nicht direkt vergleichbar.
+        </p>
       </div>
     </div>
 
@@ -1657,82 +1631,6 @@
     return { green: 35, stale: 65 };
   }
 
-  // Stationen, die seit über 30 Tagen keinen einzigen Messwert mehr geliefert
-  // haben, werden auf der Karte nicht mehr angezeigt (Stufe nach der
-  // Transparenz). Die Abfrage läuft im Hintergrund weiter; liefert die Station
-  // wieder Werte, erscheint sie beim nächsten Laden der Seite wieder.
-  var HIDE_AFTER_DAYS = 30;
-  // Zeitpunkt (ms) des letzten Messwerts einer Station aus data/wind.json:
-  // bevorzugt das vom Abruf-Skript mitgeführte "lastValueUTC", sonst die jüngste
-  // Zeile mit irgendeinem Wert, sonst "noValueSince" bzw. die jüngste Zeile.
-  // null = unbekannt (dann wird die Station vorsichtshalber NICHT ausgeblendet).
-  function stationLastValueMs(entry){
-    if (!entry) return null;
-    var best = null;
-    function take(iso){
-      var t = iso ? new Date(iso).getTime() : NaN;
-      if (!isNaN(t) && (best === null || t > best)) best = t;
-    }
-    take(entry.lastValueUTC);
-    var rows = entry.rows || [];
-    for (var i = rows.length - 1; i >= 0; i--) {
-      var r = rows[i];
-      if (r && ['avgKmh','gustKmh','dirDeg','tempC','humidityPct'].some(function(f){ return r[f] !== null && r[f] !== undefined; })) { take(r.instantUTC); break; }
-    }
-    if (best === null) take(entry.noValueSince);
-    if (best === null && rows.length) take(rows[rows.length - 1].instantUTC);
-    return best;
-  }
-  function isLongInactive(entry){
-    var t = stationLastValueMs(entry);
-    return t !== null && (Date.now() - t) > HIDE_AFTER_DAYS * 24 * 60 * 60 * 1000;
-  }
-
-  // Wie werden Mittelwind (Ø) und Böe bei der jeweiligen Quelle ermittelt?
-  // Kurz und allgemein verständlich. Belegt sind: MeteoSchweiz (Böenspitze 1 s,
-  // Maximum der 10 Min.), SLF (höchster 5-s-Wert der 30 Min.), GeoSphere
-  // (Windspitze der letzten 10 Min.). Bei Südtirol, Tirol und Trentino gibt der
-  // Betreiber keine genaue Böendauer an - dort steht deshalb nur die allgemeine
-  // Bedeutung (höchste kurzzeitige Windspitze im Messintervall).
-  var SOURCE_LINKS = {
-    'Südtirol': 'https://wetter.provinz.bz.it/de/messungen',
-    'MeteoSchweiz': 'https://www.meteoschweiz.admin.ch',
-    'SLF': 'https://www.slf.ch',
-    'lawinen.report': 'https://lawinen.report',
-    'GeoSphere Austria': 'https://www.geosphere.at',
-    'Meteotrentino': 'https://www.meteotrentino.it'
-  };
-  function sourceKey(station){
-    if (!station.extra) return 'Südtirol';
-    var src = station.source || '';
-    return src.indexOf('SLF') === 0 ? 'SLF' : src;
-  }
-  function windDefinition(station){
-    var k = sourceKey(station);
-    if (k === 'MeteoSchweiz') return { avg: 'Mittelwert über 10 Minuten', gust: 'stärkste 1-Sekunden-Spitze der letzten 10 Minuten' };
-    if (k === 'SLF') return { avg: 'Mittelwert über 30 Minuten', gust: 'höchster 5-Sekunden-Wert innerhalb dieser 30 Minuten' };
-    if (k === 'GeoSphere Austria') return { avg: 'Mittelwert über 10 Minuten', gust: 'Windspitze (Maximum) der letzten 10 Minuten' };
-    if (k === 'Meteotrentino') return { avg: 'Mittelwert über 15 Minuten', gust: 'höchste kurzzeitige Windspitze in diesen 15 Minuten' };
-    if (k === 'lawinen.report') return { avg: 'Mittelwert über das Messintervall der Station', gust: 'höchste kurzzeitige Windspitze in diesem Intervall' };
-    return { avg: 'Mittelwert über 10 Minuten', gust: 'höchste kurzzeitige Windspitze innerhalb dieser 10 Minuten' };
-  }
-  // "Quelle: <Name>" als Link, genauso wie die Quellenangaben unter der Karte.
-  function sourceLineHtml(station){
-    var k = sourceKey(station);
-    var url = SOURCE_LINKS[k];
-    var label;
-    if (!station.extra) label = 'Autonome Provinz Bozen - Südtirol';
-    else label = String(station.attribution || station.source || 'unbekannt').replace(/^Quelle:\s*/, '');
-    var inner = escHtml(label);
-    return 'Quelle: ' + (url ? '<a href="' + url + '" target="_blank" rel="noopener">' + inner + '</a>' : inner);
-  }
-  function windDefinitionHtml(station){
-    var d = windDefinition(station);
-    return '<div class="wind-def"><div class="wind-def-title">Definition Windgeschwindigkeit:</div>' +
-      '<div><b>Ø</b> = ' + d.avg + '</div>' +
-      '<div><b>Böe</b> = ' + d.gust + '</div></div>';
-  }
-
   function windDirLabel(deg){
     if (deg === null || deg === undefined || isNaN(deg)) return '—';
     var dirs = ['N','NO','O','SO','S','SW','W','NW'];
@@ -2057,8 +1955,10 @@
 
     // Zusatzstationen: Name/Quelle stammen aus fremden Datenquellen -> maskieren
     var stationTitle = station.extra ? escHtml(station.name) : station.name;
-    // Quelle + kurze Erklärung, wie Mittelwind und Böe bei dieser Quelle ermittelt werden.
-    var sourceNote = '<p class="wind-note wind-source-note">' + sourceLineHtml(station) + '</p>' + windDefinitionHtml(station);
+    var sourceNote = (station.extra && station.attribution)
+      ? '<p class="wind-note wind-source-note">' + escHtml(station.attribution) +
+        (station.intervalMin && station.intervalMin > 10 ? ' · Messintervall ' + escHtml(station.intervalMin) + ' Min.' : '') + '</p>'
+      : '';
 
     panel.innerHTML =
       '<h3>' + stationTitle + (station.elev ? ' <span class="station-elev-label">' + station.elev + ' m</span>' : '') + '</h3>' +
@@ -2230,26 +2130,7 @@
       attribution: 'Karte: © OpenStreetMap · Daten: Autonome Provinz Bozen – Südtirol',
       maxZoom: 19
     });
-    // OpenTopoMap zeichnet ab Zoomstufe 11 deutlich anders (mehr Details) als
-    // darunter. Damit die Karte beim Öffnen (Stufe 10) und eine Stufe weiter weg
-    // (Stufe 9) schon so aussieht wie in Stufe 11, werden dort die Kacheln von
-    // Stufe 11 geladen und verkleinert dargestellt (wie bei Retina-Displays).
-    // Darunter (Stufe 8 und weiter weg) gilt wieder die normale Darstellung.
-    // Eintrag: Karten-Zoomstufe -> wie viele Stufen tiefer die Kacheln geholt werden.
-    var TOPO_NEAR_LOOK = { 10: 1, 9: 2 };
-    var TopoNearLayer = L.TileLayer.extend({
-      getTileSize: function(){
-        var base = L.TileLayer.prototype.getTileSize.call(this);
-        var k = TOPO_NEAR_LOOK[this._tileZoom];
-        return k ? base.divideBy(Math.pow(2, k)) : base;
-      },
-      _getZoomForUrl: function(){
-        var z = L.TileLayer.prototype._getZoomForUrl.call(this);
-        var k = TOPO_NEAR_LOOK[this._tileZoom];
-        return k ? Math.min(z + k, this.options.maxNativeZoom || this.options.maxZoom) : z;
-      }
-    });
-    var topoLayer = new TopoNearLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    var topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       attribution: 'Karte: © OpenTopoMap (CC-BY-SA) · Daten: Autonome Provinz Bozen – Südtirol',
       maxZoom: 16
     });
@@ -2266,164 +2147,12 @@
       maxZoom: 19
     });
     var satelliteLayer = L.layerGroup([satImageLayer, satLabelLayer]);
-
-    // Helligkeits-/Kontrastausgleich fürs Satellitenbild: Esri setzt je Zoomstufe
-    // andere Bildmosaike zusammen, die beim Herauszoomen dunkler oder kontrast-
-    // reicher bzw. -ärmer wirken. Statt feste Werte zu raten, misst die Seite das
-    // einmalig selbst: an zwei Orten wird je Stufe die Kachel mit ihren vier
-    // Unterkacheln der nächsthöheren Stufe verglichen (gleiches Gebiet, auf das
-    // gleiche Raster heruntergerechnet, nur anderes Mosaik). Aus Mittelwert und
-    // Streuung der Helligkeit ergibt sich je Stufe eine Umrechnung, die das Bild
-    // an die hineingezoomte Ansicht (ab Stufe SAT_REF_ZOOM) angleicht. Klappt die
-    // Messung nicht (z.B. Kacheln ohne Freigabe zum Auslesen), bleibt das Bild
-    // unverändert.
-    var SAT_REF_ZOOM = 16, SAT_MIN_CAL_ZOOM = 8;
-    var SAT_CAL_POINTS = [[46.70, 10.60], [47.00, 11.25]];
-    var SAT_CACHE_KEY = 'satToneV2';
-    var satTone = null;              // { zoom: { b: Helligkeit, c: Kontrast } }
-    var satCalibrating = false;
-    function satTileUrl(z, x, y){
-      return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + z + '/' + y + '/' + x;
-    }
-    function satTileXY(lat, lon, z){
-      var n = Math.pow(2, z), latR = lat * Math.PI / 180;
-      return {
-        x: Math.floor((lon + 180) / 360 * n),
-        y: Math.floor((1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n)
-      };
-    }
-    function satLoadImg(z, x, y){
-      return new Promise(function(resolve, reject){
-        var img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = function(){ resolve(img); };
-        img.onerror = function(){ reject(new Error('Kachel nicht ladbar')); };
-        img.src = satTileUrl(z, x, y);
-      });
-    }
-    // Mittelwert und Streuung der Helligkeit auf einem 16x16-Raster. Die vier
-    // Unterkacheln werden in die vier Quadranten (je 8x8) gelegt, damit ein
-    // Rasterpunkt bei Kachel und Unterkacheln dieselbe Fläche abdeckt.
-    function satStats(draw){
-      var c = document.createElement('canvas'); c.width = 16; c.height = 16;
-      var g = c.getContext('2d');
-      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-      draw(g);
-      var d = g.getImageData(0, 0, 16, 16).data, n = d.length / 4, sum = 0, sq = 0;
-      for (var i = 0; i < d.length; i += 4) {
-        var v = 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
-        sum += v; sq += v * v;
-      }
-      var mean = sum / n;
-      return { mean: mean, sd: Math.sqrt(Math.max(0, sq / n - mean * mean)) };
-    }
-    function satCompare(z, t){
-      var offs = [[0,0],[1,0],[0,1],[1,1]];
-      return Promise.all([satLoadImg(z, t.x, t.y), Promise.all(offs.map(function(o){ return satLoadImg(z + 1, t.x * 2 + o[0], t.y * 2 + o[1]); }))]).then(function(res){
-        var par = satStats(function(g){ g.drawImage(res[0], 0, 0, 16, 16); });
-        var kid = satStats(function(g){ res[1].forEach(function(im, i){ g.drawImage(im, offs[i][0] * 8, offs[i][1] * 8, 8, 8); }); });
-        return { par: par, kid: kid };
-      });
-    }
-    function satApplyToTile(img, z){
-      var t = null;
-      if (satTone && z !== undefined) t = satTone[z] || (z < SAT_MIN_CAL_ZOOM ? satTone[SAT_MIN_CAL_ZOOM] : null);
-      img.style.filter = (t && (Math.abs(t.b - 1) > 0.005 || Math.abs(t.c - 1) > 0.005))
-        ? 'brightness(' + t.b.toFixed(3) + ') contrast(' + t.c.toFixed(3) + ')' : '';
-    }
-    function satApplyAll(){
-      var container = satImageLayer.getContainer && satImageLayer.getContainer();
-      if (!container) return;
-      Array.prototype.forEach.call(container.querySelectorAll('img.leaflet-tile'), function(img){ satApplyToTile(img, img.__satZ); });
-    }
-    satImageLayer.on('tileload', function(e){
-      e.tile.__satZ = e.coords.z;
-      satApplyToTile(e.tile, e.coords.z);
-    });
-    function satCalibrate(){
-      if (satTone || satCalibrating) return;
-      try {
-        var cached = JSON.parse(localStorage.getItem(SAT_CACHE_KEY) || 'null');
-        if (cached && cached.f && (Date.now() - cached.t) < 7 * 24 * 3600 * 1000) { satTone = cached.f; satApplyAll(); return; }
-      } catch (e) { /* Zwischenspeicher nicht verfügbar - dann eben messen */ }
-      satCalibrating = true;
-      var steps = {}; // zoom -> Liste von { a, b } (kachelweise Umrechnung y = a*x + b)
-      var jobs = SAT_CAL_POINTS.map(function(pt){
-        var chain = Promise.resolve();
-        for (var z = SAT_REF_ZOOM - 1; z >= SAT_MIN_CAL_ZOOM; z--) {
-          (function(z){
-            chain = chain.then(function(){
-              return satCompare(z, satTileXY(pt[0], pt[1], z)).then(function(r){
-                if (r.par.mean < 1 || r.par.sd < 0.5) return; // leere/einfarbige Kachel: nichts aussagekräftig
-                var a = r.kid.sd / r.par.sd;
-                (steps[z] = steps[z] || []).push({ a: a, b: r.kid.mean - a * r.par.mean });
-              });
-            });
-          })(z);
-        }
-        return chain;
-      });
-      Promise.all(jobs).then(function(){
-        var tone = {}, A = 1, B = 0; // Gesamtumrechnung von Stufe z bis zur Referenzstufe: y = A*x + B
-        for (var z = SAT_REF_ZOOM - 1; z >= SAT_MIN_CAL_ZOOM; z--) {
-          var list = steps[z];
-          if (list && list.length) {
-            var a = Math.exp(list.reduce(function(s, v){ return s + Math.log(Math.max(0.2, v.a)); }, 0) / list.length);
-            var b = list.reduce(function(s, v){ return s + v.b; }, 0) / list.length;
-            a = Math.max(0.8, Math.min(1.35, a));
-            b = Math.max(-40, Math.min(40, b));
-            if (Math.abs(a - 1) < 0.03) a = 1;     // Messrauschen ignorieren
-            if (Math.abs(b) < 3) b = 0;
-            // Stufe z -> z+1 -> ... -> Referenz:  y = A*(a*x + b) + B
-            B = A * b + B;
-            A = A * a;
-            A = Math.max(0.7, Math.min(1.6, A));
-            B = Math.max(-60, Math.min(60, B));
-          }
-          // y = A*x + B als CSS: contrast(C) nach brightness(Br):  C*Br*x + 128*(1-C)
-          var C = Math.max(0.7, Math.min(1.6, 1 - B / 128));
-          tone[z] = { b: A / C, c: C };
-        }
-        satTone = tone;
-        try { localStorage.setItem(SAT_CACHE_KEY, JSON.stringify({ t: Date.now(), f: tone })); } catch (e) { /* egal */ }
-        satApplyAll();
-      }).catch(function(){ /* Messung nicht möglich: Bild bleibt unverändert */ })
-        .then(function(){ satCalibrating = false; });
-    }
-    satImageLayer.on('add', function(){ setTimeout(satCalibrate, 1500); });
     osmLayer.addTo(windMapInstance); // Standard-Ansicht
     L.control.layers(
       { 'Straßenkarte': osmLayer, 'Topografisch': topoLayer, 'Satellit': satelliteLayer },
       null,
       { position: 'topright', collapsed: true }
     ).addTo(windMapInstance);
-
-    // Topo-Karte: Die Darstellung "wie beim Hineinzoomen" (Kacheln von Stufe 11)
-    // wird bis Stufe TOPO_MIN_ZOOM hinaus erzeugt. Noch weiter weg würde sie
-    // hunderte bis tausende Kacheln pro Ansicht brauchen (Stufe 8: ca. 700,
-    // Stufe 7: ca. 2800 am Desktop) und die Server von OpenTopoMap unnötig
-    // belasten. Solange die Topo-Karte aktiv ist, geht Herauszoomen daher nur bis
-    // Stufe 9; bei Straßenkarte und Satellit gilt wieder die volle Zoomweite.
-    var TOPO_MIN_ZOOM = 9;
-    windMapInstance.on('baselayerchange', function(e){
-      windMapInstance.setMinZoom(e.layer === topoLayer ? TOPO_MIN_ZOOM : 0);
-    });
-
-    // Klick ins Leere (neben die Karte, auf eine freie Stelle der Seite oder auf
-    // eine leere Kartenfläche) schließt die Detailansicht der Live-Karte wieder.
-    // Nicht geschlossen wird bei Klicks auf Stationssymbole, Kartenbedienelemente
-    // und innerhalb der Detailansicht selbst.
-    document.addEventListener('click', function(e){
-      var panel = document.getElementById('windDetailPanel');
-      if (!panel || !panel.classList.contains('open')) return;
-      var path = e.composedPath ? e.composedPath() : [];
-      for (var i = 0; i < path.length; i++) {
-        var n = path[i];
-        if (n === panel) return;
-        if (n.classList && (n.classList.contains('windsock-icon') || n.classList.contains('leaflet-marker-icon') || n.classList.contains('leaflet-control') || n.classList.contains('leaflet-popup') || n.classList.contains('menu-dropdown') || n.classList.contains('menu-toggle'))) return;
-      }
-      panel.classList.remove('open');
-    });
 
     fetch('./data/wind.json?t=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.ok ? r.json() : { stations: {} }; })
@@ -2464,8 +2193,6 @@
           var entry = stations[station.code];
           var rows = (entry && entry.rows) ? entry.rows : [];
           var last = rows.length ? rows[rows.length - 1] : null;
-          // Seit über 30 Tagen keine Werte mehr: gar nicht auf der Karte zeigen.
-          if (isLongInactive(entry)) return;
           // Hat diese Station laut vorhandener Historie überhaupt je Windwerte
           // geliefert? Nur wenn mindestens eine Zeile existiert UND darunter
           // keine einzige echte Windangabe war, gilt sie als "kein Windsensor".
