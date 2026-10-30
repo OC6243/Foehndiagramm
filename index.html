@@ -545,6 +545,21 @@
   }
   .sources a{ color:var(--cool); }
 
+  /* Einklappbare Quellenangaben ("Mehr anzeigen" mit Pfeil) */
+  .src-more{ margin-top:4px; }
+  .src-more summary{
+    cursor:pointer; color:var(--cool); font-size:12.5px; font-weight:600;
+    list-style:none; display:inline-block;
+  }
+  .src-more summary::-webkit-details-marker{ display:none; }
+  .src-more summary:hover{ text-decoration:underline; }
+  .src-more summary::after{ content:'▾'; margin-left:5px; font-size:11px; }
+  .src-more[open] summary::after{ content:'▴'; }
+  .src-more:not([open]) .when-open{ display:none; }
+  .src-more[open] .when-closed{ display:none; }
+  .src-more > .src-more-body{ margin-top:6px; }
+  .src-more > .src-more-body p{ margin:0 0 6px; }
+
   .page-foot{
     text-align:center; color:var(--muted); font-size:12.5px;
     margin-top:14px; font-family:'IBM Plex Mono', monospace;
@@ -595,8 +610,11 @@
       <div id="content" class="loading">Lade aktuelle Messwerte …</div>
 
       <div class="sources">
-        Quelle Messdaten Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a><br>
-        Quelle Messdaten Tirol: <a href="https://www.geosphere.at/de" target="_blank" rel="noopener">GeoSphere Austria</a>
+        Quelle Messdaten Südtirol: <a href="https://home.provinz.bz.it/" target="_blank" rel="noopener">Autonome Provinz Bozen – Südtirol</a>
+        <details class="src-more">
+          <summary><span class="when-closed">Mehr anzeigen</span><span class="when-open">Weniger anzeigen</span></summary>
+          <div class="src-more-body">Quelle Messdaten Tirol: <a href="https://www.geosphere.at/de" target="_blank" rel="noopener">GeoSphere Austria</a></div>
+        </details>
       </div>
       <div class="page-foot" id="pageFoot"></div>
     </div>
@@ -605,14 +623,19 @@
       <div class="section">
         <div id="windMap"></div>
         <div class="wind-detail-panel" id="windDetailPanel"></div>
-        <p class="wind-note">Quellen: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a> ·
-          <a href="https://www.meteoschweiz.admin.ch" target="_blank" rel="noopener">MeteoSchweiz</a> ·
-          <a href="https://www.slf.ch" target="_blank" rel="noopener">WSL-Institut für Schnee- und Lawinenforschung SLF</a> ·
-          <a href="https://lawinen.report" target="_blank" rel="noopener">Lawinenwarndienst Tirol / lawinen.report</a> ·
-          <a href="https://www.geosphere.at" target="_blank" rel="noopener">GeoSphere Austria</a> ·
-          <a href="https://www.meteotrentino.it" target="_blank" rel="noopener">Meteotrentino</a><br>
-          Messintervalle und Böen-Definitionen unterscheiden sich je nach Quelle, Böenwerte sind daher nicht direkt vergleichbar.
-        </p>
+        <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
+        <details class="src-more wind-note">
+          <summary><span class="when-closed">Mehr anzeigen</span><span class="when-open">Weniger anzeigen</span></summary>
+          <div class="src-more-body">
+            <p>Weitere Quellen:
+              <a href="https://www.meteoschweiz.admin.ch" target="_blank" rel="noopener">MeteoSchweiz</a> ·
+              <a href="https://www.slf.ch" target="_blank" rel="noopener">WSL-Institut für Schnee- und Lawinenforschung SLF</a> ·
+              <a href="https://lawinen.report" target="_blank" rel="noopener">Lawinenwarndienst Tirol / lawinen.report</a> ·
+              <a href="https://www.geosphere.at" target="_blank" rel="noopener">GeoSphere Austria</a> ·
+              <a href="https://www.meteotrentino.it" target="_blank" rel="noopener">Meteotrentino</a></p>
+            <p>Messintervalle und Böen-Definitionen unterscheiden sich je nach Quelle, Böenwerte sind daher nicht direkt vergleichbar.</p>
+          </div>
+        </details>
       </div>
     </div>
 
@@ -1662,6 +1685,28 @@
     return t !== null && (Date.now() - t) > HIDE_AFTER_DAYS * 24 * 60 * 60 * 1000;
   }
 
+  // Wie werden Mittelwind (Ø) und Böe bei der jeweiligen Quelle ermittelt?
+  // Kurz und allgemein verständlich. Belegt sind: MeteoSchweiz (Böenspitze 1 s,
+  // Maximum der 10 Min.), SLF (höchster 5-s-Wert der 30 Min.), GeoSphere
+  // (Windspitze der letzten 10 Min.). Bei Südtirol, Tirol und Trentino gibt der
+  // Betreiber keine genaue Böendauer an - dort steht deshalb nur die allgemeine
+  // Bedeutung (höchste kurzzeitige Windspitze im Messintervall).
+  function gustMethodHtml(station){
+    var src = station.extra ? (station.source || '') : 'Südtirol';
+    var t;
+    if (src === 'MeteoSchweiz') t = 'Ø = Mittel über 10 Minuten. Böe = stärkste 1-Sekunden-Spitze der letzten 10 Minuten.';
+    else if (src.indexOf('SLF') === 0) t = 'Ø = Mittel über 30 Minuten. Böe = höchster 5-Sekunden-Wert innerhalb dieser 30 Minuten.';
+    else if (src === 'GeoSphere Austria') t = 'Ø = Mittel über 10 Minuten. Böe = Windspitze (Maximum) der letzten 10 Minuten.';
+    else if (src === 'Meteotrentino') t = 'Ø = Mittel über 15 Minuten. Böe = höchste kurzzeitige Windspitze in diesen 15 Minuten.';
+    else if (src === 'lawinen.report') t = 'Ø = Mittel über das Messintervall der Station. Böe = höchste kurzzeitige Windspitze in diesem Intervall.';
+    else t = 'Ø = Mittel über 10 Minuten. Böe = höchste kurzzeitige Windspitze innerhalb dieser 10 Minuten.';
+    return 'So wird gemessen: ' + t;
+  }
+  function sourceLineHtml(station){
+    if (!station.extra) return 'Quelle: Autonome Provinz Bozen – Südtirol';
+    return escHtml(station.attribution || ('Quelle: ' + (station.source || 'unbekannt')));
+  }
+
   function windDirLabel(deg){
     if (deg === null || deg === undefined || isNaN(deg)) return '—';
     var dirs = ['N','NO','O','SO','S','SW','W','NW'];
@@ -1986,10 +2031,8 @@
 
     // Zusatzstationen: Name/Quelle stammen aus fremden Datenquellen -> maskieren
     var stationTitle = station.extra ? escHtml(station.name) : station.name;
-    var sourceNote = (station.extra && station.attribution)
-      ? '<p class="wind-note wind-source-note">' + escHtml(station.attribution) +
-        (station.intervalMin && station.intervalMin > 10 ? ' · Messintervall ' + escHtml(station.intervalMin) + ' Min.' : '') + '</p>'
-      : '';
+    // Quelle + kurze Erklärung, wie Mittelwind und Böe bei dieser Quelle ermittelt werden.
+    var sourceNote = '<p class="wind-note wind-source-note">' + sourceLineHtml(station) + '<br>' + gustMethodHtml(station) + '</p>';
 
     panel.innerHTML =
       '<h3>' + stationTitle + (station.elev ? ' <span class="station-elev-label">' + station.elev + ' m</span>' : '') + '</h3>' +
@@ -2161,7 +2204,26 @@
       attribution: 'Karte: © OpenStreetMap · Daten: Autonome Provinz Bozen – Südtirol',
       maxZoom: 19
     });
-    var topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    // OpenTopoMap zeichnet ab Zoomstufe 11 deutlich anders (mehr Details) als
+    // darunter. Damit die Karte beim Öffnen (Stufe 10) und eine Stufe weiter weg
+    // (Stufe 9) schon so aussieht wie in Stufe 11, werden dort die Kacheln von
+    // Stufe 11 geladen und verkleinert dargestellt (wie bei Retina-Displays).
+    // Darunter (Stufe 8 und weiter weg) gilt wieder die normale Darstellung.
+    // Eintrag: Karten-Zoomstufe -> wie viele Stufen tiefer die Kacheln geholt werden.
+    var TOPO_NEAR_LOOK = { 10: 1, 9: 2 };
+    var TopoNearLayer = L.TileLayer.extend({
+      getTileSize: function(){
+        var base = L.TileLayer.prototype.getTileSize.call(this);
+        var k = TOPO_NEAR_LOOK[this._tileZoom];
+        return k ? base.divideBy(Math.pow(2, k)) : base;
+      },
+      _getZoomForUrl: function(){
+        var z = L.TileLayer.prototype._getZoomForUrl.call(this);
+        var k = TOPO_NEAR_LOOK[this._tileZoom];
+        return k ? Math.min(z + k, this.options.maxNativeZoom || this.options.maxZoom) : z;
+      }
+    });
+    var topoLayer = new TopoNearLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       attribution: 'Karte: © OpenTopoMap (CC-BY-SA) · Daten: Autonome Provinz Bozen – Südtirol',
       maxZoom: 16
     });
@@ -2179,19 +2241,20 @@
     });
     var satelliteLayer = L.layerGroup([satImageLayer, satLabelLayer]);
 
-    // Helligkeitsausgleich fürs Satellitenbild: Esri setzt je Zoomstufe andere
-    // Bildmosaike zusammen, die beim Herauszoomen sprunghaft heller oder dunkler
-    // wirken. Statt feste Werte zu raten, misst die Seite das einmalig selbst:
-    // an zwei Orten wird je Stufe die Kachel mit ihren vier Unterkacheln der
-    // nächsthöheren Stufe verglichen (gleiches Gebiet, nur anderes Mosaik). Daraus
-    // ergibt sich pro Zoomstufe ein Faktor, der das Bild auf die Helligkeit der
-    // hineingezoomten Ansicht (ab Stufe SAT_REF_ZOOM) anhebt bzw. absenkt.
-    // Klappt die Messung nicht (z.B. Kacheln ohne Freigabe zum Auslesen), bleibt
-    // das Bild einfach unverändert.
+    // Helligkeits-/Kontrastausgleich fürs Satellitenbild: Esri setzt je Zoomstufe
+    // andere Bildmosaike zusammen, die beim Herauszoomen dunkler oder kontrast-
+    // reicher bzw. -ärmer wirken. Statt feste Werte zu raten, misst die Seite das
+    // einmalig selbst: an zwei Orten wird je Stufe die Kachel mit ihren vier
+    // Unterkacheln der nächsthöheren Stufe verglichen (gleiches Gebiet, auf das
+    // gleiche Raster heruntergerechnet, nur anderes Mosaik). Aus Mittelwert und
+    // Streuung der Helligkeit ergibt sich je Stufe eine Umrechnung, die das Bild
+    // an die hineingezoomte Ansicht (ab Stufe SAT_REF_ZOOM) angleicht. Klappt die
+    // Messung nicht (z.B. Kacheln ohne Freigabe zum Auslesen), bleibt das Bild
+    // unverändert.
     var SAT_REF_ZOOM = 16, SAT_MIN_CAL_ZOOM = 8;
     var SAT_CAL_POINTS = [[46.70, 10.60], [47.00, 11.25]];
-    var SAT_CACHE_KEY = 'satBrightnessV1';
-    var satFactors = null;           // { zoom: faktor }
+    var SAT_CACHE_KEY = 'satToneV2';
+    var satTone = null;              // { zoom: { b: Helligkeit, c: Kontrast } }
     var satCalibrating = false;
     function satTileUrl(z, x, y){
       return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + z + '/' + y + '/' + x;
@@ -2203,56 +2266,71 @@
         y: Math.floor((1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n)
       };
     }
-    function satTileLuma(z, x, y){
+    function satLoadImg(z, x, y){
       return new Promise(function(resolve, reject){
         var img = new Image();
         img.crossOrigin = 'anonymous';
-        img.onload = function(){
-          try {
-            var c = document.createElement('canvas'); c.width = 16; c.height = 16;
-            var g = c.getContext('2d'); g.drawImage(img, 0, 0, 16, 16);
-            var d = g.getImageData(0, 0, 16, 16).data, sum = 0;
-            for (var i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
-            resolve(sum / (d.length / 4));
-          } catch (e) { reject(e); }
-        };
+        img.onload = function(){ resolve(img); };
         img.onerror = function(){ reject(new Error('Kachel nicht ladbar')); };
         img.src = satTileUrl(z, x, y);
       });
     }
-    function satApplyFactors(){
-      var container = satImageLayer.getContainer && satImageLayer.getContainer();
-      if (!container) return;
-      Array.prototype.forEach.call(container.querySelectorAll('img.leaflet-tile'), function(img){
-        satApplyToTile(img, img.__satZ);
+    // Mittelwert und Streuung der Helligkeit auf einem 16x16-Raster. Die vier
+    // Unterkacheln werden in die vier Quadranten (je 8x8) gelegt, damit ein
+    // Rasterpunkt bei Kachel und Unterkacheln dieselbe Fläche abdeckt.
+    function satStats(draw){
+      var c = document.createElement('canvas'); c.width = 16; c.height = 16;
+      var g = c.getContext('2d');
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+      draw(g);
+      var d = g.getImageData(0, 0, 16, 16).data, n = d.length / 4, sum = 0, sq = 0;
+      for (var i = 0; i < d.length; i += 4) {
+        var v = 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+        sum += v; sq += v * v;
+      }
+      var mean = sum / n;
+      return { mean: mean, sd: Math.sqrt(Math.max(0, sq / n - mean * mean)) };
+    }
+    function satCompare(z, t){
+      var offs = [[0,0],[1,0],[0,1],[1,1]];
+      return Promise.all([satLoadImg(z, t.x, t.y), Promise.all(offs.map(function(o){ return satLoadImg(z + 1, t.x * 2 + o[0], t.y * 2 + o[1]); }))]).then(function(res){
+        var par = satStats(function(g){ g.drawImage(res[0], 0, 0, 16, 16); });
+        var kid = satStats(function(g){ res[1].forEach(function(im, i){ g.drawImage(im, offs[i][0] * 8, offs[i][1] * 8, 8, 8); }); });
+        return { par: par, kid: kid };
       });
     }
     function satApplyToTile(img, z){
-      var f = (satFactors && z !== undefined) ? (satFactors[z] !== undefined ? satFactors[z] : (z < SAT_MIN_CAL_ZOOM ? satFactors[SAT_MIN_CAL_ZOOM] : 1)) : 1;
-      img.style.filter = (f && Math.abs(f - 1) > 0.001) ? 'brightness(' + f.toFixed(3) + ')' : '';
+      var t = null;
+      if (satTone && z !== undefined) t = satTone[z] || (z < SAT_MIN_CAL_ZOOM ? satTone[SAT_MIN_CAL_ZOOM] : null);
+      img.style.filter = (t && (Math.abs(t.b - 1) > 0.005 || Math.abs(t.c - 1) > 0.005))
+        ? 'brightness(' + t.b.toFixed(3) + ') contrast(' + t.c.toFixed(3) + ')' : '';
+    }
+    function satApplyAll(){
+      var container = satImageLayer.getContainer && satImageLayer.getContainer();
+      if (!container) return;
+      Array.prototype.forEach.call(container.querySelectorAll('img.leaflet-tile'), function(img){ satApplyToTile(img, img.__satZ); });
     }
     satImageLayer.on('tileload', function(e){
       e.tile.__satZ = e.coords.z;
       satApplyToTile(e.tile, e.coords.z);
     });
     function satCalibrate(){
-      if (satFactors || satCalibrating) return;
+      if (satTone || satCalibrating) return;
       try {
         var cached = JSON.parse(localStorage.getItem(SAT_CACHE_KEY) || 'null');
-        if (cached && cached.f && (Date.now() - cached.t) < 7 * 24 * 3600 * 1000) { satFactors = cached.f; satApplyFactors(); return; }
+        if (cached && cached.f && (Date.now() - cached.t) < 7 * 24 * 3600 * 1000) { satTone = cached.f; satApplyAll(); return; }
       } catch (e) { /* Zwischenspeicher nicht verfügbar - dann eben messen */ }
       satCalibrating = true;
-      var ratios = {}; // zoom -> [Verhältnisse]
+      var steps = {}; // zoom -> Liste von { a, b } (kachelweise Umrechnung y = a*x + b)
       var jobs = SAT_CAL_POINTS.map(function(pt){
         var chain = Promise.resolve();
         for (var z = SAT_REF_ZOOM - 1; z >= SAT_MIN_CAL_ZOOM; z--) {
           (function(z){
             chain = chain.then(function(){
-              var t = satTileXY(pt[0], pt[1], z);
-              var kids = [[0,0],[1,0],[0,1],[1,1]].map(function(o){ return satTileLuma(z + 1, t.x * 2 + o[0], t.y * 2 + o[1]); });
-              return Promise.all([satTileLuma(z, t.x, t.y), Promise.all(kids)]).then(function(res){
-                var kidMean = res[1].reduce(function(a, b){ return a + b; }, 0) / 4;
-                if (res[0] > 1) (ratios[z] = ratios[z] || []).push(kidMean / res[0]);
+              return satCompare(z, satTileXY(pt[0], pt[1], z)).then(function(r){
+                if (r.par.mean < 1 || r.par.sd < 0.5) return; // leere/einfarbige Kachel: nichts aussagekräftig
+                var a = r.kid.sd / r.par.sd;
+                (steps[z] = steps[z] || []).push({ a: a, b: r.kid.mean - a * r.par.mean });
               });
             });
           })(z);
@@ -2260,20 +2338,29 @@
         return chain;
       });
       Promise.all(jobs).then(function(){
-        var f = {}, acc = 1;
+        var tone = {}, A = 1, B = 0; // Gesamtumrechnung von Stufe z bis zur Referenzstufe: y = A*x + B
         for (var z = SAT_REF_ZOOM - 1; z >= SAT_MIN_CAL_ZOOM; z--) {
-          var list = ratios[z];
+          var list = steps[z];
           if (list && list.length) {
-            var r = Math.exp(list.reduce(function(a, b){ return a + Math.log(b); }, 0) / list.length);
-            r = Math.max(0.7, Math.min(1.45, r));
-            if (Math.abs(r - 1) < 0.03) r = 1;   // Messrauschen ignorieren
-            acc = Math.max(0.6, Math.min(1.6, acc * r));
+            var a = Math.exp(list.reduce(function(s, v){ return s + Math.log(Math.max(0.2, v.a)); }, 0) / list.length);
+            var b = list.reduce(function(s, v){ return s + v.b; }, 0) / list.length;
+            a = Math.max(0.8, Math.min(1.35, a));
+            b = Math.max(-40, Math.min(40, b));
+            if (Math.abs(a - 1) < 0.03) a = 1;     // Messrauschen ignorieren
+            if (Math.abs(b) < 3) b = 0;
+            // Stufe z -> z+1 -> ... -> Referenz:  y = A*(a*x + b) + B
+            B = A * b + B;
+            A = A * a;
+            A = Math.max(0.7, Math.min(1.6, A));
+            B = Math.max(-60, Math.min(60, B));
           }
-          f[z] = acc;
+          // y = A*x + B als CSS: contrast(C) nach brightness(Br):  C*Br*x + 128*(1-C)
+          var C = Math.max(0.7, Math.min(1.6, 1 - B / 128));
+          tone[z] = { b: A / C, c: C };
         }
-        satFactors = f;
-        try { localStorage.setItem(SAT_CACHE_KEY, JSON.stringify({ t: Date.now(), f: f })); } catch (e) { /* egal */ }
-        satApplyFactors();
+        satTone = tone;
+        try { localStorage.setItem(SAT_CACHE_KEY, JSON.stringify({ t: Date.now(), f: tone })); } catch (e) { /* egal */ }
+        satApplyAll();
       }).catch(function(){ /* Messung nicht möglich: Bild bleibt unverändert */ })
         .then(function(){ satCalibrating = false; });
     }
