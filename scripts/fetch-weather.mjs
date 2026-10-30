@@ -1099,6 +1099,38 @@ export async function fetchExtraStations(windData, now = new Date()) {
   return windData;
 }
 
+/******************** Letzter Messwert je Station ********************/
+
+// Merkt sich pro Station, wann zuletzt IRGENDEIN Messwert (Wind, Böe, Richtung,
+// Temperatur, Feuchte) geliefert wurde ("lastValueUTC"). Die Seite blendet
+// Stationen aus, die seit über 30 Tagen nichts mehr geliefert haben. Das Feld
+// wird nur nach vorn geschoben, überlebt also auch, wenn die gespeicherten
+// Zeilen (nur wenige Stunden) längst ausgetauscht wurden. Stationen, die noch
+// nie einen Wert geliefert haben, bekommen "noValueSince" (Zeitpunkt, ab dem wir
+// sie beobachten), damit auch sie nach 30 Tagen ausgeblendet werden können.
+// Die Abfrage läuft für ALLE Stationen unverändert weiter - liefert eine
+// ausgeblendete Station wieder Werte, rückt lastValueUTC vor und sie erscheint
+// beim nächsten Laden der Seite wieder.
+export function stampLastValues(windData, now = new Date()) {
+  const FIELDS = ["avgKmh", "gustKmh", "dirDeg", "tempC", "humidityPct"];
+  for (const st of Object.values(windData.stations || {})) {
+    if (!st || !Array.isArray(st.rows)) continue;
+    let newest = null;
+    for (const r of st.rows) {
+      if (!r || !r.instantUTC) continue;
+      if (!FIELDS.some((f) => r[f] !== null && r[f] !== undefined)) continue;
+      const t = new Date(r.instantUTC).getTime();
+      if (!isNaN(t) && (newest === null || t > newest)) newest = t;
+    }
+    if (newest !== null) {
+      const prev = st.lastValueUTC ? new Date(st.lastValueUTC).getTime() : NaN;
+      if (isNaN(prev) || newest > prev) st.lastValueUTC = new Date(newest).toISOString();
+    } else if (!st.lastValueUTC && !st.noValueSince) {
+      st.noValueSince = now.toISOString();
+    }
+  }
+}
+
 async function main() {
   // Kurzer Puffer, bevor überhaupt irgendwas abgerufen wird: die Quelle
   // braucht nach dem 10-Minuten-Messtakt noch etwas Verarbeitungszeit, bis
@@ -1137,6 +1169,7 @@ async function main() {
   console.log("data/history.json aktualisiert.");
 
   windData.generatedAt = history.generatedAt;
+  stampLastValues(windData, now);
   await writeFile(WIND_STATION_PATH, JSON.stringify(windData, null, 2) + "\n", "utf-8");
   console.log("data/wind.json aktualisiert.");
 }
