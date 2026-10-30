@@ -1631,6 +1631,37 @@
     return { green: 35, stale: 65 };
   }
 
+  // Stationen, die seit über 30 Tagen keinen einzigen Messwert mehr geliefert
+  // haben, werden auf der Karte nicht mehr angezeigt (Stufe nach der
+  // Transparenz). Die Abfrage läuft im Hintergrund weiter; liefert die Station
+  // wieder Werte, erscheint sie beim nächsten Laden der Seite wieder.
+  var HIDE_AFTER_DAYS = 30;
+  // Zeitpunkt (ms) des letzten Messwerts einer Station aus data/wind.json:
+  // bevorzugt das vom Abruf-Skript mitgeführte "lastValueUTC", sonst die jüngste
+  // Zeile mit irgendeinem Wert, sonst "noValueSince" bzw. die jüngste Zeile.
+  // null = unbekannt (dann wird die Station vorsichtshalber NICHT ausgeblendet).
+  function stationLastValueMs(entry){
+    if (!entry) return null;
+    var best = null;
+    function take(iso){
+      var t = iso ? new Date(iso).getTime() : NaN;
+      if (!isNaN(t) && (best === null || t > best)) best = t;
+    }
+    take(entry.lastValueUTC);
+    var rows = entry.rows || [];
+    for (var i = rows.length - 1; i >= 0; i--) {
+      var r = rows[i];
+      if (r && ['avgKmh','gustKmh','dirDeg','tempC','humidityPct'].some(function(f){ return r[f] !== null && r[f] !== undefined; })) { take(r.instantUTC); break; }
+    }
+    if (best === null) take(entry.noValueSince);
+    if (best === null && rows.length) take(rows[rows.length - 1].instantUTC);
+    return best;
+  }
+  function isLongInactive(entry){
+    var t = stationLastValueMs(entry);
+    return t !== null && (Date.now() - t) > HIDE_AFTER_DAYS * 24 * 60 * 60 * 1000;
+  }
+
   function windDirLabel(deg){
     if (deg === null || deg === undefined || isNaN(deg)) return '—';
     var dirs = ['N','NO','O','SO','S','SW','W','NW'];
@@ -2147,6 +2178,106 @@
       maxZoom: 19
     });
     var satelliteLayer = L.layerGroup([satImageLayer, satLabelLayer]);
+
+    // Helligkeitsausgleich fürs Satellitenbild: Esri setzt je Zoomstufe andere
+    // Bildmosaike zusammen, die beim Herauszoomen sprunghaft heller oder dunkler
+    // wirken. Statt feste Werte zu raten, misst die Seite das einmalig selbst:
+    // an zwei Orten wird je Stufe die Kachel mit ihren vier Unterkacheln der
+    // nächsthöheren Stufe verglichen (gleiches Gebiet, nur anderes Mosaik). Daraus
+    // ergibt sich pro Zoomstufe ein Faktor, der das Bild auf die Helligkeit der
+    // hineingezoomten Ansicht (ab Stufe SAT_REF_ZOOM) anhebt bzw. absenkt.
+    // Klappt die Messung nicht (z.B. Kacheln ohne Freigabe zum Auslesen), bleibt
+    // das Bild einfach unverändert.
+    var SAT_REF_ZOOM = 16, SAT_MIN_CAL_ZOOM = 8;
+    var SAT_CAL_POINTS = [[46.70, 10.60], [47.00, 11.25]];
+    var SAT_CACHE_KEY = 'satBrightnessV1';
+    var satFactors = null;           // { zoom: faktor }
+    var satCalibrating = false;
+    function satTileUrl(z, x, y){
+      return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + z + '/' + y + '/' + x;
+    }
+    function satTileXY(lat, lon, z){
+      var n = Math.pow(2, z), latR = lat * Math.PI / 180;
+      return {
+        x: Math.floor((lon + 180) / 360 * n),
+        y: Math.floor((1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n)
+      };
+    }
+    function satTileLuma(z, x, y){
+      return new Promise(function(resolve, reject){
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function(){
+          try {
+            var c = document.createElement('canvas'); c.width = 16; c.height = 16;
+            var g = c.getContext('2d'); g.drawImage(img, 0, 0, 16, 16);
+            var d = g.getImageData(0, 0, 16, 16).data, sum = 0;
+            for (var i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+            resolve(sum / (d.length / 4));
+          } catch (e) { reject(e); }
+        };
+        img.onerror = function(){ reject(new Error('Kachel nicht ladbar')); };
+        img.src = satTileUrl(z, x, y);
+      });
+    }
+    function satApplyFactors(){
+      var container = satImageLayer.getContainer && satImageLayer.getContainer();
+      if (!container) return;
+      Array.prototype.forEach.call(container.querySelectorAll('img.leaflet-tile'), function(img){
+        satApplyToTile(img, img.__satZ);
+      });
+    }
+    function satApplyToTile(img, z){
+      var f = (satFactors && z !== undefined) ? (satFactors[z] !== undefined ? satFactors[z] : (z < SAT_MIN_CAL_ZOOM ? satFactors[SAT_MIN_CAL_ZOOM] : 1)) : 1;
+      img.style.filter = (f && Math.abs(f - 1) > 0.001) ? 'brightness(' + f.toFixed(3) + ')' : '';
+    }
+    satImageLayer.on('tileload', function(e){
+      e.tile.__satZ = e.coords.z;
+      satApplyToTile(e.tile, e.coords.z);
+    });
+    function satCalibrate(){
+      if (satFactors || satCalibrating) return;
+      try {
+        var cached = JSON.parse(localStorage.getItem(SAT_CACHE_KEY) || 'null');
+        if (cached && cached.f && (Date.now() - cached.t) < 7 * 24 * 3600 * 1000) { satFactors = cached.f; satApplyFactors(); return; }
+      } catch (e) { /* Zwischenspeicher nicht verfügbar - dann eben messen */ }
+      satCalibrating = true;
+      var ratios = {}; // zoom -> [Verhältnisse]
+      var jobs = SAT_CAL_POINTS.map(function(pt){
+        var chain = Promise.resolve();
+        for (var z = SAT_REF_ZOOM - 1; z >= SAT_MIN_CAL_ZOOM; z--) {
+          (function(z){
+            chain = chain.then(function(){
+              var t = satTileXY(pt[0], pt[1], z);
+              var kids = [[0,0],[1,0],[0,1],[1,1]].map(function(o){ return satTileLuma(z + 1, t.x * 2 + o[0], t.y * 2 + o[1]); });
+              return Promise.all([satTileLuma(z, t.x, t.y), Promise.all(kids)]).then(function(res){
+                var kidMean = res[1].reduce(function(a, b){ return a + b; }, 0) / 4;
+                if (res[0] > 1) (ratios[z] = ratios[z] || []).push(kidMean / res[0]);
+              });
+            });
+          })(z);
+        }
+        return chain;
+      });
+      Promise.all(jobs).then(function(){
+        var f = {}, acc = 1;
+        for (var z = SAT_REF_ZOOM - 1; z >= SAT_MIN_CAL_ZOOM; z--) {
+          var list = ratios[z];
+          if (list && list.length) {
+            var r = Math.exp(list.reduce(function(a, b){ return a + Math.log(b); }, 0) / list.length);
+            r = Math.max(0.7, Math.min(1.45, r));
+            if (Math.abs(r - 1) < 0.03) r = 1;   // Messrauschen ignorieren
+            acc = Math.max(0.6, Math.min(1.6, acc * r));
+          }
+          f[z] = acc;
+        }
+        satFactors = f;
+        try { localStorage.setItem(SAT_CACHE_KEY, JSON.stringify({ t: Date.now(), f: f })); } catch (e) { /* egal */ }
+        satApplyFactors();
+      }).catch(function(){ /* Messung nicht möglich: Bild bleibt unverändert */ })
+        .then(function(){ satCalibrating = false; });
+    }
+    satImageLayer.on('add', function(){ setTimeout(satCalibrate, 1500); });
     osmLayer.addTo(windMapInstance); // Standard-Ansicht
     L.control.layers(
       { 'Straßenkarte': osmLayer, 'Topografisch': topoLayer, 'Satellit': satelliteLayer },
@@ -2193,6 +2324,8 @@
           var entry = stations[station.code];
           var rows = (entry && entry.rows) ? entry.rows : [];
           var last = rows.length ? rows[rows.length - 1] : null;
+          // Seit über 30 Tagen keine Werte mehr: gar nicht auf der Karte zeigen.
+          if (isLongInactive(entry)) return;
           // Hat diese Station laut vorhandener Historie überhaupt je Windwerte
           // geliefert? Nur wenn mindestens eine Zeile existiert UND darunter
           // keine einzige echte Windangabe war, gilt sie als "kein Windsensor".
