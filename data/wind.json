@@ -26044,12 +26044,6 @@
     "42830SF": {
       "rows": [
         {
-          "instantUTC": "2026-10-30T23:13:31.796Z",
-          "time": "00:13",
-          "avgKmh": null,
-          "gustKmh": null
-        },
-        {
           "instantUTC": "2026-10-30T23:16:59.585Z",
           "time": "00:16",
           "avgKmh": null,
@@ -26282,9 +26276,15 @@
           "time": "03:26",
           "avgKmh": null,
           "gustKmh": null
+        },
+        {
+          "instantUTC": "2026-10-31T02:28:52.049Z",
+          "time": "03:28",
+          "avgKmh": null,
+          "gustKmh": null
         }
       ],
-      "lastValueUTC": "2026-10-31T02:26:45.331Z"
+      "lastValueUTC": "2026-10-31T02:28:52.049Z"
     },
     "50400WS": {
       "rows": [
@@ -32978,6 +32978,15 @@
           "dirDeg": 145,
           "tempC": -7.3,
           "humidityPct": 91.6
+        },
+        {
+          "instantUTC": "2026-10-31T02:20:00.000Z",
+          "time": "03:20",
+          "avgKmh": 1.8,
+          "gustKmh": 3.2,
+          "dirDeg": 142,
+          "tempC": -7.2,
+          "humidityPct": 92.6
         }
       ],
       "meta": {
@@ -32991,7 +33000,7 @@
         "intervalMin": 10,
         "type": "berg"
       },
-      "lastValueUTC": "2026-10-31T02:10:00.000Z"
+      "lastValueUTC": "2026-10-31T02:20:00.000Z"
     },
     "SLF_VSC1": {
       "rows": [
@@ -59754,5 +59763,5 @@
       "lastValueUTC": "2026-10-31T02:20:00.000Z"
     }
   },
-  "generatedAt": "31.10.2026, 03:26"
+  "generatedAt": "31.10.2026, 03:29"
 }
