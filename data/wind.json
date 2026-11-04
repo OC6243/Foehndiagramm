@@ -26044,12 +26044,6 @@
     "42830SF": {
       "rows": [
         {
-          "instantUTC": "2026-11-03T23:21:55.288Z",
-          "time": "00:21",
-          "avgKmh": null,
-          "gustKmh": null
-        },
-        {
           "instantUTC": "2026-11-03T23:26:42.667Z",
           "time": "00:26",
           "avgKmh": null,
@@ -26282,9 +26276,15 @@
           "time": "03:36",
           "avgKmh": null,
           "gustKmh": null
+        },
+        {
+          "instantUTC": "2026-11-04T02:38:37.206Z",
+          "time": "03:38",
+          "avgKmh": null,
+          "gustKmh": null
         }
       ],
-      "lastValueUTC": "2026-11-04T02:36:44.927Z"
+      "lastValueUTC": "2026-11-04T02:38:37.206Z"
     },
     "50400WS": {
       "rows": [
@@ -32987,6 +32987,15 @@
           "dirDeg": 120,
           "tempC": -4.4,
           "humidityPct": 92.2
+        },
+        {
+          "instantUTC": "2026-11-04T02:30:00.000Z",
+          "time": "03:30",
+          "avgKmh": 1.1,
+          "gustKmh": 2.5,
+          "dirDeg": 69,
+          "tempC": -4.2,
+          "humidityPct": 92.4
         }
       ],
       "meta": {
@@ -33000,7 +33009,7 @@
         "intervalMin": 10,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-04T02:20:00.000Z"
+      "lastValueUTC": "2026-11-04T02:30:00.000Z"
     },
     "SLF_VSC1": {
       "rows": [
@@ -33663,6 +33672,15 @@
           "dirDeg": 111.2,
           "tempC": -6.7,
           "humidityPct": 100
+        },
+        {
+          "instantUTC": "2026-11-04T02:30:00.000Z",
+          "time": "03:30",
+          "avgKmh": 21.4,
+          "gustKmh": 30.2,
+          "dirDeg": 100.4,
+          "tempC": -6.7,
+          "humidityPct": 100
         }
       ],
       "meta": {
@@ -33676,7 +33694,7 @@
         "intervalMin": 30,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-04T02:00:00.000Z"
+      "lastValueUTC": "2026-11-04T02:30:00.000Z"
     },
     "MCH_SCU": {
       "rows": [
@@ -62256,5 +62274,5 @@
       "lastValueUTC": "2026-11-04T02:30:00.000Z"
     }
   },
-  "generatedAt": "04.11.2026, 03:36"
+  "generatedAt": "04.11.2026, 03:38"
 }
