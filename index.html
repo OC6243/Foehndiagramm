@@ -1637,11 +1637,10 @@
   var windMapInstance = null;
 
   // Zusatzstationen (MeteoSchweiz, SLF, Tirol, Trentino, GeoSphere): kommen
-  // zusammen mit ihren Stammdaten ("meta") aus data/wind.json. Blinken der
-  // Windwerte-Rechtecke ist dort aus, weil die Böen-Messverfahren der Quellen
-  // nicht vergleichbar sind (siehe Hinweis in der Datenbeschreibung). Zum
-  // Einschalten einfach auf true setzen.
-  var EXTRA_STATIONS_BLINK = false;
+  // zusammen mit ihren Stammdaten ("meta") aus data/wind.json. Das Blinken der
+  // Windwerte-Rechtecke gilt hier genauso wie bei den Südtiroler Stationen
+  // (gleiche Schwellen). Zum Ausschalten einfach auf false setzen.
+  var EXTRA_STATIONS_BLINK = true;
 
   function escHtml(s){
     return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function(c){
