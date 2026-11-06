@@ -4,16 +4,6 @@
     "rightLabel": "Innsbruck",
     "rows": [
       {
-        "instantUTC": "2026-11-06T04:00:00.000Z",
-        "datumLeft": "06.11.2026",
-        "zeitLeft": "05:00",
-        "wertLeft": 1025.8,
-        "datumRight": "06.11.2026",
-        "zeitRight": "05:00",
-        "wertRight": 1025.5,
-        "delta": 0.3
-      },
-      {
         "instantUTC": "2026-11-06T04:10:00.000Z",
         "datumLeft": "06.11.2026",
         "zeitLeft": "05:10",
@@ -962,6 +952,16 @@
         "zeitRight": "20:50",
         "wertRight": 1024.4,
         "delta": -1.9
+      },
+      {
+        "instantUTC": "2026-11-06T20:00:00.000Z",
+        "datumLeft": "06.11.2026",
+        "zeitLeft": "21:00",
+        "wertLeft": 1022.6,
+        "datumRight": "06.11.2026",
+        "zeitRight": "21:00",
+        "wertRight": 1024.6,
+        "delta": -2
       }
     ]
   },
@@ -969,16 +969,6 @@
     "leftLabel": "Meran",
     "rightLabel": "Imst",
     "rows": [
-      {
-        "instantUTC": "2026-11-06T04:00:00.000Z",
-        "datumLeft": "06.11.2026",
-        "zeitLeft": "05:00",
-        "wertLeft": 1026.9,
-        "datumRight": "06.11.2026",
-        "zeitRight": "05:00",
-        "wertRight": 1025.8,
-        "delta": 1.1
-      },
       {
         "instantUTC": "2026-11-06T04:10:00.000Z",
         "datumLeft": "06.11.2026",
@@ -1928,8 +1918,18 @@
         "zeitRight": "20:50",
         "wertRight": 1023.3,
         "delta": 0.2
+      },
+      {
+        "instantUTC": "2026-11-06T20:00:00.000Z",
+        "datumLeft": "06.11.2026",
+        "zeitLeft": "21:00",
+        "wertLeft": 1023.5,
+        "datumRight": "06.11.2026",
+        "zeitRight": "21:00",
+        "wertRight": 1023.4,
+        "delta": 0.1
       }
     ]
   },
-  "generatedAt": "06.11.2026, 21:06"
+  "generatedAt": "06.11.2026, 21:11"
 }
