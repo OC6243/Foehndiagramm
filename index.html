@@ -1731,6 +1731,16 @@
       '<div><b>Böe</b> = ' + d.gust + '</div></div>';
   }
 
+  // Deckkraft einer Station je nach Alter des letzten Werts (für alle Quellen gleich):
+  // bis 35 Min. voll sichtbar, darüber 10 % transparent, über 65 Min. 30 %, über 120 Min. 50 %.
+  function staleOpacity(ageMin){
+    if (ageMin === null || ageMin === undefined) return 1;
+    if (ageMin > 120) return 0.5;
+    if (ageMin > 65) return 0.7;
+    if (ageMin > 35) return 0.9;
+    return 1;
+  }
+
   function windDirLabel(deg){
     if (deg === null || deg === undefined || isNaN(deg)) return '—';
     var dirs = ['N','NO','O','SO','S','SW','W','NW'];
@@ -1815,13 +1825,16 @@
 
     var sockColor = (station.type === 'tal') ? '#F2994A' : '#E5342A';
 
-    // Ring um den Stationspunkt: orange ab 35 Min. ("nicht mehr aktuell"),
+    // Ring um den Stationspunkt: gelb ab 35 Min. ("nicht mehr aktuell"),
     // rot ab 65 Min. ("verzögert") - für alle Quellen gleich.
     var staleLim = staleLimits(station);
     var isStale = !isAbandoned && ageMin !== null && ageMin > staleLim.stale;
     var isLate = !isAbandoned && !isStale && ageMin !== null && ageMin > staleLim.green;
 
-    var opacity = (hasData && !isAbandoned) ? 1 : 0.5;
+    // Gesamte Darstellung der Station (Windsack, Werte, Ring) wird mit
+    // zunehmender Verzögerung durchsichtiger: sie trägt dann weniger zum
+    // aktuellen Wettergeschehen bei. Ohne Daten oder aufgegeben: 50 %.
+    var opacity = (hasData && !isAbandoned) ? staleOpacity(ageMin) : 0.5;
 
     // Liefert die Station nie eine Windrichtung (laut gespeicherter Historie),
     // wäre ein drehender Windsack irreführend: dann nur der Stationspunkt
@@ -1842,7 +1855,7 @@
         '<circle cx="' + cx + '" cy="' + cy + '" r="3.2" fill="#2B2B2B"/></svg>';
     }
     var staleRingSvg = (isStale || isLate)
-      ? '<circle class="stale-ring" cx="' + cx + '" cy="' + cy + '" r="7.2" fill="none" stroke="' + (isStale ? '#E5342A' : '#F2994A') + '" stroke-width="1.28"></circle>'
+      ? '<circle class="stale-ring" cx="' + cx + '" cy="' + cy + '" r="7.2" fill="none" stroke="' + (isStale ? '#E5342A' : '#F2C200') + '" stroke-width="1.28"></circle>'
       : '';
 
     return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;opacity:' + opacity + ';">' +
@@ -2476,7 +2489,7 @@
           var isAbandoned = hasWindSensor && ageMin !== null && ageMin > 3 * 24 * 60;
           var hasCurrentData = hasWindSensor && !isAbandoned && last &&
             ((last.avgKmh !== null && last.avgKmh !== undefined) || (last.gustKmh !== null && last.gustKmh !== undefined));
-          var isTransparent = !hasWindSensor || !hasCurrentData;
+          var isTransparent = !hasWindSensor || !hasCurrentData || (ageMin !== null && ageMin > 120);
 
           // Leaflet sortiert Marker standardmäßig nach geografischer Breite
           // (weiter südlich = optisch "vorne") statt nach Erstellungsreihenfolge -
@@ -2497,6 +2510,14 @@
           } else {
             zIndexOffset = isTransparent ? 0 : 200; // nicht-transparent immer vor transparent
           }
+          // Zusätzliche Darstellungsreihenfolge nach Aktualität (für alle Stationen
+          // und Quellen): Je stärker die Verzögerung, desto weiter hinten liegt die
+          // Station. Die Abstufung (aktuell / über 35 Min. / über 65 Min. / transparent)
+          // hat Vorrang vor Priorität und Höhe - innerhalb einer Stufe gilt die
+          // bisherige Reihenfolge. 100000 Punkte pro Stufe überwiegen sicher jede
+          // Bildschirmposition und alle bisherigen Abstände.
+          var delayTier = isTransparent ? 3 : (ageMin !== null && ageMin > 65 ? 2 : (ageMin !== null && ageMin > 35 ? 1 : 0));
+          zIndexOffset -= delayTier * 100000;
 
           // Hat die Station laut Historie je eine Windrichtung geliefert? Wenn nicht
           // (z.B. Latschbloder), wird statt des Windsacks nur der Stationspunkt
