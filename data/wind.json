@@ -26044,12 +26044,6 @@
     "42830SF": {
       "rows": [
         {
-          "instantUTC": "2026-11-07T19:46:50.779Z",
-          "time": "20:46",
-          "avgKmh": null,
-          "gustKmh": null
-        },
-        {
           "instantUTC": "2026-11-07T19:51:48.139Z",
           "time": "20:51",
           "avgKmh": null,
@@ -26282,9 +26276,15 @@
           "time": "00:02",
           "avgKmh": null,
           "gustKmh": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:06:40.065Z",
+          "time": "00:06",
+          "avgKmh": null,
+          "gustKmh": null
         }
       ],
-      "lastValueUTC": "2026-11-07T23:02:15.046Z"
+      "lastValueUTC": "2026-11-07T23:06:40.065Z"
     },
     "50400WS": {
       "rows": [
@@ -32244,6 +32244,15 @@
           "dirDeg": 171.9,
           "tempC": -6.4,
           "humidityPct": 100
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 7.9,
+          "gustKmh": 10.8,
+          "dirDeg": 171,
+          "tempC": -6.5,
+          "humidityPct": 100
         }
       ],
       "meta": {
@@ -32257,7 +32266,7 @@
         "intervalMin": 30,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:30:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "MCH_SMM": {
       "rows": [
@@ -33361,6 +33370,15 @@
           "dirDeg": null,
           "tempC": -5.7,
           "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": -5.9,
+          "humidityPct": null
         }
       ],
       "meta": {
@@ -33374,7 +33392,7 @@
         "intervalMin": 15,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "SLF_OFE2": {
       "rows": [
@@ -33494,6 +33512,15 @@
           "dirDeg": 282.6,
           "tempC": -2.6,
           "humidityPct": 100
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 7.7,
+          "gustKmh": 12.5,
+          "dirDeg": 300.2,
+          "tempC": -2.5,
+          "humidityPct": 100
         }
       ],
       "meta": {
@@ -33507,7 +33534,7 @@
         "intervalMin": 30,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:30:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "SLF_VIN1": {
       "rows": [
@@ -34244,6 +34271,15 @@
           "dirDeg": 275,
           "tempC": -3.3,
           "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 1.1,
+          "gustKmh": 2.5,
+          "dirDeg": 276,
+          "tempC": -3.4,
+          "humidityPct": null
         }
       ],
       "meta": {
@@ -34257,7 +34293,7 @@
         "intervalMin": 15,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "MCH_NAS": {
       "rows": [
@@ -34744,6 +34780,15 @@
           "dirDeg": 283.9,
           "tempC": -4.4,
           "humidityPct": 100
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 2.6,
+          "gustKmh": 5.8,
+          "dirDeg": 251.1,
+          "tempC": -4.4,
+          "humidityPct": 99.3
         }
       ],
       "meta": {
@@ -34757,7 +34802,7 @@
         "intervalMin": 30,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:30:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0076": {
       "rows": [
@@ -34994,6 +35039,15 @@
           "dirDeg": 99,
           "tempC": 4,
           "humidityPct": 100
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 2.5,
+          "gustKmh": 4.7,
+          "dirDeg": 116,
+          "tempC": 4,
+          "humidityPct": 100
         }
       ],
       "meta": {
@@ -35007,7 +35061,7 @@
         "intervalMin": 15,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TIROL_valdafur": {
       "rows": [
@@ -48975,6 +49029,24 @@
           "dirDeg": null,
           "tempC": 0.2,
           "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T22:45:00.000Z",
+          "time": "23:45",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": 0.1,
+          "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": 0.2,
+          "humidityPct": null
         }
       ],
       "meta": {
@@ -48988,7 +49060,7 @@
         "intervalMin": 15,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:30:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0417": {
       "rows": [
@@ -49225,6 +49297,15 @@
           "dirDeg": 100,
           "tempC": 3.8,
           "humidityPct": 99
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 2.5,
+          "gustKmh": 4.3,
+          "dirDeg": 105,
+          "tempC": 3.8,
+          "humidityPct": 99
         }
       ],
       "meta": {
@@ -49238,7 +49319,7 @@
         "intervalMin": 15,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0399": {
       "rows": [
@@ -49475,6 +49556,15 @@
           "dirDeg": null,
           "tempC": 4.9,
           "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": 4.9,
+          "humidityPct": null
         }
       ],
       "meta": {
@@ -49488,7 +49578,7 @@
         "intervalMin": 15,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0418": {
       "rows": [
@@ -49716,6 +49806,24 @@
           "dirDeg": null,
           "tempC": -0.1,
           "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T22:45:00.000Z",
+          "time": "23:45",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": -0.1,
+          "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": -0.1,
+          "humidityPct": null
         }
       ],
       "meta": {
@@ -49729,7 +49837,7 @@
         "intervalMin": 15,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:30:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0082": {
       "rows": [
@@ -49966,6 +50074,15 @@
           "dirDeg": null,
           "tempC": 3.4,
           "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": 3.4,
+          "humidityPct": null
         }
       ],
       "meta": {
@@ -49979,7 +50096,7 @@
         "intervalMin": 15,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0431": {
       "rows": [
@@ -50216,6 +50333,15 @@
           "dirDeg": null,
           "tempC": 4,
           "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": 4,
+          "humidityPct": null
         }
       ],
       "meta": {
@@ -50229,7 +50355,7 @@
         "intervalMin": 15,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0367": {
       "rows": [
@@ -50466,6 +50592,15 @@
           "dirDeg": 204,
           "tempC": 4.7,
           "humidityPct": 100
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 1.4,
+          "gustKmh": 3.6,
+          "dirDeg": 194,
+          "tempC": 4.7,
+          "humidityPct": 100
         }
       ],
       "meta": {
@@ -50479,7 +50614,7 @@
         "intervalMin": 15,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0227": {
       "rows": [
@@ -50716,6 +50851,15 @@
           "dirDeg": null,
           "tempC": -0.4,
           "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": -0.4,
+          "humidityPct": null
         }
       ],
       "meta": {
@@ -50729,7 +50873,7 @@
         "intervalMin": 15,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0229": {
       "rows": [
@@ -50957,6 +51101,24 @@
           "dirDeg": null,
           "tempC": -0.9,
           "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T22:45:00.000Z",
+          "time": "23:45",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": -1,
+          "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": -1,
+          "humidityPct": null
         }
       ],
       "meta": {
@@ -50970,7 +51132,7 @@
         "intervalMin": 15,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:30:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0437": {
       "rows": [
@@ -51232,6 +51394,15 @@
           "dirDeg": null,
           "tempC": -1.5,
           "humidityPct": 100
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": -1.6,
+          "humidityPct": 100
         }
       ],
       "meta": {
@@ -51245,7 +51416,7 @@
         "intervalMin": 15,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0015": {
       "rows": [
@@ -51482,6 +51653,15 @@
           "dirDeg": null,
           "tempC": 4.4,
           "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": 4.4,
+          "humidityPct": null
         }
       ],
       "meta": {
@@ -51495,7 +51675,7 @@
         "intervalMin": 15,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0421": {
       "rows": [
@@ -51732,6 +51912,15 @@
           "dirDeg": null,
           "tempC": 5,
           "humidityPct": 100
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": 5,
+          "humidityPct": 100
         }
       ],
       "meta": {
@@ -51745,7 +51934,7 @@
         "intervalMin": 15,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0030": {
       "rows": [
@@ -51982,6 +52171,15 @@
           "dirDeg": null,
           "tempC": 5.1,
           "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": 5.1,
+          "humidityPct": null
         }
       ],
       "meta": {
@@ -51995,7 +52193,7 @@
         "intervalMin": 15,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "TN_T0469": {
       "rows": [
@@ -52232,6 +52430,15 @@
           "dirDeg": 160,
           "tempC": 4.6,
           "humidityPct": 100
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": null,
+          "gustKmh": null,
+          "dirDeg": null,
+          "tempC": 4.6,
+          "humidityPct": 100
         }
       ],
       "meta": {
@@ -52245,7 +52452,7 @@
         "intervalMin": 15,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:45:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11113": {
       "rows": [
@@ -52599,6 +52806,15 @@
           "dirDeg": 156,
           "tempC": 3.3,
           "humidityPct": 84
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 5.4,
+          "gustKmh": 13,
+          "dirDeg": 171,
+          "tempC": 2.9,
+          "humidityPct": 85
         }
       ],
       "meta": {
@@ -52612,7 +52828,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11313": {
       "rows": [
@@ -53342,6 +53558,15 @@
           "dirDeg": 242,
           "tempC": 4.3,
           "humidityPct": 87
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 2.5,
+          "gustKmh": 7.6,
+          "dirDeg": 195,
+          "tempC": 4.5,
+          "humidityPct": 87
         }
       ],
       "meta": {
@@ -53355,7 +53580,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11318": {
       "rows": [
@@ -53709,6 +53934,15 @@
           "dirDeg": 225,
           "tempC": -9,
           "humidityPct": 92
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 11.2,
+          "gustKmh": 19.4,
+          "dirDeg": 234,
+          "tempC": -9.1,
+          "humidityPct": 91
         }
       ],
       "meta": {
@@ -53722,7 +53956,7 @@
         "intervalMin": 10,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11316": {
       "rows": [
@@ -54076,6 +54310,15 @@
           "dirDeg": 282,
           "tempC": null,
           "humidityPct": null
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 3.6,
+          "gustKmh": 7.9,
+          "dirDeg": 263,
+          "tempC": null,
+          "humidityPct": null
         }
       ],
       "meta": {
@@ -54089,7 +54332,7 @@
         "intervalMin": 10,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11317": {
       "rows": [
@@ -54443,6 +54686,15 @@
           "dirDeg": 270,
           "tempC": 1.5,
           "humidityPct": 92
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 1.1,
+          "gustKmh": 1.8,
+          "dirDeg": 271,
+          "tempC": 1.5,
+          "humidityPct": 93
         }
       ],
       "meta": {
@@ -54456,7 +54708,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11115": {
       "rows": [
@@ -54810,6 +55062,15 @@
           "dirDeg": 7,
           "tempC": 5.3,
           "humidityPct": 90
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 1.8,
+          "gustKmh": 3.6,
+          "dirDeg": 63,
+          "tempC": 5.3,
+          "humidityPct": 90
         }
       ],
       "meta": {
@@ -54823,7 +55084,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11309": {
       "rows": [
@@ -55177,6 +55438,15 @@
           "dirDeg": 123,
           "tempC": 4.3,
           "humidityPct": 94
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 2.2,
+          "gustKmh": 4,
+          "dirDeg": 68,
+          "tempC": 4.3,
+          "humidityPct": 94
         }
       ],
       "meta": {
@@ -55190,7 +55460,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11119": {
       "rows": [
@@ -55544,6 +55814,15 @@
           "dirDeg": 243,
           "tempC": 2.3,
           "humidityPct": 92
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 4,
+          "gustKmh": 6.5,
+          "dirDeg": 232,
+          "tempC": 2.2,
+          "humidityPct": 92
         }
       ],
       "meta": {
@@ -55557,7 +55836,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11324": {
       "rows": [
@@ -55911,6 +56190,15 @@
           "dirDeg": 63,
           "tempC": 4.2,
           "humidityPct": 98
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 1.4,
+          "gustKmh": 4.3,
+          "dirDeg": 44,
+          "tempC": 4.3,
+          "humidityPct": 98
         }
       ],
       "meta": {
@@ -55924,7 +56212,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11129": {
       "rows": [
@@ -56278,6 +56566,15 @@
           "dirDeg": 337,
           "tempC": 1.8,
           "humidityPct": 93
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 2.9,
+          "gustKmh": 7.9,
+          "dirDeg": 295,
+          "tempC": 1.7,
+          "humidityPct": 93
         }
       ],
       "meta": {
@@ -56291,7 +56588,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11329": {
       "rows": [
@@ -56645,6 +56942,15 @@
           "dirDeg": 348,
           "tempC": 4,
           "humidityPct": 95
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 6.8,
+          "gustKmh": 11.9,
+          "dirDeg": 350,
+          "tempC": 4,
+          "humidityPct": 95
         }
       ],
       "meta": {
@@ -56658,7 +56964,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11126": {
       "rows": [
@@ -57012,6 +57318,15 @@
           "dirDeg": 176,
           "tempC": -2.2,
           "humidityPct": 94
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 21.2,
+          "gustKmh": 24.5,
+          "dirDeg": 175,
+          "tempC": -2.1,
+          "humidityPct": 94
         }
       ],
       "meta": {
@@ -57025,7 +57340,7 @@
         "intervalMin": 10,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11123": {
       "rows": [
@@ -57379,6 +57694,15 @@
           "dirDeg": 259,
           "tempC": 4.2,
           "humidityPct": 97
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 2.2,
+          "gustKmh": 3.6,
+          "dirDeg": 253,
+          "tempC": 4.3,
+          "humidityPct": 96
         }
       ],
       "meta": {
@@ -57392,7 +57716,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_8989037": {
       "rows": [
@@ -57728,6 +58052,15 @@
           "dirDeg": 111,
           "tempC": 6.2,
           "humidityPct": 89
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 2.2,
+          "gustKmh": 3.2,
+          "dirDeg": 131,
+          "tempC": 6.2,
+          "humidityPct": 89
         }
       ],
       "meta": {
@@ -57741,7 +58074,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11121": {
       "rows": [
@@ -58095,6 +58428,15 @@
           "dirDeg": 334,
           "tempC": 6.2,
           "humidityPct": 92
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 1.1,
+          "gustKmh": 2.5,
+          "dirDeg": 241,
+          "tempC": 6.2,
+          "humidityPct": 92
         }
       ],
       "meta": {
@@ -58108,7 +58450,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11320": {
       "rows": [
@@ -58462,6 +58804,15 @@
           "dirDeg": 7,
           "tempC": 6.4,
           "humidityPct": 91
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 2.2,
+          "gustKmh": 3.6,
+          "dirDeg": 6,
+          "tempC": 6.4,
+          "humidityPct": 91
         }
       ],
       "meta": {
@@ -58475,7 +58826,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11117": {
       "rows": [
@@ -58829,6 +59180,15 @@
           "dirDeg": 146,
           "tempC": 3.4,
           "humidityPct": 94
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 4,
+          "gustKmh": 4.7,
+          "dirDeg": 138,
+          "tempC": 3.4,
+          "humidityPct": 94
         }
       ],
       "meta": {
@@ -58842,7 +59202,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11127": {
       "rows": [
@@ -59196,6 +59556,15 @@
           "dirDeg": 138,
           "tempC": -0.8,
           "humidityPct": 92
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 2.2,
+          "gustKmh": 4.3,
+          "dirDeg": 4,
+          "tempC": -0.8,
+          "humidityPct": 92
         }
       ],
       "meta": {
@@ -59209,7 +59578,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11326": {
       "rows": [
@@ -59563,6 +59932,15 @@
           "dirDeg": 266,
           "tempC": 2.2,
           "humidityPct": 94
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 1.8,
+          "gustKmh": 4.3,
+          "dirDeg": 251,
+          "tempC": 2.2,
+          "humidityPct": 95
         }
       ],
       "meta": {
@@ -59576,7 +59954,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11250": {
       "rows": [
@@ -59930,6 +60308,15 @@
           "dirDeg": 9,
           "tempC": 1.8,
           "humidityPct": 100
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 1.4,
+          "gustKmh": 3.2,
+          "dirDeg": 217,
+          "tempC": 1.8,
+          "humidityPct": 100
         }
       ],
       "meta": {
@@ -59943,7 +60330,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11330": {
       "rows": [
@@ -60297,6 +60684,15 @@
           "dirDeg": 86,
           "tempC": 6,
           "humidityPct": 95
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 1.4,
+          "gustKmh": 3.6,
+          "dirDeg": 108,
+          "tempC": 6.1,
+          "humidityPct": 95
         }
       ],
       "meta": {
@@ -60310,7 +60706,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11136": {
       "rows": [
@@ -60664,6 +61060,15 @@
           "dirDeg": 201,
           "tempC": 2.6,
           "humidityPct": 93
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 1.4,
+          "gustKmh": 3.6,
+          "dirDeg": 32,
+          "tempC": 2.6,
+          "humidityPct": 93
         }
       ],
       "meta": {
@@ -60677,7 +61082,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11073": {
       "rows": [
@@ -61031,6 +61436,15 @@
           "dirDeg": 123,
           "tempC": 0.6,
           "humidityPct": 96
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 2.5,
+          "gustKmh": 3.6,
+          "dirDeg": 128,
+          "tempC": 0.4,
+          "humidityPct": 96
         }
       ],
       "meta": {
@@ -61044,7 +61458,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11252": {
       "rows": [
@@ -61398,6 +61812,15 @@
           "dirDeg": 71,
           "tempC": 0,
           "humidityPct": 97
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 1.4,
+          "gustKmh": 3.2,
+          "dirDeg": 147,
+          "tempC": 0,
+          "humidityPct": 97
         }
       ],
       "meta": {
@@ -61411,7 +61834,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11300": {
       "rows": [
@@ -61765,6 +62188,15 @@
           "dirDeg": 80,
           "tempC": -2.3,
           "humidityPct": 99
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 1.8,
+          "gustKmh": 3.2,
+          "dirDeg": 64,
+          "tempC": -2.2,
+          "humidityPct": 99
         }
       ],
       "meta": {
@@ -61778,7 +62210,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     },
     "GS_11201": {
       "rows": [
@@ -62132,6 +62564,15 @@
           "dirDeg": 61,
           "tempC": 0.6,
           "humidityPct": 94
+        },
+        {
+          "instantUTC": "2026-11-07T23:00:00.000Z",
+          "time": "00:00",
+          "avgKmh": 4.3,
+          "gustKmh": 7.9,
+          "dirDeg": 68,
+          "tempC": 0.6,
+          "humidityPct": 93
         }
       ],
       "meta": {
@@ -62145,8 +62586,8 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-07T22:50:00.000Z"
+      "lastValueUTC": "2026-11-07T23:00:00.000Z"
     }
   },
-  "generatedAt": "08.11.2026, 00:02"
+  "generatedAt": "08.11.2026, 00:06"
 }
