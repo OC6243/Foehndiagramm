@@ -4,19 +4,6 @@
     "rightLabel": "Innsbruck",
     "rows": [
       {
-        "instantUTC": "2026-11-10T01:40:00.000Z",
-        "datumLeft": "10.11.2026",
-        "zeitLeft": "02:40",
-        "wertLeft": 1019.4,
-        "datumRight": "10.11.2026",
-        "zeitRight": "02:40",
-        "wertRight": 1016.5,
-        "delta": 2.9,
-        "qnhLeft": 1018.8,
-        "qnhRight": 1015.5,
-        "deltaQnh": 3.3
-      },
-      {
         "instantUTC": "2026-11-10T01:50:00.000Z",
         "datumLeft": "10.11.2026",
         "zeitLeft": "02:50",
@@ -1250,16 +1237,29 @@
         "qnhLeft": 1012.2,
         "qnhRight": 1011.7,
         "deltaQnh": 0.5
+      },
+      {
+        "instantUTC": "2026-11-10T18:20:00.000Z",
+        "datumLeft": "10.11.2026",
+        "zeitLeft": "19:20",
+        "wertLeft": 1012.9,
+        "datumRight": "10.11.2026",
+        "zeitRight": "19:30",
+        "wertRight": 1012.6,
+        "delta": 0.3,
+        "qnhLeft": 1012.3,
+        "qnhRight": 1011.8,
+        "deltaQnh": 0.5
       }
     ],
     "qnhCheck": {
-      "instantUTC": "2026-11-10T18:10:00.000Z",
-      "diffHpa": -0.01,
+      "instantUTC": "2026-11-10T18:20:00.000Z",
+      "diffHpa": 0,
       "limitHpa": 0.3,
       "ok": true
     }
   },
-  "generatedAt": "10.11.2026, 19:26",
+  "generatedAt": "10.11.2026, 19:32",
   "eyrsLandeck": {
     "leftLabel": "Eyrs",
     "rightLabel": "Landeck",
@@ -2498,10 +2498,23 @@
         "qnhLeft": 1012.7,
         "qnhRight": 1012.2,
         "deltaQnh": 0.5
+      },
+      {
+        "instantUTC": "2026-11-10T18:20:00.000Z",
+        "datumLeft": "10.11.2026",
+        "zeitLeft": "19:20",
+        "wertLeft": 1015,
+        "datumRight": "10.11.2026",
+        "zeitRight": "19:20",
+        "wertRight": 1012.1,
+        "delta": 2.9,
+        "qnhLeft": 1012.7,
+        "qnhRight": 1012.2,
+        "deltaQnh": 0.5
       }
     ],
     "qnhCheck": {
-      "instantUTC": "2026-11-10T18:10:00.000Z",
+      "instantUTC": "2026-11-10T18:20:00.000Z",
       "diffHpa": 0.04,
       "limitHpa": 0.3,
       "ok": true
