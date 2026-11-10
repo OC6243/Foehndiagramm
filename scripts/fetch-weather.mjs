@@ -23,8 +23,11 @@
 // Wert doch mal nicht exakt auf dem Raster lag).
 //
 // Quellen:
-//  - Bozen, Meran:      Bürgernetz Südtirol API, /timeseries-Endpunkt
-//  - Innsbruck, Imst:   GeoSphere Austria Data Hub, /historical-Modus
+//  - Bozen, Eyrs:         Bürgernetz Südtirol API, /timeseries-Endpunkt (LD.RED, LT, LF)
+//  - Innsbruck, Landeck:  GeoSphere Austria Data Hub, /historical-Modus (PRED, P, TL, RF)
+//
+// Pro Paar werden zwei Druckangaben gespeichert: QFF (reduzierter Druck der
+// Quellen, wie bisher) und QNH (daraus berechnet, siehe qnhFromReduced).
 //
 // Aufruf: node scripts/fetch-weather.mjs
 
@@ -54,12 +57,6 @@ const MAX_BACKFILL_SLOTS = 12;       // Sicherheitsnetz: max. so viele fehlende 
 // nicht durch die Summe aller Abrufe.
 const RETRY_COUNT = 3;
 const RETRY_DELAY_MS = 8 * 1000;
-
-// GeoSphere Austria Stations-IDs (TAWES, tawes-v1-10min)
-const GEOSPHERE_STATIONS = {
-  innsbruck: "11121", // INNSBRUCK-FLUGHAFEN (AUTOMAT)
-  imst: "11115"       // IMST
-};
 
 /******************** Allgemeine Helper ********************/
 
@@ -219,7 +216,58 @@ function computeNeededSlots(lastSlot, latestTarget) {
   return slots;
 }
 
-/******************** Bozen / Meran (Bürgernetz Südtirol) ********************/
+/******************** Stationen und Paare (Föhndiagramm) ********************/
+
+// Jedes Paar: links die Südtiroler Station (Bürgernetz), rechts die Tiroler
+// Station (GeoSphere). Differenz = links - rechts (Süden minus Norden).
+// heightM: Höhe, mit der die jeweilige Quelle ihren reduzierten Luftdruck
+// (QFF) rechnet. Bei GeoSphere die Stationshöhe laut ZAMG-Tabelle (weicht
+// von den API-Stammdaten ab und passt auf die Rechnung von PRED); beim
+// Bürgernetz die Stationshöhe (der Wert geht in QNH nur minimal ein, siehe
+// qnhFromReduced).
+const PAIRS = {
+  bozenInnsbruck: {
+    left:  { src: "bz",  code: "83200MS", label: "Bozen",     heightM: 245 },
+    right: { src: "geo", id: "11121",     label: "Innsbruck", heightM: 585 }
+  },
+  eyrsLandeck: {
+    left:  { src: "bz",  code: "08200MS", label: "Eyrs",      heightM: 874 },
+    right: { src: "geo", id: "11112",     label: "Landeck",   heightM: 809 }
+  }
+};
+
+const QNH_CHECK_LIMIT_HPA = 0.3; // GeoSphere: QNH aus PRED und aus Stationsdruck P dürfen so weit auseinanderliegen
+
+/******************** QFF -> QNH ********************/
+
+// Taupunkt aus Temperatur [°C] und relativer Feuchte [%] (Magnus-Formel).
+export function dewPoint(tempC, rhPct) {
+  const [k2, k3] = tempC > 0 ? [17.62, 243.12] : [22.46, 272.62];
+  const l = Math.log(rhPct / 100);
+  return (k3 * ((k2 * tempC) / (k3 + tempC) + l)) / ((k2 * k3) / (k3 + tempC) - l);
+}
+
+// Reduktionsfaktor der Südtiroler/GeoSphere-Formel (QFF mit Feuchtekorrektur):
+// QFF = Stationsdruck * Faktor.
+function reductionFactor(tempC, rhPct, heightM) {
+  const td = dewPoint(tempC, rhPct);
+  const e = 6.107 * 10 ** ((7.5 * td) / (237.7 + td)); // Dampfdruck [hPa]
+  return Math.exp((9.80665 * heightM) / (287.05 * (tempC + 273.15 + 0.11 * e + (0.0065 * heightM) / 2)));
+}
+
+// QNH (ICAO-Standardatmosphäre) aus dem Stationsdruck.
+export function qnhFromStationPressure(pStation, heightM) {
+  return pStation / Math.pow(1 - (0.0065 * heightM) / 288.15, 5.2559);
+}
+
+// QNH aus dem reduzierten Druck (QFF): Reduktion rückgängig machen und mit der
+// Standardatmosphäre neu reduzieren. Die Höhe geht in beiden Schritten fast
+// gleich stark ein und hebt sich weitgehend auf (10 m Fehler = unter 0,05 hPa).
+export function qnhFromReduced(qff, tempC, rhPct, heightM) {
+  return qnhFromStationPressure(qff / reductionFactor(tempC, rhPct, heightM), heightM);
+}
+
+/******************** Bürgernetz Südtirol (Eyrs, Bozen) ********************/
 
 // Die Bürgernetz-API liefert Zeitstempel wie "2026-08-11T15:10:00CEST".
 // new Date() auf so einen String OHNE Zeitzone würde die System-Zeitzone
@@ -243,92 +291,129 @@ function fmtBuergernetzParam(date) {
   return `${get("year")}${get("month")}${get("day")}${get("hour")}${get("minute")}`;
 }
 
-async function fetchBuergernetzAtSlot(stationCode, label, targetSlot) {
-  const from = fmtBuergernetzParam(addMinutes(targetSlot, -WINDOW_MINUTES));
-  const to = fmtBuergernetzParam(addMinutes(targetSlot, WINDOW_MINUTES));
+async function fetchBuergernetzSensor(stationCode, sensor, from, to) {
   const url =
     `https://geoservices.buergernetz.bz.it/services/meteo/v1/timeseries` +
-    `?station_code=${stationCode}&sensor_code=LD.RED&output_format=JSON` +
-    `&date_from=${from}&date_to=${to}`;
-
-  const data = await fetchJson(url, {
-    headers: { Accept: "application/json", "User-Agent": "foehndiagramm-web/1.0" }
-  });
-
-  if (!Array.isArray(data) || data.length === 0) {
-    throw new Error(`Keine Daten für ${label} im Zielfenster (${from}-${to})`);
-  }
-
-  const entries = data
+    `?station_code=${stationCode}&sensor_code=${sensor}&output_format=JSON` +
+    `&date_from=${fmtBuergernetzParam(from)}&date_to=${fmtBuergernetzParam(to)}`;
+  const data = await withRetry(
+    () => fetchJson(url, { headers: { Accept: "application/json", "User-Agent": "foehndiagramm-web/1.0" } }),
+    `${stationCode} ${sensor}`,
+    RETRY_COUNT
+  );
+  if (!Array.isArray(data)) return [];
+  return data
     .filter((e) => typeof e.VALUE === "number" && e.DATE)
-    .map((e) => ({ value: round1(e.VALUE), instant: parseBuergernetzDate(String(e.DATE)) }));
-
-  const best = closestTo(entries, targetSlot);
-  if (!best) throw new Error(`Kein passender LD.RED-Wert für ${label}`);
-  return best;
+    .map((e) => ({ value: e.VALUE, instant: parseBuergernetzDate(String(e.DATE)) }));
 }
 
-/******************** Innsbruck / Imst (GeoSphere Austria, historical) ********************/
+// Ein Abruf pro Sensor für das ganze Zeitfenster (statt je Zeitpunkt einzeln).
+async function fetchBuergernetzWindow(stationCode, from, to) {
+  const [red, temp, rh] = await Promise.all([
+    fetchBuergernetzSensor(stationCode, "LD.RED", from, to),
+    fetchBuergernetzSensor(stationCode, "LT", from, to),
+    fetchBuergernetzSensor(stationCode, "LF", from, to)
+  ]);
+  return { red, temp, rh };
+}
+
+/******************** GeoSphere Austria (Innsbruck, Landeck) ********************/
 
 function fmtIsoMinuteUTC(date) {
   return date.toISOString().slice(0, 16); // "2026-08-11T13:10"
 }
 
-async function fetchGeosphereAtSlot(targetSlot) {
-  const ids = Object.values(GEOSPHERE_STATIONS).join(",");
-  const start = fmtIsoMinuteUTC(addMinutes(targetSlot, -WINDOW_MINUTES));
-  const end = fmtIsoMinuteUTC(addMinutes(targetSlot, WINDOW_MINUTES));
+// Liefert Reihen {instant, ...}: PRED (reduziert), P (Stationsdruck), TL, RF.
+async function fetchGeosphereWindow(stationId, from, to) {
   const url =
     `https://dataset.api.hub.geosphere.at/v1/station/historical/tawes-v1-10min` +
-    `?parameters=PRED&station_ids=${ids}&start=${start}&end=${end}`;
-
-  const data = await fetchJson(url, { headers: { "User-Agent": "foehndiagramm-web/1.0" } });
-
+    `?parameters=PRED,P,TL,RF&station_ids=${stationId}` +
+    `&start=${fmtIsoMinuteUTC(from)}&end=${fmtIsoMinuteUTC(to)}`;
+  const data = await withRetry(
+    () => fetchJson(url, { headers: { "User-Agent": "foehndiagramm-web/1.0" } }),
+    `GeoSphere ${stationId}`,
+    RETRY_COUNT
+  );
   const timestamps = (data.timestamps || []).map((t) => new Date(t));
-  if (!timestamps.length) throw new Error("Keine GeoSphere-Zeitstempel im Zielfenster");
+  const feature = (data.features || []).find((f) => String(f.properties?.station) === String(stationId));
+  const par = feature?.properties?.parameters || {};
+  const pick = (name) => (Array.isArray(par[name]?.data) ? par[name].data : []);
+  const red = pick("PRED"), p = pick("P"), t = pick("TL"), rh = pick("RF");
+  const ok = (v) => (typeof v === "number" ? v : null);
+  return timestamps.map((instant, i) => ({ instant, red: ok(red[i]), p: ok(p[i]), temp: ok(t[i]), rh: ok(rh[i]) }));
+}
 
-  let bestIdx = -1, bestDiff = Infinity;
-  timestamps.forEach((t, i) => {
-    const diff = Math.abs(t.getTime() - targetSlot.getTime());
-    if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
-  });
+/******************** Werte je Zeitpunkt zusammenstellen ********************/
 
-  const result = {};
-  for (const feature of data.features || []) {
-    const stationId = feature.properties?.station;
-    const values = feature.properties?.parameters?.PRED?.data;
-    if (Array.isArray(values) && typeof values[bestIdx] === "number") {
-      for (const [key, id] of Object.entries(GEOSPHERE_STATIONS)) {
-        if (id === stationId) {
-          result[key] = { value: round1(values[bestIdx]), instant: timestamps[bestIdx] };
-        }
-      }
-    }
+// Nächstgelegener Eintrag innerhalb von maxMin Minuten, sonst null.
+function nearest(entries, instant, maxMin) {
+  let best = null, bestDiff = Infinity;
+  for (const e of entries) {
+    if (!e.instant || isNaN(e.instant)) continue;
+    const diff = Math.abs(e.instant.getTime() - instant.getTime());
+    if (diff < bestDiff) { bestDiff = diff; best = e; }
   }
-  return result;
+  return best && bestDiff <= maxMin * 60000 ? best : null;
+}
+
+// Bürgernetz: QFF = LD.RED, QNH aus LD.RED + Temperatur + Feuchte desselben Zeitpunkts.
+function bzValueAt(win, st, slot) {
+  const red = nearest(win.red, slot, WINDOW_MINUTES);
+  if (!red) return null;
+  const temp = nearest(win.temp, red.instant, 5);
+  const rh = nearest(win.rh, red.instant, 5);
+  const qff = round1(red.value);
+  const qnh = temp && rh ? round1(qnhFromReduced(red.value, temp.value, rh.value, st.heightM)) : null;
+  return { instant: red.instant, qff, qnh, check: null };
+}
+
+// GeoSphere: QFF = PRED. QNH aus PRED + Temperatur + Feuchte (gleiche Methode
+// wie beim Bürgernetz). Kontrolle: QNH direkt aus dem Stationsdruck P.
+function geoValueAt(series, st, slot) {
+  const e = nearest(series.filter((x) => x.red !== null), slot, WINDOW_MINUTES);
+  if (!e) return null;
+  const qff = round1(e.red);
+  const haveTr = e.temp !== null && e.rh !== null;
+  const qnhExact = haveTr ? qnhFromReduced(e.red, e.temp, e.rh, st.heightM) : null;
+  const qnh = qnhExact === null ? null : round1(qnhExact);
+  const qnhP = e.p !== null ? qnhFromStationPressure(e.p, st.heightM) : null;
+  const check = qnhExact !== null && qnhP !== null ? Math.round((qnhP - qnhExact) * 100) / 100 : null;
+  return { instant: e.instant, qff, qnh, check };
+}
+
+export function buildPairRow(left, right) {
+  const delta = round1(left.qff - right.qff);
+  const deltaQnh = left.qnh !== null && right.qnh !== null ? round1(left.qnh - right.qnh) : null;
+  return {
+    instantUTC: left.instant.toISOString(),
+    datumLeft: fmtDate(left.instant), zeitLeft: fmtTime(left.instant), wertLeft: left.qff,
+    datumRight: fmtDate(right.instant), zeitRight: fmtTime(right.instant), wertRight: right.qff,
+    delta,
+    qnhLeft: left.qnh, qnhRight: right.qnh, deltaQnh
+  };
 }
 
 /******************** Historie lesen/schreiben ********************/
 
-async function loadHistory() {
+export async function loadHistory() {
+  let history;
   try {
-    const raw = await readFile(DATA_PATH, "utf-8");
-    return JSON.parse(raw);
+    history = JSON.parse(await readFile(DATA_PATH, "utf-8"));
   } catch {
-    return {
-      bozenInnsbruck: { leftLabel: "Bozen", rightLabel: "Innsbruck", rows: [] },
-      imstMeran: { leftLabel: "Meran", rightLabel: "Imst", rows: [] },
-      generatedAt: null
-    };
+    history = { generatedAt: null };
   }
+  for (const [key, spec] of Object.entries(PAIRS)) {
+    if (!history[key]) history[key] = { leftLabel: spec.left.label, rightLabel: spec.right.label, rows: [] };
+  }
+  // Das frühere Paar Meran-Imst wird nicht mehr geführt.
+  delete history.imstMeran;
+  return history;
 }
 
-function pushRow(pair, row) {
-  // Duplikate vermeiden (Vergleich über den echten UTC-Zeitpunkt, nicht die
-  // formatierten Anzeige-Strings - robuster bei Tages-/Zeitzonenwechseln).
-  const last = pair.rows[pair.rows.length - 1];
-  if (last && last.instantUTC === row.instantUTC) return;
-
+// Fügt eine Zeile ein bzw. ersetzt die Zeile mit gleichem Zeitpunkt
+// (Vergleich über den echten UTC-Zeitpunkt, nicht die Anzeige-Strings).
+function upsertRow(pair, row) {
+  pair.rows = pair.rows.filter((r) => r.instantUTC !== row.instantUTC);
   pair.rows.push(row);
   pair.rows.sort((a, b) => new Date(a.instantUTC) - new Date(b.instantUTC));
   if (pair.rows.length > MAX_ROWS) {
@@ -336,74 +421,86 @@ function pushRow(pair, row) {
   }
 }
 
-function buildRow(left, right) {
-  const delta = round1(left.value - right.value);
-  return {
-    instantUTC: left.instant.toISOString(),
-    datumLeft: fmtDate(left.instant), zeitLeft: fmtTime(left.instant), wertLeft: left.value,
-    datumRight: fmtDate(right.instant), zeitRight: fmtTime(right.instant), wertRight: right.value,
-    delta
-  };
-}
-
 /******************** Hauptlogik ********************/
 
-async function fillPair(history, pairKey, stationCode, stationLabel, geosphereKey, geosphereCache, now) {
+// Zeitpunkte, die in diesem Lauf berechnet werden:
+//  - neue Zeitpunkte seit der letzten Zeile (Nachhol-Logik wie bisher),
+//  - ein leeres Paar (neu) wird einmalig über die volle Historie gefüllt,
+//  - bestehende Zeilen ohne QNH-Felder (Zeilen aus der Zeit vor QNH) werden nachgerechnet.
+function slotsToCompute(pair, latestTarget) {
+  const slots = new Map();
+  const add = (d) => slots.set(d.getTime(), d);
+  if (!pair.rows.length) {
+    for (let i = MAX_ROWS - 1; i >= 0; i--) add(addMinutes(latestTarget, -i * SAMPLING_INTERVAL_MINUTES));
+  } else {
+    computeNeededSlots(lastSlotOf(pair), latestTarget).forEach(add);
+    // Zeilen ohne QNH-Felder (alt) sowie junge Zeilen, bei denen Temperatur/Feuchte
+    // beim ersten Versuch noch fehlte (deltaQnh null, jünger als 90 Min.), erneut versuchen.
+    const retryAfter = latestTarget.getTime() - 90 * 60000;
+    pair.rows
+      .filter((r) => r.instantUTC && (r.deltaQnh === undefined || (r.deltaQnh === null && new Date(r.instantUTC).getTime() >= retryAfter)))
+      .forEach((r) => add(new Date(r.instantUTC)));
+  }
+  return [...slots.values()].sort((a, b) => a - b);
+}
+
+async function fetchSide(st, from, to) {
+  return st.src === "bz" ? fetchBuergernetzWindow(st.code, from, to) : fetchGeosphereWindow(st.id, from, to);
+}
+function sideValueAt(data, st, slot) {
+  return st.src === "bz" ? bzValueAt(data, st, slot) : geoValueAt(data, st, slot);
+}
+
+export async function fillPair(history, pairKey, now) {
+  const spec = PAIRS[pairKey];
   const pair = history[pairKey];
   const latestTarget = computeLatestTargetSlot(now);
-  const lastSlot = lastSlotOf(pair);
-  const neededSlots = computeNeededSlots(lastSlot, latestTarget);
-
-  if (!neededSlots.length) {
+  const slots = slotsToCompute(pair, latestTarget);
+  if (!slots.length) {
     console.log(`${pairKey}: bereits aktuell, nichts nachzuholen.`);
     return;
   }
-  if (lastSlot) {
-    console.log(`${pairKey}: ${neededSlots.length} fehlende(r) Slot(s) werden parallel nachgeholt (letzter bekannter Wert: ${lastSlot.toISOString()}).`);
+  console.log(`${pairKey}: ${slots.length} Zeitpunkt(e) werden berechnet (${slots[0].toISOString()} bis ${slots[slots.length - 1].toISOString()}).`);
+
+  const from = addMinutes(slots[0], -WINDOW_MINUTES);
+  const to = addMinutes(slots[slots.length - 1], WINDOW_MINUTES);
+  let leftData, rightData;
+  try {
+    [leftData, rightData] = await Promise.all([fetchSide(spec.left, from, to), fetchSide(spec.right, from, to)]);
+  } catch (err) {
+    console.warn(`${pairKey}: Abruf fehlgeschlagen (${err.message}) - nächster Lauf versucht es erneut.`);
+    return;
   }
 
-  // Alle fehlenden Slots PARALLEL abfragen (nicht mehr nacheinander) - die
-  // Laufzeit ist dadurch durch den langsamsten einzelnen Abruf begrenzt, nicht
-  // durch die Summe aller Abrufe. Der geosphereCache kann dabei in seltenen
-  // Fällen einen Slot doppelt abfragen (Race zwischen parallelen Prüfungen) -
-  // das ist unkritisch, kostet höchstens einen zusätzlichen API-Call.
-  const results = await Promise.all(neededSlots.map(async (slot) => {
-    const slotIso = slot.toISOString();
-    try {
-      const stationValue = await withRetry(
-        () => fetchBuergernetzAtSlot(stationCode, stationLabel, slot),
-        `${stationLabel} @ ${slotIso}`,
-        RETRY_COUNT
-      );
-
-      if (!(slotIso in geosphereCache)) {
-        geosphereCache[slotIso] = withRetry(
-          () => fetchGeosphereAtSlot(slot),
-          `GeoSphere @ ${slotIso}`,
-          RETRY_COUNT
-        ).catch((err) => {
-          console.warn(`GeoSphere @ ${slotIso} fehlgeschlagen: ${err.message}`);
-          return null;
-        });
-      }
-      const geo = await geosphereCache[slotIso];
-      const otherValue = geo && geo[geosphereKey];
-
-      if (!otherValue) {
-        console.warn(`${pairKey}: kein GeoSphere-Wert für ${slotIso}, übersprungen.`);
-        return null;
-      }
-      return buildRow(stationValue, otherValue);
-    } catch (err) {
-      console.warn(`${pairKey}: ${stationLabel} @ ${slotIso} fehlgeschlagen: ${err.message}`);
-      return null;
+  let latestCheck = null;
+  for (const slot of slots) {
+    const left = sideValueAt(leftData, spec.left, slot);
+    const right = sideValueAt(rightData, spec.right, slot);
+    const iso = slot.toISOString();
+    if (!left || !right) {
+      // Bestehende Zeile ohne QNH: als "nicht berechenbar" markieren, damit nicht jeder Lauf es neu versucht.
+      const existing = pair.rows.find((r) => r.instantUTC === iso);
+      if (existing && existing.deltaQnh === undefined) { existing.qnhLeft = null; existing.qnhRight = null; existing.deltaQnh = null; }
+      else if (!existing) console.warn(`${pairKey}: keine Werte für ${iso}, übersprungen.`);
+      continue;
     }
-  }));
+    const row = buildPairRow(left, right);
+    upsertRow(pair, row);
+    if (right.check !== null) latestCheck = { instantUTC: row.instantUTC, diffHpa: right.check };
+  }
 
-  results.filter(Boolean).forEach((row) => {
-    pushRow(pair, row);
-    console.log(`${pairKey} @ ${row.zeitLeft}: ${row.wertLeft} / ${row.wertRight} hPa -> Δ ${row.delta}`);
-  });
+  // Kontrolle (nur GeoSphere-Seite): QNH aus P gegen QNH aus PRED.
+  if (latestCheck) {
+    latestCheck.limitHpa = QNH_CHECK_LIMIT_HPA;
+    latestCheck.ok = Math.abs(latestCheck.diffHpa) <= QNH_CHECK_LIMIT_HPA;
+    pair.qnhCheck = latestCheck;
+    if (!latestCheck.ok) {
+      console.warn(`WARNUNG ${pairKey}: QNH aus Stationsdruck weicht um ${latestCheck.diffHpa} hPa von QNH aus PRED ab (Grenze ${QNH_CHECK_LIMIT_HPA}). Barometerhöhe oder Formel prüfen.`);
+    }
+  }
+
+  const last = pair.rows[pair.rows.length - 1];
+  if (last) console.log(`${pairKey} @ ${last.zeitLeft}: QFF ${last.wertLeft}/${last.wertRight} -> Δ ${last.delta} | QNH ${last.qnhLeft}/${last.qnhRight} -> Δ ${last.deltaQnh}`);
 }
 
 /******************** Live-Windwerte (Südtirol-Stationskarte) ********************/
@@ -1144,14 +1241,13 @@ async function main() {
   const history = await loadHistory();
   const windHistory = await loadWindHistory();
   const now = new Date();
-  const geosphereCache = {}; // slotISO -> {innsbruck, imst} | null - vermeidet doppelte GeoSphere-Abrufe
 
   console.log(`Lauf gestartet um ${now.toISOString()} UTC.`);
 
   const [, windData] = await Promise.all([
     Promise.all([
-      fillPair(history, "bozenInnsbruck", "83200MS", "Bozen", "innsbruck", geosphereCache, now),
-      fillPair(history, "imstMeran", "23200MS", "Meran", "imst", geosphereCache, now)
+      fillPair(history, "bozenInnsbruck", now),
+      fillPair(history, "eyrsLandeck", now)
     ]),
     fetchWindStations(windHistory),
     // Zusatzstationen anderer Datenquellen (eigene Hosts, daher parallel
