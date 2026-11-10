@@ -330,6 +330,14 @@
   @keyframes blinkRed{ 0%,100%{ border-color:#E5342A; box-shadow:0 1px 4px rgba(0,0,0,0.18); } 50%{ border-color:#E5342A; box-shadow:0 0 0 3px rgba(229,52,42,0.55); } }
   @keyframes blinkOrange{ 0%,100%{ border-color:#F2994A; box-shadow:0 1px 4px rgba(0,0,0,0.18); } 50%{ border-color:#F2994A; box-shadow:0 0 0 3px rgba(242,153,74,0.55); } }
   @keyframes blinkYellow{ 0%,100%{ border-color:#E6B800; box-shadow:0 1px 4px rgba(0,0,0,0.18); } 50%{ border-color:#E6B800; box-shadow:0 0 0 3px rgba(230,184,0,0.5); } }
+  /* Weit herausgezoomt: Wertefelder weg, nur Windsäcke. Blinken dann als farbige Windsack-Kontur. */
+  .wm-far .wr-box{ display:none !important; }
+  @keyframes sockOutRed{ 0%,100%{ stroke:rgba(229,52,42,0.15); stroke-width:3; } 50%{ stroke:#E5342A; stroke-width:9; } }
+  @keyframes sockOutOrange{ 0%,100%{ stroke:rgba(242,153,74,0.15); stroke-width:3; } 50%{ stroke:#F2994A; stroke-width:9; } }
+  @keyframes sockOutYellow{ 0%,100%{ stroke:rgba(230,184,0,0.15); stroke-width:3; } 50%{ stroke:#E6B800; stroke-width:9; } }
+  .wm-far .sock-blink-red .sock-outline{ animation:sockOutRed 1s ease-in-out infinite; }
+  .wm-far .sock-blink-orange .sock-outline{ animation:sockOutOrange 1s ease-in-out infinite; }
+  .wm-far .sock-blink-yellow .sock-outline{ animation:sockOutYellow 1.3s ease-in-out infinite; }
   .wr-blink-red{ animation:blinkRed 1s ease-in-out infinite; border-width:2px !important; }
   .wr-blink-orange{ animation:blinkOrange 1s ease-in-out infinite; border-width:2px !important; }
   .wr-blink-yellow{ animation:blinkYellow 1.3s ease-in-out infinite; border-width:2px !important; }
@@ -492,6 +500,8 @@
     font-family:'IBM Plex Sans', sans-serif;
     font-weight:600;
   }
+  /* beide Druckspalten gleich breit, Überschrift (z. B. "QNH [hPa]") bleibt in einer Zeile */
+  thead tr.sub th.pc{ width:21%; min-width:88px; white-space:nowrap; }
   tbody td{
     padding:4px 7px;
     border-bottom:1px solid #EEF1F0;
@@ -1111,7 +1121,7 @@
     var unitLabel = (mode === 'qff' ? 'QFF' : 'QNH') + ' [hPa]';
     var html = '<table><thead>' +
       '<tr class="group"><th colspan="3"></th><th>' + pair.leftLabel.toUpperCase() + '</th><th>' + pair.rightLabel.toUpperCase() + '</th><th></th></tr>' +
-      '<tr class="sub"><th>ΔhPa</th><th></th><th>Uhrzeit</th><th>' + unitLabel + '</th><th>' + unitLabel + '</th><th>Datum</th></tr>' +
+      '<tr class="sub"><th>ΔhPa</th><th></th><th>Uhrzeit</th><th class="pc">' + unitLabel + '</th><th class="pc">' + unitLabel + '</th><th>Datum</th></tr>' +
       '</thead><tbody>';
 
     rows.forEach(function(r, i){
@@ -1975,10 +1985,15 @@
     // Liefert die Station nie eine Windrichtung (laut gespeicherter Historie),
     // wäre ein drehender Windsack irreführend: dann nur der Stationspunkt
     // (Drehpunkt des Windsacks, gleiche Größe) plus das Werte-Rechteck.
+    // Weit herausgezoomt (Klasse wm-far an der Karte) sind die Wertefelder
+    // ausgeblendet; ein Blinken zeigt dann stattdessen die Kontur des Windsacks
+    // in der jeweiligen Farbe (sock-blink-*, siehe CSS).
+    var sockBlink = blinkClass ? ' sock-' + blinkClass.replace('wr-', '') : '';
     var sockSvg;
     if (hasDirSensor) {
-      sockSvg = '<svg width="38" height="16" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
-        'style="position:absolute;left:' + (cx - 3.8) + 'px;top:' + (cy - 8) + 'px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;">' +
+      sockSvg = '<svg class="sock-svg' + sockBlink + '" width="38" height="16" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" ' +
+        'style="position:absolute;left:' + (cx - 3.8) + 'px;top:' + (cy - 8) + 'px;transform:rotate(' + rotation + 'deg);transform-origin:10% 50%;overflow:visible;">' +
+        '<polygon class="sock-outline" points="18,5 31,7 45,9 58,10.5 58,13.5 45,15 31,17 18,19" fill="none" stroke="transparent" stroke-width="5" stroke-linejoin="round"/>' +
         '<line x1="6" y1="12" x2="18" y2="5" stroke="#3A4750" stroke-width="1.3"/>' +
         '<line x1="6" y1="12" x2="18" y2="19" stroke="#3A4750" stroke-width="1.3"/>' +
         '<polygon points="18,5 18,19 31,17 31,7" fill="' + sockColor + '"/>' +
@@ -1987,8 +2002,8 @@
         '<circle cx="6" cy="12" r="5" fill="#2B2B2B"/>' +
       '</svg>';
     } else {
-      sockSvg = '<svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;pointer-events:none;">' +
-        '<circle cx="' + cx + '" cy="' + cy + '" r="3.2" fill="#2B2B2B"/></svg>';
+      sockSvg = '<svg class="sock-svg' + sockBlink + '" width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;pointer-events:none;">' +
+        '<circle class="sock-outline" cx="' + cx + '" cy="' + cy + '" r="3.2" fill="#2B2B2B" stroke="transparent" stroke-width="2.5"/></svg>';
     }
     var staleRingSvg = (isStale || isLate)
       ? '<circle class="stale-ring" cx="' + cx + '" cy="' + cy + '" r="7.2" fill="none" stroke="' + (isStale ? '#E5342A' : '#F2C200') + '" stroke-width="1.28"></circle>'
@@ -1997,7 +2012,7 @@
     return '<div class="windsock-icon" style="position:relative;width:90px;height:90px;opacity:' + opacity + ';">' +
       (staleRingSvg ? '<svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;pointer-events:none;">' + staleRingSvg + '</svg>' : '') +
       sockSvg +
-      '<div class="' + blinkClass + '" style="position:absolute;left:' + (rx - rectW / 2) + 'px;top:' + (ry - rectH / 2) + 'px;width:' + rectW + 'px;height:' + rectH + 'px;box-sizing:border-box;padding:3px 0;' +
+      '<div class="wr-box ' + blinkClass + '" style="position:absolute;left:' + (rx - rectW / 2) + 'px;top:' + (ry - rectH / 2) + 'px;width:' + rectW + 'px;height:' + rectH + 'px;box-sizing:border-box;padding:3px 0;' +
         'background:rgba(255,255,255,0.96);border:1px solid #C9CFCD;border-radius:5px;box-shadow:0 1px 4px rgba(0,0,0,0.18);' +
         'display:flex;flex-direction:column;align-items:center;justify-content:space-between;' +
         'font-family:\'IBM Plex Mono\',monospace;font-size:11px;line-height:1;color:#1C2B3A;font-weight:700;">' +
@@ -2234,9 +2249,14 @@
   var ICON_MIN_ZOOM = 8;   // bei diesem Zoom (oder darunter) kleinste Größe
   var ICON_FULL_ZOOM = 12; // ab diesem Zoom (oder darüber) volle (120%) Größe
 
+  // Startzoom ist 10. Eine Stufe weiter heraus (9 oder weniger) werden die
+  // Wertefelder ausgeblendet, damit die Karte übersichtlich bleibt.
+  var WM_FAR_ZOOM = 9;
+
   function updateIconScale(){
     if (!windMapInstance) return;
     var zoom = windMapInstance.getZoom();
+    windMapInstance.getContainer().classList.toggle('wm-far', zoom <= WM_FAR_ZOOM);
     var t = Math.max(0, Math.min(1, (zoom - ICON_MIN_ZOOM) / (ICON_FULL_ZOOM - ICON_MIN_ZOOM)));
     var scale = ICON_MIN_SCALE + t * (ICON_MAX_SCALE - ICON_MIN_SCALE);
     document.querySelectorAll('.windsock-icon').forEach(function(el){
