@@ -4,32 +4,6 @@
     "rightLabel": "Innsbruck",
     "rows": [
       {
-        "instantUTC": "2026-11-12T02:50:00.000Z",
-        "datumLeft": "12.11.2026",
-        "zeitLeft": "03:50",
-        "wertLeft": 1003.6,
-        "datumRight": "12.11.2026",
-        "zeitRight": "04:00",
-        "wertRight": 1003.4,
-        "delta": 0.2,
-        "qnhLeft": 1003.3,
-        "qnhRight": 1002.8,
-        "deltaQnh": 0.5
-      },
-      {
-        "instantUTC": "2026-11-12T03:00:00.000Z",
-        "datumLeft": "12.11.2026",
-        "zeitLeft": "04:00",
-        "wertLeft": 1003.6,
-        "datumRight": "12.11.2026",
-        "zeitRight": "04:10",
-        "wertRight": 1003.4,
-        "delta": 0.2,
-        "qnhLeft": 1003.3,
-        "qnhRight": 1002.8,
-        "deltaQnh": 0.5
-      },
-      {
         "instantUTC": "2026-11-12T03:10:00.000Z",
         "datumLeft": "12.11.2026",
         "zeitLeft": "04:10",
@@ -1250,46 +1224,46 @@
         "qnhLeft": 992.8,
         "qnhRight": 994.2,
         "deltaQnh": -1.4
+      },
+      {
+        "instantUTC": "2026-11-12T18:50:00.000Z",
+        "datumLeft": "12.11.2026",
+        "zeitLeft": "19:50",
+        "wertLeft": 993,
+        "datumRight": "12.11.2026",
+        "zeitRight": "19:50",
+        "wertRight": 994.5,
+        "delta": -1.5,
+        "qnhLeft": 992.8,
+        "qnhRight": 994,
+        "deltaQnh": -1.2
+      },
+      {
+        "instantUTC": "2026-11-12T19:00:00.000Z",
+        "datumLeft": "12.11.2026",
+        "zeitLeft": "20:00",
+        "wertLeft": 992.9,
+        "datumRight": "12.11.2026",
+        "zeitRight": "20:10",
+        "wertRight": 994.7,
+        "delta": -1.8,
+        "qnhLeft": 992.7,
+        "qnhRight": 994.2,
+        "deltaQnh": -1.5
       }
     ],
     "qnhCheck": {
-      "instantUTC": "2026-11-12T18:40:00.000Z",
+      "instantUTC": "2026-11-12T19:00:00.000Z",
       "diffHpa": -0.05,
       "limitHpa": 0.3,
       "ok": true
     }
   },
-  "generatedAt": "12.11.2026, 20:06",
+  "generatedAt": "12.11.2026, 20:12",
   "eyrsLandeck": {
     "leftLabel": "Eyrs",
     "rightLabel": "Landeck",
     "rows": [
-      {
-        "instantUTC": "2026-11-12T02:50:00.000Z",
-        "datumLeft": "12.11.2026",
-        "zeitLeft": "03:50",
-        "wertLeft": 1005.2,
-        "datumRight": "12.11.2026",
-        "zeitRight": "04:00",
-        "wertRight": 1005.1,
-        "delta": 0.1,
-        "qnhLeft": 1003.9,
-        "qnhRight": 1003.4,
-        "deltaQnh": 0.5
-      },
-      {
-        "instantUTC": "2026-11-12T03:00:00.000Z",
-        "datumLeft": "12.11.2026",
-        "zeitLeft": "04:00",
-        "wertLeft": 1005.1,
-        "datumRight": "12.11.2026",
-        "zeitRight": "04:10",
-        "wertRight": 1005,
-        "delta": 0.1,
-        "qnhLeft": 1003.8,
-        "qnhRight": 1003.3,
-        "deltaQnh": 0.5
-      },
       {
         "instantUTC": "2026-11-12T03:10:00.000Z",
         "datumLeft": "12.11.2026",
@@ -2511,10 +2485,36 @@
         "qnhLeft": 994,
         "qnhRight": 994.3,
         "deltaQnh": -0.3
+      },
+      {
+        "instantUTC": "2026-11-12T18:50:00.000Z",
+        "datumLeft": "12.11.2026",
+        "zeitLeft": "19:50",
+        "wertLeft": 994.3,
+        "datumRight": "12.11.2026",
+        "zeitRight": "19:50",
+        "wertRight": 994.3,
+        "delta": 0,
+        "qnhLeft": 993.8,
+        "qnhRight": 994.1,
+        "deltaQnh": -0.3
+      },
+      {
+        "instantUTC": "2026-11-12T19:00:00.000Z",
+        "datumLeft": "12.11.2026",
+        "zeitLeft": "20:00",
+        "wertLeft": 994.3,
+        "datumRight": "12.11.2026",
+        "zeitRight": "20:00",
+        "wertRight": 994.5,
+        "delta": -0.2,
+        "qnhLeft": 993.8,
+        "qnhRight": 994.3,
+        "deltaQnh": -0.5
       }
     ],
     "qnhCheck": {
-      "instantUTC": "2026-11-12T18:40:00.000Z",
+      "instantUTC": "2026-11-12T19:00:00.000Z",
       "diffHpa": -0.03,
       "limitHpa": 0.3,
       "ok": true
