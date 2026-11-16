@@ -1259,24 +1259,11 @@
       "ok": true
     }
   },
-  "generatedAt": "16.11.2026, 15:46",
+  "generatedAt": "16.11.2026, 15:51",
   "eyrsLandeck": {
     "leftLabel": "Eyrs",
     "rightLabel": "Landeck",
     "rows": [
-      {
-        "instantUTC": "2026-11-15T22:40:00.000Z",
-        "datumLeft": "15.11.2026",
-        "zeitLeft": "23:40",
-        "wertLeft": 1019.9,
-        "datumRight": "15.11.2026",
-        "zeitRight": "23:50",
-        "wertRight": 1013.7,
-        "delta": 6.2,
-        "qnhLeft": 1015.6,
-        "qnhRight": 1012,
-        "deltaQnh": 3.6
-      },
       {
         "instantUTC": "2026-11-15T22:50:00.000Z",
         "datumLeft": "15.11.2026",
@@ -2511,10 +2498,23 @@
         "qnhLeft": 1010.1,
         "qnhRight": 1009.4,
         "deltaQnh": 0.7
+      },
+      {
+        "instantUTC": "2026-11-16T14:40:00.000Z",
+        "datumLeft": "16.11.2026",
+        "zeitLeft": "15:40",
+        "wertLeft": 1011.2,
+        "datumRight": "16.11.2026",
+        "zeitRight": "15:40",
+        "wertRight": 1009.3,
+        "delta": 1.9,
+        "qnhLeft": 1010.1,
+        "qnhRight": 1009.4,
+        "deltaQnh": 0.7
       }
     ],
     "qnhCheck": {
-      "instantUTC": "2026-11-16T14:30:00.000Z",
+      "instantUTC": "2026-11-16T14:40:00.000Z",
       "diffHpa": 0.01,
       "limitHpa": 0.3,
       "ok": true
