@@ -26746,12 +26746,6 @@
     "42830SF": {
       "rows": [
         {
-          "instantUTC": "2026-11-17T14:26:41.901Z",
-          "time": "15:26",
-          "avgKmh": null,
-          "gustKmh": null
-        },
-        {
           "instantUTC": "2026-11-17T14:32:08.392Z",
           "time": "15:32",
           "avgKmh": null,
@@ -26984,9 +26978,15 @@
           "time": "18:43",
           "avgKmh": null,
           "gustKmh": null
+        },
+        {
+          "instantUTC": "2026-11-17T17:46:53.042Z",
+          "time": "18:46",
+          "avgKmh": null,
+          "gustKmh": null
         }
       ],
-      "lastValueUTC": "2026-11-17T17:43:08.590Z"
+      "lastValueUTC": "2026-11-17T17:46:53.042Z"
     },
     "50400WS": {
       "rows": [
@@ -63554,6 +63554,15 @@
           "dirDeg": 229,
           "tempC": 5.6,
           "humidityPct": 74
+        },
+        {
+          "instantUTC": "2026-11-17T17:40:00.000Z",
+          "time": "18:40",
+          "avgKmh": 6.8,
+          "gustKmh": 13.3,
+          "dirDeg": 226,
+          "tempC": 5.8,
+          "humidityPct": 73
         }
       ],
       "meta": {
@@ -63567,8 +63576,8 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-17T17:30:00.000Z"
+      "lastValueUTC": "2026-11-17T17:40:00.000Z"
     }
   },
-  "generatedAt": "17.11.2026, 18:43"
+  "generatedAt": "17.11.2026, 18:46"
 }
