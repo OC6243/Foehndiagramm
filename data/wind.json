@@ -26746,12 +26746,6 @@
     "42830SF": {
       "rows": [
         {
-          "instantUTC": "2026-11-17T20:41:47.072Z",
-          "time": "21:41",
-          "avgKmh": null,
-          "gustKmh": null
-        },
-        {
           "instantUTC": "2026-11-17T20:46:59.531Z",
           "time": "21:46",
           "avgKmh": null,
@@ -26984,9 +26978,15 @@
           "time": "00:56",
           "avgKmh": null,
           "gustKmh": null
+        },
+        {
+          "instantUTC": "2026-11-18T00:00:27.320Z",
+          "time": "01:00",
+          "avgKmh": null,
+          "gustKmh": null
         }
       ],
-      "lastValueUTC": "2026-11-17T23:56:39.482Z"
+      "lastValueUTC": "2026-11-18T00:00:27.320Z"
     },
     "50400WS": {
       "rows": [
@@ -33313,6 +33313,15 @@
           "dirDeg": 193,
           "tempC": 1.8,
           "humidityPct": 90.8
+        },
+        {
+          "instantUTC": "2026-11-17T23:50:00.000Z",
+          "time": "00:50",
+          "avgKmh": 1.8,
+          "gustKmh": 4,
+          "dirDeg": 224,
+          "tempC": 1.4,
+          "humidityPct": 92.7
         }
       ],
       "meta": {
@@ -33326,7 +33335,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-17T23:40:00.000Z"
+      "lastValueUTC": "2026-11-17T23:50:00.000Z"
     },
     "MCH_BUF": {
       "rows": [
@@ -33680,6 +33689,15 @@
           "dirDeg": 123,
           "tempC": -1.1,
           "humidityPct": 97.1
+        },
+        {
+          "instantUTC": "2026-11-17T23:50:00.000Z",
+          "time": "00:50",
+          "avgKmh": 2.5,
+          "gustKmh": 5,
+          "dirDeg": 123,
+          "tempC": -1.1,
+          "humidityPct": 97
         }
       ],
       "meta": {
@@ -33693,7 +33711,7 @@
         "intervalMin": 10,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-17T23:40:00.000Z"
+      "lastValueUTC": "2026-11-17T23:50:00.000Z"
     },
     "SLF_VSC1": {
       "rows": [
@@ -34696,6 +34714,15 @@
           "dirDeg": 46,
           "tempC": 0.2,
           "humidityPct": 100
+        },
+        {
+          "instantUTC": "2026-11-17T23:50:00.000Z",
+          "time": "00:50",
+          "avgKmh": 2.9,
+          "gustKmh": 4.7,
+          "dirDeg": 63,
+          "tempC": 0.2,
+          "humidityPct": 100
         }
       ],
       "meta": {
@@ -34709,7 +34736,7 @@
         "intervalMin": 10,
         "type": "tal"
       },
-      "lastValueUTC": "2026-11-17T23:40:00.000Z"
+      "lastValueUTC": "2026-11-17T23:50:00.000Z"
     },
     "TN_T0065": {
       "rows": [
@@ -35313,6 +35340,15 @@
           "dirDeg": 238,
           "tempC": 1.6,
           "humidityPct": 56.1
+        },
+        {
+          "instantUTC": "2026-11-17T23:50:00.000Z",
+          "time": "00:50",
+          "avgKmh": 36,
+          "gustKmh": 48.6,
+          "dirDeg": 239,
+          "tempC": 1.5,
+          "humidityPct": 53.5
         }
       ],
       "meta": {
@@ -35326,7 +35362,7 @@
         "intervalMin": 10,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-17T23:40:00.000Z"
+      "lastValueUTC": "2026-11-17T23:50:00.000Z"
     },
     "SLF_LAV1": {
       "rows": [
@@ -62976,5 +63012,5 @@
       "lastValueUTC": "2026-11-17T23:50:00.000Z"
     }
   },
-  "generatedAt": "18.11.2026, 00:56"
+  "generatedAt": "18.11.2026, 01:00"
 }
