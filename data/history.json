@@ -4,19 +4,6 @@
     "rightLabel": "Innsbruck",
     "rows": [
       {
-        "instantUTC": "2026-11-25T22:30:00.000Z",
-        "datumLeft": "25.11.2026",
-        "zeitLeft": "23:30",
-        "wertLeft": 1012.3,
-        "datumRight": "25.11.2026",
-        "zeitRight": "23:40",
-        "wertRight": 1013.4,
-        "delta": -1.1,
-        "qnhLeft": 1011.4,
-        "qnhRight": 1011.2,
-        "deltaQnh": 0.2
-      },
-      {
         "instantUTC": "2026-11-25T22:40:00.000Z",
         "datumLeft": "25.11.2026",
         "zeitLeft": "23:40",
@@ -1250,33 +1237,33 @@
         "qnhLeft": 1005.8,
         "qnhRight": 1011.8,
         "deltaQnh": -6
+      },
+      {
+        "instantUTC": "2026-11-26T14:30:00.000Z",
+        "datumLeft": "26.11.2026",
+        "zeitLeft": "15:30",
+        "wertLeft": 1006.5,
+        "datumRight": "26.11.2026",
+        "zeitRight": "15:40",
+        "wertRight": 1014.9,
+        "delta": -8.4,
+        "qnhLeft": 1005.9,
+        "qnhRight": 1012,
+        "deltaQnh": -6.1
       }
     ],
     "qnhCheck": {
-      "instantUTC": "2026-11-26T14:20:00.000Z",
-      "diffHpa": -0.01,
+      "instantUTC": "2026-11-26T14:30:00.000Z",
+      "diffHpa": 0.01,
       "limitHpa": 0.3,
       "ok": true
     }
   },
-  "generatedAt": "26.11.2026, 15:36",
+  "generatedAt": "26.11.2026, 15:41",
   "eyrsLandeck": {
     "leftLabel": "Eyrs",
     "rightLabel": "Landeck",
     "rows": [
-      {
-        "instantUTC": "2026-11-25T22:30:00.000Z",
-        "datumLeft": "25.11.2026",
-        "zeitLeft": "23:30",
-        "wertLeft": 1013.4,
-        "datumRight": "25.11.2026",
-        "zeitRight": "23:40",
-        "wertRight": 1012.4,
-        "delta": 1,
-        "qnhLeft": 1010.3,
-        "qnhRight": 1010.2,
-        "deltaQnh": 0.1
-      },
       {
         "instantUTC": "2026-11-25T22:40:00.000Z",
         "datumLeft": "25.11.2026",
@@ -2511,10 +2498,23 @@
         "qnhLeft": 1005.3,
         "qnhRight": 1010.6,
         "deltaQnh": -5.3
+      },
+      {
+        "instantUTC": "2026-11-26T14:30:00.000Z",
+        "datumLeft": "26.11.2026",
+        "zeitLeft": "15:30",
+        "wertLeft": 1007.9,
+        "datumRight": "26.11.2026",
+        "zeitRight": "15:30",
+        "wertRight": 1014.2,
+        "delta": -6.3,
+        "qnhLeft": 1005.4,
+        "qnhRight": 1010.6,
+        "deltaQnh": -5.2
       }
     ],
     "qnhCheck": {
-      "instantUTC": "2026-11-26T14:20:00.000Z",
+      "instantUTC": "2026-11-26T14:30:00.000Z",
       "diffHpa": -0.05,
       "limitHpa": 0.3,
       "ok": true
