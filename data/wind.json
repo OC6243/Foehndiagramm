@@ -29203,12 +29203,6 @@
     "42830SF": {
       "rows": [
         {
-          "instantUTC": "2026-11-26T09:32:13.540Z",
-          "time": "10:32",
-          "avgKmh": null,
-          "gustKmh": null
-        },
-        {
           "instantUTC": "2026-11-26T09:36:45.416Z",
           "time": "10:36",
           "avgKmh": null,
@@ -29441,9 +29435,15 @@
           "time": "13:46",
           "avgKmh": null,
           "gustKmh": null
+        },
+        {
+          "instantUTC": "2026-11-26T12:48:38.481Z",
+          "time": "13:48",
+          "avgKmh": null,
+          "gustKmh": null
         }
       ],
-      "lastValueUTC": "2026-11-26T12:46:50.802Z"
+      "lastValueUTC": "2026-11-26T12:48:38.481Z"
     },
     "50400WS": {
       "rows": [
@@ -36137,6 +36137,15 @@
           "dirDeg": 315,
           "tempC": -2.4,
           "humidityPct": 87
+        },
+        {
+          "instantUTC": "2026-11-26T12:40:00.000Z",
+          "time": "13:40",
+          "avgKmh": 10.8,
+          "gustKmh": 23,
+          "dirDeg": 315,
+          "tempC": -2.5,
+          "humidityPct": 87.6
         }
       ],
       "meta": {
@@ -36150,7 +36159,7 @@
         "intervalMin": 10,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-26T12:30:00.000Z"
+      "lastValueUTC": "2026-11-26T12:40:00.000Z"
     },
     "SLF_VSC1": {
       "rows": [
@@ -37770,6 +37779,15 @@
           "dirDeg": 100,
           "tempC": -5.7,
           "humidityPct": 96.3
+        },
+        {
+          "instantUTC": "2026-11-26T12:40:00.000Z",
+          "time": "13:40",
+          "avgKmh": 2.5,
+          "gustKmh": 4.7,
+          "dirDeg": 173,
+          "tempC": -5.6,
+          "humidityPct": 96
         }
       ],
       "meta": {
@@ -37783,7 +37801,7 @@
         "intervalMin": 10,
         "type": "berg"
       },
-      "lastValueUTC": "2026-11-26T12:30:00.000Z"
+      "lastValueUTC": "2026-11-26T12:40:00.000Z"
     },
     "SLF_LAV1": {
       "rows": [
@@ -65334,5 +65352,5 @@
       "lastValueUTC": "2026-11-26T12:40:00.000Z"
     }
   },
-  "generatedAt": "26.11.2026, 13:46"
+  "generatedAt": "26.11.2026, 13:48"
 }
