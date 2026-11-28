@@ -7,11 +7,12 @@ ins Repository, die Seite liest diese Dateien direkt.
 
 ## Seiten
 
-- **Föhndiagramm** – Luftdruckdifferenz Bozen ↔ Innsbruck (mit Föhn-Schwellen) und Eyrs ↔ Landeck (ohne Schwellen), jeweils wahlweise als QNH oder QFF
+- **Föhndiagramm** – Luftdruckdifferenz Bozen ↔ Innsbruck (mit Föhn-Schwellen) und Eyrs ↔ Landeck (ohne Schwellen), jeweils wahlweise als QNH oder QFF. Zusätzlich wählbar: Bruneck ↔ Jenbach und Bruneck ↔ Lienz (ohne Schwellen)
 - **Live-Karte** – Wind an rund 190 Stationen (Pfeil, Ø-Wind, Böen, Verlauf, Detailansicht)
 - **Ausgewählte Stationen** – Auswahl der wichtigsten Startplätze und Stationen
 - **Föhnprognose**
 - **Live-Tracking** – Links zu XContest und Burnair
+- **Einstellungen** – *Konfigurieren* (Stationspaare, Startansicht der Karte, Auswahl und Reihenfolge der „Ausgewählten Stationen“, Konfiguration herunterladen und hochladen) und *Zoomstufe* (3 Schriftgrößen)
 
 ## Aufbau
 
@@ -25,6 +26,10 @@ ins Repository, die Seite liest diese Dateien direkt.
 | `manifest.json`, `icon-*.png`, `favicon.ico`, `splash-paraglider.png` | App-Installation auf dem Startbildschirm (PWA) |
 | `logo.png`, `logo-flieger.png`, `logo-xcontest.png`, `logo-burnair.png` | Bilder der Seite |
 | `CNAME` | Eigene Domain (tolwind.bz.it) für GitHub Pages |
+
+### Einstellungen der Besucher
+
+Alle Einstellungen werden ausschließlich im Browser des Besuchers gespeichert (Local Storage, Schlüssel `tolwind-config-v1`), nicht auf dem Server. Standard ist die bisherige Ansicht. Beim ersten Besuch erscheint ein Hinweisfeld (keine Cookies, lokale Speicherung), das sich mit „Nicht mehr anzeigen“ dauerhaft ausblenden lässt. Die Datenschutz-Erklärung im Impressum nennt den lokalen Speicher ebenfalls.
 
 **Wichtig:** Der Ordner `data/` wird von der Action laufend überschrieben. Beim
 Einspielen einer neuen `index.html` diesen Ordner nicht anfassen.
@@ -77,8 +82,10 @@ stehen, bis ein neuer eingetragen ist.
 
 - **Schwellenwerte „Föhn möglich":** `TABLE_PRE`, `TABLE_SOFT`, `TABLE_HARD` sowie
   `CHART_LINE_SOFT`, `CHART_LINE_HARD` in `index.html`.
-- **Vorzeichen der Druckdifferenz:** Süden minus Norden (Bozen − Innsbruck,
-  Eyrs − Landeck); siehe Kommentare in `scripts/fetch-weather.mjs`.
+- **Vorzeichen der Druckdifferenz:** Süden minus Norden bzw. Westen minus Osten (Bozen − Innsbruck,
+  Eyrs − Landeck, Bruneck − Jenbach, Bruneck − Lienz); siehe Kommentare in `scripts/fetch-weather.mjs`.
+- **Stationspaare:** Berechnung in `PAIRS` (`scripts/fetch-weather.mjs`), Auswahlliste der Seite in `PAIR_CATALOG` (`index.html`). Bei Jenbach und Lienz wird die GeoSphere-Stations-ID beim Lauf über die Metadaten gesucht (Name und Höhe); im Log steht die gefundene ID. Sie lässt sich bei Bedarf als `id` fest eintragen.
+- **Zoomstufen:** Faktoren 1 / 1,15 / 1,3 (`ZOOM_LEVELS` und die Variable `--fs` in `index.html`).
 - **QNH und QFF:** QFF ist der reduzierte Druck der Quellen (`LD.RED` beim Bürgernetz, `PRED` bei GeoSphere). QNH wird daraus mit Temperatur und Luftfeuchte berechnet (`qnhFromReduced` in `scripts/fetch-weather.mjs`). Die Reduktionshöhen der Stationen stehen in `PAIRS` (GeoSphere: Höhen laut ZAMG-Tabelle, z. B. Landeck 809 m, Innsbruck-Flughafen 585 m). Bei GeoSphere wird QNH zusätzlich aus dem Stationsdruck `P` gegengerechnet. Weicht es um mehr als 0,3 hPa ab, steht eine Warnung im Log der Action (und `qnhCheck` in `data/history.json`).
 - **Länge des Verlaufs:** `MAX_ROWS` (Föhndiagramm, 96 Werte = 16 Stunden) und
   `MAX_WIND_ROWS` (Windkarte, 40 Werte, rund 6,5 Stunden) in `scripts/fetch-weather.mjs`.
