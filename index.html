@@ -20,6 +20,10 @@
 <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=2">
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#E9EDEC">
+<script>
+  /* Gespeicherte Zoomstufe vor dem ersten Zeichnen setzen (kein Springen der Größe) */
+  (function(){ try { var c = JSON.parse(localStorage.getItem("tolwind-config-v1") || "{}"); var z = parseInt(c && c.zoomLevel, 10); if (z === 2 || z === 3) document.documentElement.setAttribute("data-zs", String(z)); } catch (e) { /* ignorieren */ } })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -41,7 +45,10 @@
 
     --line-primary:#1C2B3A;
     --line-secondary:#B9C2C0;
+    --fs:1; /* Schriftfaktor der Zoomstufe (1 / 1.15 / 1.3) */
   }
+  html[data-zs="2"]{ --fs:1.15; }
+  html[data-zs="3"]{ --fs:1.3; }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
@@ -79,7 +86,7 @@
   .menu-item{
     display:block; width:100%; text-align:left;
     padding:10px 12px; border-radius:8px;
-    font-family:'IBM Plex Sans', sans-serif; font-size:14px; color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif; font-size:calc(14px * var(--fs)); color:var(--ink);
     background:none; border:none; cursor:pointer;
   }
   .menu-item + .menu-item{ margin-top:2px; }
@@ -88,7 +95,7 @@
   .title-row img.logo{ width:51px; height:56px; object-fit:contain; flex-shrink:0; }
   .eyebrow{
     font-family:'IBM Plex Mono', monospace;
-    font-size:12px;
+    font-size:calc(12px * var(--fs));
     letter-spacing:.12em;
     text-transform:uppercase;
     color:var(--cool);
@@ -138,11 +145,11 @@
   }
   .impressum-link{
     background:none; border:none; cursor:pointer; padding:4px 8px;
-    font-family:'IBM Plex Sans', sans-serif; font-size:12px; color:var(--muted);
+    font-family:'IBM Plex Sans', sans-serif; font-size:calc(12px * var(--fs)); color:var(--muted);
     text-decoration:underline; text-underline-offset:2px; opacity:0.75;
   }
   .impressum-link:hover{ opacity:1; color:var(--ink); }
-  .footer-dot{ color:var(--muted); opacity:0.6; margin:0 2px; font-size:12px; }
+  .footer-dot{ color:var(--muted); opacity:0.6; margin:0 2px; font-size:calc(12px * var(--fs)); }
 
   .impressum-overlay{
     display:none; position:fixed; inset:0; background:rgba(28,43,58,0.45);
@@ -154,12 +161,12 @@
     position:relative; background:var(--panel); border-radius:14px;
     max-width:640px; width:100%; padding:32px 28px 28px;
     box-shadow:0 10px 40px rgba(0,0,0,0.25);
-    font-family:'IBM Plex Sans', sans-serif; font-size:14px; line-height:1.6; color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif; font-size:calc(14px * var(--fs)); line-height:1.6; color:var(--ink);
   }
-  .impressum-box h2{ margin:0 0 4px; font-size:22px; }
-  .impressum-box h3{ margin:20px 0 4px; font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .impressum-box h2{ margin:0 0 4px; font-size:calc(22px * var(--fs)); }
+  .impressum-box h3{ margin:20px 0 4px; font-size:calc(14px * var(--fs)); color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
   .impressum-box p{ margin:4px 0; }
-  .impressum-note{ font-size:12px; color:#C1443C; font-style:italic; }
+  .impressum-note{ font-size:calc(12px * var(--fs)); color:#C1443C; font-style:italic; }
   .impressum-block{ margin-top:10px; }
   .impressum-block-title{ font-weight:700; margin:0 0 2px; }
   .impressum-emphasis{
@@ -173,7 +180,7 @@
   .impressum-close{
     position:absolute; top:14px; right:14px; width:32px; height:32px;
     border-radius:50%; border:1px solid var(--hairline); background:var(--paper);
-    font-size:20px; line-height:1; cursor:pointer; color:var(--muted);
+    font-size:calc(20px * var(--fs)); line-height:1; cursor:pointer; color:var(--muted);
   }
   .impressum-close:hover{ color:var(--ink); }
 
@@ -188,7 +195,7 @@
   .paypal-row{ display:flex; flex-direction:column; gap:10px; margin-top:16px; max-width:260px; }
   .paypal-button{
     display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%;
-    background:#0070BA; color:#fff; font-weight:700; font-size:14.5px;
+    background:#0070BA; color:#fff; font-weight:700; font-size:calc(14.5px * var(--fs));
     padding:11px 20px; border-radius:24px; text-decoration:none; box-sizing:border-box;
     font-family:'IBM Plex Sans', sans-serif; transition:background .15s ease;
   }
@@ -208,7 +215,7 @@
   }
 
   .legend-note{
-    font-size:12.5px; color:var(--muted); margin-top:10px;
+    font-size:calc(12.5px * var(--fs)); color:var(--muted); margin-top:10px;
     display:flex; flex-wrap:wrap; gap:16px; align-items:center;
   }
   .legend-note span{display:inline-flex; align-items:center; gap:6px;}
@@ -223,8 +230,8 @@
   }
   .table-summary::-webkit-details-marker{ display:none; }
   .table-summary:hover{ background:#EBEEED; }
-  .table-summary-title{ font-weight:600; font-size:14px; color:var(--ink); display:block; }
-  .table-summary-sub{ font-size:12.5px; color:var(--cool); font-weight:600; display:block; margin-top:2px; }
+  .table-summary-title{ font-weight:600; font-size:calc(14px * var(--fs)); color:var(--ink); display:block; }
+  .table-summary-sub{ font-size:calc(12.5px * var(--fs)); color:var(--cool); font-weight:600; display:block; margin-top:2px; }
   .table-collapse:not([open]) .when-open{ display:none; }
   .table-collapse[open] .when-closed{ display:none; }
   .table-collapse .legend-note{ margin-top:14px; }
@@ -234,21 +241,21 @@
     padding:16px 20px; margin-top:16px;
   }
   .global-desc p{
-    font-size:14px; line-height:1.65; color:#3A4750; max-width:80ch;
+    font-size:calc(14px * var(--fs)); line-height:1.65; color:#3A4750; max-width:80ch;
     white-space:pre-line; margin:0;
   }
   .global-desc details{ margin-top:8px; }
   .global-desc details p{ margin-top:8px; }
   .global-desc summary{
-    cursor:pointer; color:var(--cool); font-size:13.5px; font-weight:600;
+    cursor:pointer; color:var(--cool); font-size:calc(13.5px * var(--fs)); font-weight:600;
     list-style:none; display:inline-block;
   }
   .global-desc summary::-webkit-details-marker{ display:none; }
   .global-desc summary:hover{ text-decoration:underline; }
-  .global-desc summary::after{ content:'▾'; margin-left:5px; font-size:11px; }
+  .global-desc summary::after{ content:'▾'; margin-left:5px; font-size:calc(11px * var(--fs)); }
   .global-desc details[open] summary::after{ content:'▴'; }
   .global-desc .desc-attr{
-    font-size:12px; color:var(--muted); font-style:italic; margin-top:12px;
+    font-size:calc(12px * var(--fs)); color:var(--muted); font-style:italic; margin-top:12px;
   }
   .global-desc .desc-attr a{ color:var(--cool); }
 
@@ -267,14 +274,14 @@
   @media (prefers-reduced-motion:reduce){ .section{opacity:1;transform:none;animation:none;} }
 
   .section h2{
-    font-size:20px; margin:0 0 14px; font-weight:700;
+    font-size:calc(20px * var(--fs)); margin:0 0 14px; font-weight:700;
   }
 
   /* QNH/QFF-Umschalter oben rechts in der Diagramm-Kachel (liegt über der Titelzeile, verschiebt nichts) */
   .qq-ctl{ position:absolute; top:22px; right:24px; display:flex; align-items:center; gap:8px; z-index:5; }
   .qq-seg{ display:inline-flex; gap:4px; }
   .qq-btn{
-    font-family:'IBM Plex Sans', sans-serif; font-size:12px; font-weight:700; letter-spacing:.03em; line-height:1;
+    font-family:'IBM Plex Sans', sans-serif; font-size:calc(12px * var(--fs)); font-weight:700; letter-spacing:.03em; line-height:1;
     padding:6px 9px; border-radius:7px; cursor:pointer;
     border:1px solid var(--cool); background:rgba(62,110,142,0.12); color:var(--cool);
     transition:background .15s, color .15s, border-color .15s;
@@ -285,7 +292,7 @@
   .qq-info{
     width:22px; height:22px; border-radius:50%; padding:0; cursor:pointer;
     border:1px solid var(--hairline); background:var(--panel); color:var(--muted);
-    font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:13px; line-height:1;
+    font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:calc(13px * var(--fs)); line-height:1;
     display:inline-flex; align-items:center; justify-content:center;
   }
   .qq-info:hover, .qq-info[aria-expanded="true"]{ color:var(--cool); border-color:var(--cool); }
@@ -294,22 +301,22 @@
     width:min(340px, calc(100% - 48px));
     background:var(--panel); border:1px solid var(--hairline); border-radius:10px;
     box-shadow:0 8px 24px rgba(28,43,58,0.16); padding:12px 14px;
-    font-family:'IBM Plex Sans', sans-serif; font-weight:400; font-size:13px; line-height:1.55; color:#3A4750; text-align:left;
+    font-family:'IBM Plex Sans', sans-serif; font-weight:400; font-size:calc(13px * var(--fs)); line-height:1.55; color:#3A4750; text-align:left;
   }
   .qq-pop[hidden]{ display:none; }
   .qq-pop p{ margin:0 0 8px; }
   .qq-pop p:last-child{ margin-bottom:0; }
   .qq-pop b{ font-weight:700; color:var(--ink); }
-  .qq-pop .qq-note{ font-size:12px; color:var(--muted); }
+  .qq-pop .qq-note{ font-size:calc(12px * var(--fs)); color:var(--muted); }
   @media (max-width:420px){
     .qq-ctl{ gap:6px; }
     .qq-seg{ gap:3px; }
-    .qq-btn{ font-size:11px; padding:6px 6px; }
-    .qq-info{ width:20px; height:20px; font-size:12px; }
+    .qq-btn{ font-size:calc(11px * var(--fs)); padding:6px 6px; }
+    .qq-info{ width:20px; height:20px; font-size:calc(12px * var(--fs)); }
   }
   /* sehr schmale Handys: Titel etwas kleiner, damit er nie unter den Umschalter läuft */
-  @media (max-width:400px){ .section h2{ font-size:18px; } }
-  @media (max-width:340px){ .section h2{ font-size:16.5px; } }
+  @media (max-width:400px){ .section h2{ font-size:calc(18px * var(--fs)); } }
+  @media (max-width:340px){ .section h2{ font-size:calc(16.5px * var(--fs)); } }
 
   .empty-state{
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -320,8 +327,8 @@
   .empty-state-icon{
     width:56px; height:56px; margin-bottom:22px; color:var(--hairline);
   }
-  .empty-state h2{ margin:0 0 8px; font-size:19px; color:var(--ink); font-weight:700; }
-  .empty-state p{ margin:0; color:var(--muted); font-size:14px; max-width:38ch; line-height:1.6; }
+  .empty-state h2{ margin:0 0 8px; font-size:calc(19px * var(--fs)); color:var(--ink); font-weight:700; }
+  .empty-state p{ margin:0; color:var(--muted); font-size:calc(14px * var(--fs)); max-width:38ch; line-height:1.6; }
 
   #windMap{ height:644px; width:100%; border-radius:14px; background:#EEF1F0; }
   @media (max-width:600px){ #windMap{ height:483px; } }
@@ -347,30 +354,30 @@
 
   @keyframes compassBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.25; } }
   .compass-newest-blink{ animation:compassBlink 1s ease-in-out infinite; }
-  .wind-note{ font-size:12px; color:var(--muted); margin-top:10px; margin-bottom:0; line-height:1.6; }
+  .wind-note{ font-size:calc(12px * var(--fs)); color:var(--muted); margin-top:10px; margin-bottom:0; line-height:1.6; }
   .wind-note a{ color:var(--cool); }
   .wind-detail-panel{
     display:none; margin-top:16px; padding:16px 18px;
     background:#F7F8F8; border:1px solid var(--hairline); border-radius:12px;
   }
   .wind-detail-panel.open{ display:block; }
-  .wind-detail-panel h3{ margin:0 0 10px; font-size:16px; }
+  .wind-detail-panel h3{ margin:0 0 10px; font-size:calc(16px * var(--fs)); }
   @keyframes staleTextBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.25; } }
-  .stale-warning-text{ color:#E5342A; font-weight:700; font-size:13px; animation:staleTextBlink 1s ease-in-out infinite; }
+  .stale-warning-text{ color:#E5342A; font-weight:700; font-size:calc(13px * var(--fs)); animation:staleTextBlink 1s ease-in-out infinite; }
   .stale-warning-block{ margin:-6px 0 12px; }
   @keyframes trafficBlink{ 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
   .update-traffic-dot{ display:inline-block; width:7.2px; height:7.2px; border-radius:50%; margin:0 6px; vertical-align:middle; animation:trafficBlink 1.1s ease-in-out infinite; }
   .wdg-date{ margin-left:8px; font-weight:400; color:var(--muted); }
   .wind-detail-grid{
     display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
-    gap:10px 18px; font-family:'IBM Plex Mono', monospace; font-size:13px;
+    gap:10px 18px; font-family:'IBM Plex Mono', monospace; font-size:calc(13px * var(--fs));
   }
   .wind-detail-grid .wdg-label{
-    font-family:'IBM Plex Sans', sans-serif; font-size:11px; line-height:14px; color:var(--muted);
+    font-family:'IBM Plex Sans', sans-serif; font-size:calc(11px * var(--fs)); line-height:14px; color:var(--muted);
     display:flex; flex-direction:column; justify-content:flex-end; min-height:28px; margin-bottom:2px;
   }
   .wdg-label-inner{ display:inline-flex; align-items:center; }
-  .station-elev-label{ font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted); margin-left:8px; }
+  .station-elev-label{ font-family:'IBM Plex Sans', sans-serif; font-size:calc(11px * var(--fs)); color:var(--muted); margin-left:8px; }
   .wind-detail-grid .wdg-value{ font-weight:700; color:var(--ink); }
 
   .wind-charts-row{
@@ -381,7 +388,7 @@
     border-radius:10px; padding:12px 14px; box-sizing:border-box; overflow:hidden;
   }
   .wind-chart-title{
-    font-family:'IBM Plex Sans', sans-serif; font-size:12px; font-weight:700;
+    font-family:'IBM Plex Sans', sans-serif; font-size:calc(12px * var(--fs)); font-weight:700;
     color:var(--muted); margin-bottom:8px;
   }
   .wind-compass-box{ display:flex; flex-direction:column; align-items:center; }
@@ -392,7 +399,7 @@
   #wind-compass-container, #wind-compass-container-sel{ width:100%; max-width:220px; min-width:130px; flex:1 1 150px; }
   .wind-compass-legend{
     display:flex; flex-direction:column; gap:4px; flex:1 1 110px; min-width:110px; max-width:220px;
-    font-family:'IBM Plex Sans', sans-serif; font-size:10.5px; color:var(--muted);
+    font-family:'IBM Plex Sans', sans-serif; font-size:calc(10.5px * var(--fs)); color:var(--muted);
   }
   .wind-compass-legend .wcl-row{ display:flex; align-items:center; gap:8px; }
   .wind-compass-legend .wcl-dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
@@ -410,7 +417,7 @@
   .lt-card:focus-visible{ box-shadow:0 0 0 3px rgba(62,110,142,0.35); }
   .lt-logo{ display:flex; align-items:center; justify-content:center; height:84px; width:100%; }
   .lt-logo img{ max-height:100%; max-width:80%; width:auto; height:auto; object-fit:contain; }
-  .lt-open{ font-size:14px; font-weight:600; color:var(--cool); display:inline-flex; align-items:center; gap:5px; }
+  .lt-open{ font-size:calc(14px * var(--fs)); font-weight:600; color:var(--cool); display:inline-flex; align-items:center; gap:5px; }
   .lt-arrow{ flex:none; display:block; }
   .foehn-forecast-card + .foehn-forecast-card{ margin-top:13px; }
   @media (min-width:900px){
@@ -453,13 +460,13 @@
   .selected-card .wind-detail-panel{ margin:14px -16px -12px; padding:14px 16px; border-top:1px solid var(--hairline); border-radius:0 0 12px 12px; }
   .ssc-header-col{ display:flex; flex-direction:column; margin-bottom:8px; position:relative; z-index:2; }
   .ssc-header{ display:flex; align-items:baseline; justify-content:space-between; }
-  .ssc-stale{ font-size:11px; margin-top:2px; }
-  .ssc-name{ font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:16px; color:var(--ink); }
-  .ssc-time{ display:inline-flex; align-items:center; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--muted); }
+  .ssc-stale{ font-size:calc(11px * var(--fs)); margin-top:2px; }
+  .ssc-name{ font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:calc(16px * var(--fs)); color:var(--ink); }
+  .ssc-time{ display:inline-flex; align-items:center; font-family:'IBM Plex Mono', monospace; font-size:calc(12px * var(--fs)); color:var(--muted); }
   .ssc-body{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .ssc-values{ display:flex; gap:22px; }
-  .ssc-values .ssc-label{ display:block; font-family:'IBM Plex Sans', sans-serif; font-size:11px; color:var(--muted); margin-bottom:1px; }
-  .ssc-values .ssc-value{ font-family:'IBM Plex Mono', monospace; font-size:24px; font-weight:700; color:var(--ink); line-height:1; }
+  .ssc-values .ssc-label{ display:block; font-family:'IBM Plex Sans', sans-serif; font-size:calc(11px * var(--fs)); color:var(--muted); margin-bottom:1px; }
+  .ssc-values .ssc-value{ font-family:'IBM Plex Mono', monospace; font-size:calc(24px * var(--fs)); font-weight:700; color:var(--ink); line-height:1; }
   .ssc-values .ssc-value.ssc-gust{ color:#C1443C; }
   .ssc-sock{ flex:0 0 auto; width:80px; height:60px; position:relative; }
 
@@ -478,7 +485,7 @@
   table{
     border-collapse:collapse;
     width:100%;
-    font-size:12px;
+    font-size:calc(12px * var(--fs));
     font-family:'IBM Plex Mono', monospace;
   }
   thead tr.group th{
@@ -488,7 +495,7 @@
     border-bottom:1px solid var(--hairline);
     padding:0 7px;
     font-weight:700; text-align:left;
-    font-size:11.5px; letter-spacing:.03em; text-transform:uppercase;
+    font-size:calc(11.5px * var(--fs)); letter-spacing:.03em; text-transform:uppercase;
     font-family:'IBM Plex Sans', sans-serif;
   }
   thead tr.sub th{
@@ -510,7 +517,7 @@
   tbody tr:hover td{ background:#F5F7F6; }
   td.delta-cell{ font-weight:700; }
   .hint-text{
-    font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:10.5px;
+    font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:calc(10.5px * var(--fs));
   }
 
   /* Δ-Stufen: die Delta-Zelle bekommt die volle Farbe, der Rest der Zeile ist
@@ -557,12 +564,12 @@
   .badge-blink-red{ --blink-c:#E5342A; --blink-c-soft:rgba(229,52,42,0.3); animation:badgeBorderBlink 1.1s ease-in-out infinite; }
   .cvb-label{
     font-family:'IBM Plex Sans', sans-serif;
-    font-size:9.5px; text-transform:uppercase; letter-spacing:.05em;
+    font-size:calc(9.5px * var(--fs)); text-transform:uppercase; letter-spacing:.05em;
     color:var(--muted); display:block;
   }
   .cvb-time{
     font-family:'IBM Plex Mono', monospace;
-    font-size:12.5px; font-weight:600; color:var(--ink); margin-top:1px;
+    font-size:calc(12.5px * var(--fs)); font-weight:600; color:var(--ink); margin-top:1px;
     display:flex; align-items:center; justify-content:flex-end;
   }
   .cvb-delta-row{
@@ -570,31 +577,31 @@
   }
   .cvb-delta{
     font-family:'IBM Plex Mono', monospace;
-    font-size:19px; font-weight:700; color:var(--ink);
+    font-size:calc(19px * var(--fs)); font-weight:700; color:var(--ink);
   }
   .cvb-delta.warn{ color:var(--cool); }
   .cvb-delta.alert{ color:var(--alert); }
-  .cvb-unit{ font-family:'IBM Plex Sans', sans-serif; font-size:10.5px; color:var(--muted); }
+  .cvb-unit{ font-family:'IBM Plex Sans', sans-serif; font-size:calc(10.5px * var(--fs)); color:var(--muted); }
   .cvb-bang{
-    color:var(--alert); font-weight:800; font-size:14px;
+    color:var(--alert); font-weight:800; font-size:calc(14px * var(--fs));
     animation:bangBlink 1s steps(1,end) infinite;
   }
   @keyframes bangBlink{ 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
   @media (prefers-reduced-motion:reduce){ .cvb-bang{ animation:none; } }
 
   .zoom-hint{
-    font-size:11px; color:var(--muted); text-align:right; margin-top:4px;
+    font-size:calc(11px * var(--fs)); color:var(--muted); text-align:right; margin-top:4px;
     font-family:'IBM Plex Mono', monospace;
   }
   .zoom-reset{
-    font-size:11px; color:var(--cool); background:none; border:1px solid var(--hairline);
+    font-size:calc(11px * var(--fs)); color:var(--cool); background:none; border:1px solid var(--hairline);
     border-radius:6px; padding:2px 8px; cursor:pointer; font-family:'IBM Plex Sans', sans-serif;
   }
   .zoom-reset:hover{ background:#F1F3F2; }
 
   .sources{
     margin-top:28px; padding-top:14px; border-top:1px solid var(--hairline);
-    font-size:12.5px; color:var(--muted); line-height:1.8;
+    font-size:calc(12.5px * var(--fs)); color:var(--muted); line-height:1.8;
   }
   .sources a{ color:var(--cool); }
 
@@ -604,23 +611,179 @@
   .src-more summary::-webkit-details-marker{ display:none; }
   .src-more .src-toggle{ color:var(--cool); font-weight:600; margin-left:4px; }
   .src-more summary:hover .src-toggle{ text-decoration:underline; }
-  .src-more .src-toggle::after{ content:'▾'; margin-left:5px; font-size:11px; }
+  .src-more .src-toggle::after{ content:'▾'; margin-left:5px; font-size:calc(11px * var(--fs)); }
   .src-more[open] .src-toggle::after{ content:'▴'; }
   .src-more:not([open]) .when-open{ display:none; }
   .src-more[open] .when-closed{ display:none; }
   .src-more > .src-more-body{ margin-top:4px; }
 
   /* Detailansicht: Definition von Mittelwind und Böe */
-  .wind-def{ margin-top:12px; font-size:12px; line-height:1.6; color:var(--muted); }
+  .wind-def{ margin-top:12px; font-size:calc(12px * var(--fs)); line-height:1.6; color:var(--muted); }
   .wind-def-title{ font-weight:600; margin-bottom:1px; color:var(--ink); }
 
   .page-foot{
-    text-align:center; color:var(--muted); font-size:12.5px;
+    text-align:center; color:var(--muted); font-size:calc(12.5px * var(--fs));
     margin-top:14px; font-family:'IBM Plex Mono', monospace;
   }
 
   .loading, .error{ text-align:center; padding:60px 20px; color:var(--muted); }
   .error{ color:var(--alert); }
+
+  /* ===== Einstellungen / Zoomstufen / Hinweisfeld ===== */
+  .menu-group-label{
+    margin-top:6px; padding:10px 12px 4px; border-top:1px solid var(--hairline);
+    font-family:'IBM Plex Mono', monospace; font-size:calc(11px * var(--fs)); letter-spacing:.12em;
+    text-transform:uppercase; color:var(--muted);
+  }
+  .menu-item.sub{ padding-left:26px; }
+
+  /* Größere Zoomstufen auf schmalen Bildschirmen: QNH/QFF-Umschalter über das Diagramm statt über den Titel */
+  @media (max-width:600px){
+    html[data-zs="2"] .qq-ctl, html[data-zs="3"] .qq-ctl{ position:static; justify-content:flex-end; margin:-4px 0 12px; }
+    html[data-zs="2"] .qq-pop, html[data-zs="3"] .qq-pop{ top:112px; }
+  }
+  .cfg-help{ margin:2px 0 14px; font-size:calc(13.5px * var(--fs)); line-height:1.55; color:var(--muted); }
+  .cfg-help b{ color:var(--ink); }
+  .cfg-actions{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+  .cfg-btn{
+    font-family:'IBM Plex Sans', sans-serif; font-size:calc(14px * var(--fs)); font-weight:600; line-height:1.2;
+    padding:11px 16px; border-radius:10px; cursor:pointer;
+    border:1px solid var(--hairline); background:var(--panel); color:var(--ink);
+  }
+  .cfg-btn:hover{ background:#F1F3F2; }
+  .cfg-btn:focus-visible, .op-trigger:focus-visible, .op-arr:focus-visible, .zs-opt:focus-visible{ outline:2px solid var(--cool); outline-offset:2px; }
+  .cfg-btn.primary{ border-color:var(--cool); background:rgba(62,110,142,0.12); color:var(--cool); }
+  .cfg-btn.primary:hover{ background:rgba(62,110,142,0.2); }
+  .cfg-btn.green{ background:#1F8A4C; border-color:#1F8A4C; color:#fff; }
+  .cfg-btn.green:hover{ background:#197241; }
+  .cfg-btn.danger{ color:var(--alert); border-color:#E3B7B3; }
+  .cfg-btn.danger.armed{ background:var(--alert); border-color:var(--alert); color:#fff; }
+  .cfg-status:empty{ display:none; }
+  .cfg-status{ margin:10px 0 0; font-size:calc(13px * var(--fs)); color:#1F8A4C; line-height:1.5; }
+  .cfg-status.err{ color:var(--alert); }
+  .cfg-alt{ margin-top:14px; font-size:calc(13px * var(--fs)); color:var(--muted); }
+  .cfg-alt summary{ cursor:pointer; color:var(--cool); font-weight:600; }
+  .cfg-alt textarea{
+    display:block; width:100%; margin-top:8px; min-height:120px; resize:vertical;
+    font-family:'IBM Plex Mono', monospace; font-size:12px; line-height:1.45; color:var(--ink);
+    border:1px solid var(--hairline); border-radius:8px; padding:10px; background:#F7F8F8;
+  }
+  #cfgMapHost #windMap{ height:460px; }
+  @media (max-width:600px){ #cfgMapHost #windMap{ height:380px; } }
+
+  /* Auswahlliste mit Suche, nummerierten Häkchen und Vorschau mit Verschiebe-Griff */
+  .op{ position:relative; }
+  .op-trigger{
+    width:100%; display:flex; align-items:center; gap:10px; text-align:left;
+    font-family:'IBM Plex Sans', sans-serif; font-size:calc(14.5px * var(--fs)); color:var(--ink);
+    padding:12px 14px; border:1px solid var(--hairline); border-radius:10px; background:var(--panel); cursor:pointer;
+  }
+  .op-trigger[aria-expanded="true"]{ border-color:var(--cool); }
+  .op-trigger::after{ content:'▾'; color:var(--muted); margin-left:2px; }
+  .op-trigger[aria-expanded="true"]::after{ content:'▴'; }
+  .op-count{ margin-left:auto; color:var(--cool); font-weight:600; font-size:calc(13px * var(--fs)); white-space:nowrap; }
+  .op-panel{
+    position:absolute; z-index:30; left:0; right:0; top:calc(100% + 6px);
+    background:var(--panel); border:1px solid var(--hairline); border-radius:12px;
+    box-shadow:0 10px 28px rgba(28,43,58,0.16); padding:10px;
+  }
+  .op-panel[hidden]{ display:none; }
+  .op-search{
+    width:100%; font-family:'IBM Plex Sans', sans-serif; font-size:16px; color:var(--ink);
+    padding:10px 12px; border:1px solid var(--hairline); border-radius:8px; margin-bottom:8px; background:#fff;
+  }
+  .op-list{ max-height:min(320px, 50vh); overflow-y:auto; overscroll-behavior:contain; }
+  .op-row{ display:flex; align-items:center; gap:12px; padding:8px; min-height:46px; border-radius:8px; cursor:pointer; }
+  .op-row:hover, .op-row:focus-visible{ background:#F1F3F2; outline:none; }
+  .op-row.on{ background:rgba(62,110,142,0.08); }
+  .op-box{
+    flex:0 0 auto; width:28px; height:28px; border-radius:7px; border:2px solid #B9C2C0; background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:14px; color:#fff;
+  }
+  .op-row.on .op-box{ background:var(--cool); border-color:var(--cool); }
+  .op-name{ font-size:calc(14.5px * var(--fs)); line-height:1.3; }
+  .op-sub{ margin-left:auto; padding-left:8px; font-size:calc(12px * var(--fs)); color:var(--muted); text-align:right; }
+  .op-empty{ padding:14px 8px; color:var(--muted); font-size:calc(13px * var(--fs)); }
+  .op-prev-title{ margin:18px 0 8px; font-size:calc(13px * var(--fs)); font-weight:600; color:var(--muted); }
+  .op-preview{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .op-item{
+    display:flex; align-items:center; gap:12px; padding:10px 8px 10px 12px;
+    border:1px solid var(--hairline); border-radius:12px; background:#F7F8F8;
+  }
+  .op-item.dragging{ background:#fff; border-color:var(--cool); box-shadow:0 6px 18px rgba(28,43,58,0.2); }
+  .op-num{
+    flex:0 0 auto; width:28px; height:28px; border-radius:50%; background:var(--cool); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:14px;
+  }
+  .op-body{ flex:1 1 auto; min-width:0; }
+  .op-title{ font-weight:700; font-size:calc(15px * var(--fs)); line-height:1.3; }
+  .op-meta{ margin-top:2px; font-size:calc(12.5px * var(--fs)); color:var(--muted); line-height:1.4; }
+  .op-ctl{ display:flex; align-items:center; gap:2px; flex:0 0 auto; }
+  .op-arrows{ display:flex; flex-direction:column; gap:3px; }
+  .op-arr{
+    width:34px; height:22px; padding:0; border:1px solid var(--hairline); border-radius:6px; background:#fff;
+    font-size:11px; line-height:1; color:var(--muted); cursor:pointer;
+  }
+  .op-arr:hover:not(:disabled){ color:var(--cool); border-color:var(--cool); }
+  .op-arr:disabled{ opacity:.35; cursor:default; }
+  .op-handle{
+    width:40px; height:48px; display:flex; align-items:center; justify-content:center;
+    touch-action:none; cursor:grab; color:#9AA3A0; border-radius:8px; user-select:none; -webkit-user-select:none;
+  }
+  .op-handle:hover{ color:var(--cool); background:#EBEEED; }
+  .op-item.dragging .op-handle{ cursor:grabbing; color:var(--cool); }
+
+  /* Zoomstufen */
+  .zs-options{ display:grid; gap:12px; }
+  .zs-opt{
+    width:100%; text-align:left; display:flex; align-items:center; gap:14px; padding:14px 16px;
+    border:2px solid var(--hairline); border-radius:12px; background:var(--panel); color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif; cursor:pointer;
+  }
+  .zs-opt[aria-checked="true"]{ border-color:var(--cool); background:rgba(62,110,142,0.08); }
+  .zs-radio{ flex:0 0 auto; width:22px; height:22px; border-radius:50%; border:2px solid #B9C2C0; position:relative; background:#fff; }
+  .zs-opt[aria-checked="true"] .zs-radio{ border-color:var(--cool); }
+  .zs-opt[aria-checked="true"] .zs-radio::after{ content:''; position:absolute; inset:4px; border-radius:50%; background:var(--cool); }
+  .zs-name{ font-weight:700; font-size:calc(16px * var(--fs)); }
+  .zs-hint{ font-size:calc(12.5px * var(--fs)); color:var(--muted); margin-top:1px; }
+  .zs-opt .zs-name, .zs-opt .zs-hint{ white-space:nowrap; }
+  @media (max-width:420px){ .zs-opt{ flex-wrap:wrap; row-gap:4px; } .zs-opt .zs-sample{ flex:1 1 100%; margin-left:36px; text-align:left; } }
+  .zs-sample{ margin-left:auto; text-align:right; white-space:nowrap; font-family:'IBM Plex Mono', monospace; font-weight:700; line-height:1.25; font-size:calc(13px * var(--zf)); }
+
+  /* Hinweisfeld (Cookies und lokale Einstellungen) */
+  .hint-banner{
+    position:fixed; z-index:8000; left:50%; bottom:calc(14px + env(safe-area-inset-bottom, 0px));
+    width:min(560px, calc(100% - 24px)); transform:translateX(-50%);
+    background:var(--panel); border:1px solid var(--hairline); border-left:5px solid var(--cool); border-radius:14px;
+    box-shadow:0 12px 36px rgba(28,43,58,0.22); padding:14px 16px 14px;
+    font-family:'IBM Plex Sans', sans-serif; color:var(--ink);
+    max-height:calc(100vh - 28px); overflow-y:auto;
+  }
+  .hint-banner[hidden]{ display:none; }
+  .hint-banner.show{ animation:hintUp .5s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes hintUp{ from{ opacity:0; transform:translate(-50%, 24px); } to{ opacity:1; transform:translate(-50%, 0); } }
+  @media (prefers-reduced-motion:reduce){ .hint-banner.show{ animation:none; } }
+  .hint-head{ display:flex; gap:12px; align-items:flex-start; }
+  .hint-logo{ width:42px; height:46px; object-fit:contain; flex:0 0 auto; background:var(--paper); border-radius:10px; padding:3px; }
+  .hint-title{ font-weight:700; font-size:calc(15px * var(--fs)); margin-bottom:2px; }
+  .hb-text p{ margin:0; font-size:calc(13.5px * var(--fs)); line-height:1.5; }
+  .hint-more{ margin-top:8px; font-size:calc(13px * var(--fs)); }
+  .hint-more summary{ cursor:pointer; color:var(--cool); font-weight:600; list-style:none; }
+  .hint-more summary::-webkit-details-marker{ display:none; }
+  .hint-more summary::after{ content:'▾'; margin-left:5px; font-size:11px; }
+  .hint-more[open] summary::after{ content:'▴'; }
+  .hint-more-body{ margin-top:6px; line-height:1.55; color:var(--muted); }
+  .hint-more-body p{ margin:6px 0 0; }
+  .hint-more-body b{ color:var(--ink); }
+  .hint-foot{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px; flex-wrap:wrap; }
+  .hint-check{ display:inline-flex; align-items:center; gap:8px; font-size:calc(13.5px * var(--fs)); cursor:pointer; }
+  .hint-check input{ width:18px; height:18px; accent-color:var(--cool); }
+  .hint-ok{
+    font-family:'IBM Plex Sans', sans-serif; font-size:calc(14px * var(--fs)); font-weight:700;
+    padding:10px 20px; border-radius:10px; border:1px solid var(--cool); background:var(--cool); color:#fff; cursor:pointer;
+  }
+  .hint-ok:hover{ background:#325B77; }
 </style>
 <script data-goatcounter="https://lossgeandigoas.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
@@ -642,6 +805,9 @@
             <button class="menu-item" data-page="selected">Ausgewählte Stationen</button>
             <button class="menu-item" data-page="foehnprognose">Föhnprognose</button>
             <button class="menu-item" data-page="livetracking">Live-Tracking</button>
+            <div class="menu-group-label">Einstellungen</div>
+            <button class="menu-item sub" data-page="settings">Konfigurieren</button>
+            <button class="menu-item sub" data-page="zoom">Zoomstufe</button>
           </div>
         </div>
       </div>
@@ -697,7 +863,7 @@
     <div id="page-selected" style="display:none;">
       <div class="section">
         <div class="selected-stations-grid" id="selectedStationsGrid"></div>
-        <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a></p>
+        <p class="wind-note">Quelle: <a href="https://wetter.provinz.bz.it/de/messungen" target="_blank" rel="noopener">Autonome Provinz Bozen - Südtirol</a> · Auswahl und Reihenfolge ändern unter Einstellungen → Konfigurieren.</p>
       </div>
     </div>
 
@@ -724,6 +890,68 @@
       <div class="section foehn-forecast-card">
         <div class="foehn-forecast-img-wrap"><img id="foehnImgWr" class="foehn-forecast-img" alt="Föhnprognose Wetterring - Druckdifferenz Bozen/Innsbruck"></div>
         <p class="wind-note">Quelle: <a href="https://wetterring.at/profiwetter/foehndiagramm-tirol" target="_blank" rel="noopener">Wetterring.at</a></p>
+      </div>
+    </div>
+
+    <div id="page-settings" style="display:none;">
+      <div class="section">
+        <h2>Föhndiagramm</h2>
+        <p class="cfg-help">Wähle, welche Stationspaare im Reiter <b>Föhndiagramm</b> angezeigt werden. Die Nummer zeigt die Reihenfolge. Standard sind Bozen – Innsbruck und Eyrs – Landeck. Schwellenwerte gibt es nur für Bozen – Innsbruck, bei den anderen Paaren sind sie noch nicht bekannt.</p>
+        <div id="cfgPairsPicker"></div>
+      </div>
+
+      <div class="section">
+        <h2>Live-Windwerte</h2>
+        <p class="cfg-help">Verschiebe die Karte und ändere bei Bedarf Zoomstufe oder Kartenart (Symbol oben rechts in der Karte). Mit dem grünen Knopf legst du die gezeigte Ansicht als <b>Startansicht</b> fest. Tipp auf eine freie Stelle zoomt heraus, Doppeltipp hinein.</p>
+        <div id="cfgMapHost"></div>
+        <div class="cfg-actions">
+          <button type="button" class="cfg-btn green" id="cfgMapSave">Als Startansicht festlegen</button>
+          <button type="button" class="cfg-btn" id="cfgMapReset">Standard wiederherstellen</button>
+        </div>
+        <p class="cfg-status" id="cfgMapStatus" aria-live="polite"></p>
+      </div>
+
+      <div class="section">
+        <h2>Ausgewählte Stationen</h2>
+        <p class="cfg-help">Wähle, welche Stationen im Reiter <b>Ausgewählte Stationen</b> erscheinen (Südtirol und Zusatzstationen). Die Nummer zeigt die Reihenfolge.</p>
+        <div id="cfgStationsPicker"></div>
+      </div>
+
+      <div class="section">
+        <h2>Konfiguration herunterladen</h2>
+        <p class="cfg-help">Speichert deine Einstellungen als Datei, z. B. um sie auf ein anderes Gerät zu übertragen.</p>
+        <div class="cfg-actions"><button type="button" class="cfg-btn primary" id="cfgDownload">Konfiguration herunterladen</button></div>
+        <p class="cfg-status" id="cfgDownloadStatus" aria-live="polite"></p>
+      </div>
+
+      <div class="section">
+        <h2>Konfiguration hochladen</h2>
+        <p class="cfg-help">Lädt eine zuvor heruntergeladene Konfiguration und ersetzt die aktuellen Einstellungen.</p>
+        <div class="cfg-actions">
+          <button type="button" class="cfg-btn primary" id="cfgUploadBtn">Konfiguration hochladen</button>
+          <input type="file" id="cfgFile" accept=".json,application/json" hidden>
+        </div>
+        <p class="cfg-status" id="cfgUploadStatus" aria-live="polite"></p>
+        <details class="cfg-alt" id="cfgAlt">
+          <summary>Alternative: als Text kopieren und einfügen</summary>
+          <textarea id="cfgText" spellcheck="false" aria-label="Konfiguration als Text"></textarea>
+          <div class="cfg-actions">
+            <button type="button" class="cfg-btn" id="cfgTextCopy">Text kopieren</button>
+            <button type="button" class="cfg-btn" id="cfgTextApply">Eingefügten Text übernehmen</button>
+          </div>
+          <p class="cfg-status" id="cfgTextStatus" aria-live="polite"></p>
+        </details>
+        <div class="cfg-actions" style="margin-top:18px;"><button type="button" class="cfg-btn danger" id="cfgResetAll">Alle Einstellungen zurücksetzen</button></div>
+        <p class="cfg-status" id="cfgResetStatus" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div id="page-zoom" style="display:none;">
+      <div class="section">
+        <h2>Zoomstufe</h2>
+        <p class="cfg-help">Wähle, wie groß Schrift und Symbole dargestellt werden. <b>Stufe 1</b> entspricht der bisherigen Darstellung, <b>Stufe 3</b> ist am größten und besonders gut lesbar.</p>
+        <div class="zs-options" id="zsOptions" role="radiogroup" aria-label="Zoomstufe"></div>
+        <p class="cfg-status" id="zsStatus" aria-live="polite"></p>
       </div>
     </div>
 
@@ -800,6 +1028,13 @@
         personenbezogenen Nutzerprofile erstellt. Weitere Informationen:
         <a href="https://www.goatcounter.com/help/privacy" target="_blank" rel="noopener">Datenschutzerklärung von GoatCounter</a>.
       </p>
+      <p>
+        Wenn du unter „Einstellungen“ etwas änderst (Stationspaare, ausgewählte Stationen, Startansicht der Karte,
+        Zoomstufe) oder den Hinweis zu Cookies und Einstellungen bestätigst, speichert dein Browser diese Angaben im
+        lokalen Speicher (Local Storage) auf deinem Gerät. Sie werden nicht an den Betreiber oder Dritte übertragen und
+        lassen sich unter Einstellungen → Konfigurieren oder in den Browserdaten jederzeit löschen. Der zuletzt geöffnete
+        Reiter wird bis zum Schließen des Browsers im Sitzungsspeicher (Session Storage) gemerkt.
+      </p>
     </div>
   </div>
 
@@ -831,6 +1066,29 @@
           <img class="paypal-qr" src="./paypal-qr.png" alt="PayPal QR-Code">
         </a>
       </div>
+    </div>
+  </div>
+
+  <div class="hint-banner" id="hintBanner" role="dialog" aria-labelledby="hintTitle" hidden>
+    <div class="hint-head">
+      <img class="hint-logo" src="./logo-flieger.png" alt="">
+      <div class="hb-text">
+        <div class="hint-title" id="hintTitle">Cookies &amp; Einstellungen</div>
+        <p>Diese Seite verwendet <b>keine Cookies</b>. Deine Einstellungen merkt sich nur dein Browser, auf diesem Gerät.</p>
+      </div>
+    </div>
+    <details class="hint-more">
+      <summary>Mehr erfahren…</summary>
+      <div class="hint-more-body">
+        <p><b>Keine Cookies:</b> Weder diese Seite noch die Reichweitenmessung setzen Cookies.</p>
+        <p><b>Lokaler Speicher:</b> Wenn du unter „Einstellungen“ etwas änderst (Stationspaare, ausgewählte Stationen, Startansicht der Karte, Zoomstufe) oder dieses Feld bestätigst, speichert dein Browser das auf deinem Gerät (Local Storage). Diese Angaben verlassen dein Gerät nicht und werden an niemanden übertragen. Du kannst sie unter Einstellungen → Konfigurieren zurücksetzen oder in den Browserdaten löschen.</p>
+        <p><b>Kurzzeitspeicher:</b> Der zuletzt geöffnete Reiter wird nur bis zum Schließen des Browsers gemerkt (Session Storage).</p>
+        <p><b>Reichweitenmessung:</b> GoatCounter, anonym, ohne Cookies und ohne Nutzerprofile.</p>
+      </div>
+    </details>
+    <div class="hint-foot">
+      <label class="hint-check"><input type="checkbox" id="hintHide" checked> Nicht mehr anzeigen</label>
+      <button type="button" class="hint-ok" id="hintOk">Verstanden</button>
     </div>
   </div>
 
@@ -867,12 +1125,533 @@
     };
   })();
 
+  /* ---------- Einstellungen (nur lokal im Browser gespeichert) ---------- */
+  var CFG_KEY = 'tolwind-config-v1';
+  var Cfg = (function(){
+    var data = {};
+    try {
+      var raw = localStorage.getItem(CFG_KEY);
+      if (raw) { var parsed = JSON.parse(raw); if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) data = parsed; }
+    } catch (e) { data = {}; }
+    function persist(){ try { localStorage.setItem(CFG_KEY, JSON.stringify(data)); return true; } catch (e) { return false; } }
+    return {
+      get: function(k, d){ return (data[k] === undefined || data[k] === null) ? d : data[k]; },
+      set: function(k, v){ data[k] = v; return persist(); },
+      remove: function(k){ delete data[k]; return persist(); },
+      clear: function(){ data = {}; try { localStorage.removeItem(CFG_KEY); } catch (e) { /* ignorieren */ } },
+      replace: function(obj){ data = obj; return persist(); }
+    };
+  })();
+
+  function hasOwn(o, k){ return Object.prototype.hasOwnProperty.call(o, k); }
+
+  // Stationspaare des Föhndiagramms (links = Süd/West, rechts = Nord/Ost; Differenz = links minus rechts).
+  var PAIR_CATALOG = {
+    bozenInnsbruck: { left: 'Bozen',   right: 'Innsbruck', thresholds: true,  note: 'mit Föhn-Schwellen' },
+    eyrsLandeck:    { left: 'Eyrs',    right: 'Landeck',   thresholds: false, note: 'ohne Schwellen' },
+    bruneckJenbach: { left: 'Bruneck', right: 'Jenbach',   thresholds: false, note: 'ohne Schwellen' },
+    bruneckLienz:   { left: 'Bruneck', right: 'Lienz',     thresholds: false, note: 'West–Ost, ohne Schwellen' }
+  };
+  var PAIR_KEYS_DEFAULT = ['bozenInnsbruck', 'eyrsLandeck'];
+  function getPairKeys(){
+    var v = Cfg.get('foehnPairs', null), out = [];
+    if (Array.isArray(v)) v.forEach(function(k){ if (typeof k === 'string' && hasOwn(PAIR_CATALOG, k) && out.indexOf(k) === -1) out.push(k); });
+    return out.length ? out : PAIR_KEYS_DEFAULT.slice();
+  }
+
+  // Ausgewählte Stationen
+  var STATION_CODES_DEFAULT = ['00700WS', '02200MS', '06040WS', '08200MS'];
+  function validStationCode(c){ return typeof c === 'string' && c.length > 0 && c.length <= 40 && /^[A-Za-z0-9_.\-]+$/.test(c); }
+  function getStationCodes(){
+    var v = Cfg.get('selectedStations', null);
+    if (Array.isArray(v)) {
+      var out = [];
+      v.forEach(function(c){ if (validStationCode(c) && out.indexOf(c) === -1) out.push(c); });
+      return out;
+    }
+    return STATION_CODES_DEFAULT.slice();
+  }
+
+  // Zoomstufe (Schrift- und Symbolgröße): 1 = bisherige Darstellung, 3 = am größten
+  var ZOOM_LEVELS = [
+    { n: 1, name: 'Stufe 1', hint: 'Standard',   f: 1 },
+    { n: 2, name: 'Stufe 2', hint: 'Größer',     f: 1.15 },
+    { n: 3, name: 'Stufe 3', hint: 'Am größten', f: 1.3 }
+  ];
+  function getZoomLevel(){ var z = parseInt(Cfg.get('zoomLevel', 1), 10); return (z === 2 || z === 3) ? z : 1; }
+  function zoomFactor(){ return ZOOM_LEVELS[getZoomLevel() - 1].f; }
+  function applyZoomLevel(n, save){
+    n = (n === 2 || n === 3) ? n : 1;
+    if (n === 1) document.documentElement.removeAttribute('data-zs'); else document.documentElement.setAttribute('data-zs', String(n));
+    var ok = true;
+    if (save !== false) ok = (n === 1) ? Cfg.remove('zoomLevel') : Cfg.set('zoomLevel', n);
+    if (lastData) render(lastData);
+    if (windMapInstance) updateIconScale();
+    window.dispatchEvent(new Event('resize'));
+    return ok;
+  }
+
+  // Kartenstartansicht
+  var MAP_LAYER_KEYS = ['osm', 'topo', 'sat'];
+  var mapBaseLayerKey = 'osm';
+  var mapLayerObjs = null;
+  function getMapView(){
+    var v = Cfg.get('mapView', null);
+    if (!v || typeof v !== 'object') return null;
+    var lat = Number(v.lat), lon = Number(v.lon), zoom = parseInt(v.zoom, 10);
+    if (!isFinite(lat) || !isFinite(lon) || lat < -85 || lat > 85 || lon < -180 || lon > 180 || !isFinite(zoom) || zoom < 3 || zoom > 18) return null;
+    return { lat: lat, lon: lon, zoom: zoom, layer: MAP_LAYER_KEYS.indexOf(v.layer) !== -1 ? v.layer : 'osm' };
+  }
+  function defaultMapView(){
+    return (window.innerWidth <= 600)
+      ? { lat: 46.657391, lon: 10.588955, zoom: 10, layer: 'osm' }   // Schluderns
+      : { lat: 46.670971, lon: 11.210294, zoom: 10, layer: 'osm' };  // Meran 2000 Talstation
+  }
+  function setBaseLayer(key){
+    if (!mapLayerObjs || !windMapInstance || !mapLayerObjs[key]) return;
+    MAP_LAYER_KEYS.forEach(function(k){ if (k !== key && windMapInstance.hasLayer(mapLayerObjs[k])) windMapInstance.removeLayer(mapLayerObjs[k]); });
+    if (!windMapInstance.hasLayer(mapLayerObjs[key])) mapLayerObjs[key].addTo(windMapInstance);
+    mapBaseLayerKey = key;
+  }
+
+  // Stationskatalog (Südtirol + Zusatzstationen aus data/wind.json)
+  function loadWindPayload(){
+    return fetch('./data/wind.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.json() : { stations: {} }; })
+      .catch(function(){ return { stations: {} }; });
+  }
+  function buildStationCatalog(stations){
+    stations = stations || {};
+    var byCode = {}, list = [];
+    ALL_STATIONS.forEach(function(s){ byCode[s.code] = s; });
+    Object.keys(stations).forEach(function(key){
+      var e = stations[key];
+      if (byCode[key] || !e || !e.meta) return;
+      var m = e.meta;
+      if (typeof m.lat !== 'number' || typeof m.lon !== 'number') return;
+      var elev = (typeof m.elevationM === 'number') ? Math.round(m.elevationM) : null;
+      byCode[key] = {
+        code: key, name: m.name || key, lat: m.lat, lon: m.lon, elev: elev,
+        type: (m.type === 'tal' || m.type === 'berg') ? m.type : ((elev !== null && elev >= 1850) ? 'berg' : 'tal'),
+        extra: true, source: m.source || '', attribution: m.attribution || '', intervalMin: m.intervalMin || 10
+      };
+    });
+    Object.keys(byCode).forEach(function(code){
+      if (isLongInactive(stations[code])) return;
+      list.push(byCode[code]);
+    });
+    list.sort(function(a, b){ return String(a.name).localeCompare(String(b.name), 'de'); });
+    return { byCode: byCode, list: list };
+  }
+  function stationSourceLabel(s){
+    if (!s.extra) return 'Südtirol';
+    var k = sourceKey(s);
+    return k || 'Zusatzstation';
+  }
+
+  /* ----- Auswahlliste: Dropdown mit Suche, nummerierten Häkchen, Vorschau mit Verschiebe-Griff ----- */
+  var GRIP_SVG = '<svg viewBox="0 0 12 18" width="14" height="20" aria-hidden="true" focusable="false"><g fill="currentColor"><circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/><circle cx="3" cy="9" r="1.6"/><circle cx="9" cy="9" r="1.6"/><circle cx="3" cy="15" r="1.6"/><circle cx="9" cy="15" r="1.6"/></g></svg>';
+  var allPickers = [];
+
+  function createPicker(host, o){
+    var filter = '';
+    host.innerHTML =
+      '<div class="op">' +
+        '<button type="button" class="op-trigger" aria-expanded="false" aria-haspopup="listbox"><span class="op-trigger-label"></span><span class="op-count"></span></button>' +
+        '<div class="op-panel" hidden>' +
+          '<input type="search" class="op-search" placeholder="Suchen …" aria-label="Suchen" autocomplete="off">' +
+          '<div class="op-list" role="listbox" aria-multiselectable="true"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="op-prev-title"></div>' +
+      '<ol class="op-preview"></ol>' +
+      '<p class="cfg-status" aria-live="polite"></p>';
+    var wrap = host.querySelector('.op');
+    var trigger = host.querySelector('.op-trigger');
+    var panel = host.querySelector('.op-panel');
+    var search = host.querySelector('.op-search');
+    var list = host.querySelector('.op-list');
+    var preview = host.querySelector('.op-preview');
+    var statusEl = host.querySelector('.cfg-status');
+    var statusTimer = null;
+
+    function say(msg, isErr){
+      statusEl.textContent = msg || '';
+      statusEl.className = 'cfg-status' + (isErr ? ' err' : '');
+      if (statusTimer) clearTimeout(statusTimer);
+      if (msg) statusTimer = setTimeout(function(){ statusEl.textContent = ''; }, 3500);
+    }
+    function optsById(){ var m = {}; o.getOptions().forEach(function(x){ m[x.id] = x; }); return m; }
+    function sel(){ var m = optsById(); return o.getSelected().filter(function(id){ return m[id]; }); }
+
+    function renderList(){
+      var keep = list.scrollTop;
+      var s = sel(), q = filter.trim().toLowerCase();
+      var html = o.getOptions().filter(function(x){
+        return !q || (x.label + ' ' + (x.sub || '')).toLowerCase().indexOf(q) !== -1;
+      }).map(function(x){
+        var i = s.indexOf(x.id);
+        return '<div class="op-row' + (i >= 0 ? ' on' : '') + '" role="option" tabindex="0" aria-selected="' + (i >= 0) + '" data-id="' + escHtml(x.id) + '">' +
+          '<span class="op-box">' + (i >= 0 ? (i + 1) : '') + '</span>' +
+          '<span class="op-name">' + escHtml(x.label) + '</span>' +
+          '<span class="op-sub">' + escHtml(x.sub || '') + '</span></div>';
+      }).join('');
+      list.innerHTML = html || '<div class="op-empty">' + (o.getOptions().length ? 'Nichts gefunden.' : 'Wird geladen …') + '</div>';
+      list.scrollTop = keep;
+    }
+    function renderPreview(){
+      var s = sel(), m = optsById();
+      host.querySelector('.op-prev-title').textContent = s.length ? o.previewTitle : '';
+      if (!s.length) { preview.innerHTML = '<li class="op-empty">' + escHtml(o.emptyText) + '</li>'; return; }
+      preview.innerHTML = s.map(function(id, i){
+        return '<li class="op-item" data-id="' + escHtml(id) + '">' +
+          '<span class="op-num">' + (i + 1) + '</span>' +
+          '<div class="op-body">' + o.preview(m[id]) + '</div>' +
+          '<div class="op-ctl">' +
+            '<div class="op-arrows">' +
+              '<button type="button" class="op-arr" data-dir="-1" aria-label="Nach oben"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+              '<button type="button" class="op-arr" data-dir="1" aria-label="Nach unten"' + (i === s.length - 1 ? ' disabled' : '') + '>▼</button>' +
+            '</div>' +
+            '<span class="op-handle" role="img" aria-label="Zum Verschieben ziehen">' + GRIP_SVG + '</span>' +
+          '</div></li>';
+      }).join('');
+    }
+    function renderHead(){
+      trigger.querySelector('.op-trigger-label').textContent = o.triggerLabel;
+      trigger.querySelector('.op-count').textContent = sel().length + ' gewählt';
+    }
+    function renderAll(){ renderHead(); renderList(); renderPreview(); }
+
+    function commit(ids, msg){
+      var ok = o.setSelected(ids);
+      renderAll();
+      if (ok === false) say('Konnte nicht gespeichert werden (Browser blockiert den Speicher).', true);
+      else say(msg || 'Gespeichert.');
+    }
+    function toggle(id){
+      var s = sel(), i = s.indexOf(id);
+      if (i >= 0) {
+        if (s.length <= (o.min || 0)) { say('Mindestens ' + o.min + ' muss ausgewählt bleiben.', true); return; }
+        s.splice(i, 1);
+      } else {
+        s.push(id);
+      }
+      commit(s);
+    }
+    function setOpen(v){
+      panel.hidden = !v;
+      trigger.setAttribute('aria-expanded', v ? 'true' : 'false');
+      if (v) { search.value = ''; filter = ''; renderList(); if (window.matchMedia && !window.matchMedia('(pointer:coarse)').matches) search.focus(); }
+    }
+
+    trigger.addEventListener('click', function(e){ e.stopPropagation(); setOpen(panel.hidden); });
+    search.addEventListener('input', function(){ filter = search.value; renderList(); });
+    list.addEventListener('click', function(e){
+      var row = e.target.closest('.op-row');
+      if (row) toggle(row.getAttribute('data-id'));
+    });
+    list.addEventListener('keydown', function(e){
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      var row = e.target.closest && e.target.closest('.op-row');
+      if (row) { e.preventDefault(); toggle(row.getAttribute('data-id')); }
+    });
+    // Capture-Phase: läuft vor dem Neuzeichnen der Liste (sonst gilt der Klick auf eine Zeile als "außerhalb")
+    document.addEventListener('click', function(e){
+      if (!panel.hidden && !wrap.contains(e.target)) setOpen(false);
+    }, true);
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !panel.hidden) { setOpen(false); trigger.focus(); } });
+
+    // Pfeiltasten: eine Position nach oben/unten
+    preview.addEventListener('click', function(e){
+      var b = e.target.closest && e.target.closest('.op-arr');
+      if (!b || b.disabled) return;
+      var item = b.closest('.op-item'), id = item.getAttribute('data-id');
+      var s = sel(), i = s.indexOf(id), j = i + parseInt(b.getAttribute('data-dir'), 10);
+      if (i < 0 || j < 0 || j >= s.length) return;
+      s.splice(i, 1); s.splice(j, 0, id);
+      commit(s, 'Reihenfolge gespeichert.');
+    });
+    // Ziehen am Griff (Maus, Touch, Stift)
+    preview.addEventListener('pointerdown', function(e){
+      var h = e.target.closest && e.target.closest('.op-handle');
+      if (!h) return;
+      var item = h.closest('.op-item');
+      e.preventDefault();
+      item.classList.add('dragging');
+      try { preview.setPointerCapture(e.pointerId); } catch (err) { /* ignorieren */ }
+      function move(ev){
+        var others = Array.prototype.slice.call(preview.children).filter(function(n){ return n !== item; });
+        for (var i = 0; i < others.length; i++) {
+          var r = others[i].getBoundingClientRect();
+          if (ev.clientY < r.top + r.height / 2) { if (item.nextSibling !== others[i]) preview.insertBefore(item, others[i]); return; }
+        }
+        preview.appendChild(item);
+      }
+      function up(){
+        preview.removeEventListener('pointermove', move);
+        preview.removeEventListener('pointerup', up);
+        preview.removeEventListener('pointercancel', up);
+        item.classList.remove('dragging');
+        var ids = Array.prototype.slice.call(preview.children).map(function(n){ return n.getAttribute('data-id'); }).filter(Boolean);
+        if (ids.join('|') !== sel().join('|')) commit(ids, 'Reihenfolge gespeichert.'); else renderAll();
+      }
+      preview.addEventListener('pointermove', move);
+      preview.addEventListener('pointerup', up);
+      preview.addEventListener('pointercancel', up);
+    });
+
+    renderAll();
+    var api = { refresh: renderAll };
+    allPickers.push(api);
+    return api;
+  }
+
+  /* ----- Seite "Konfigurieren" ----- */
+  var pairsPicker = null, stationsPicker = null;
+  var settingsCatalog = { byCode: {}, list: [] };
+  var settingsWind = {};
+  var cfgMapOrig = null;
+
+  function cfgSay(id, msg, isErr){
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.className = 'cfg-status' + (isErr ? ' err' : '');
+  }
+  function fmtElev(e){ return (e || e === 0) ? String(e).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' m' : ''; }
+
+  function attachMapToSettings(){
+    if (!window.initWindMap) return;
+    window.initWindMap();
+    var el = document.getElementById('windMap'), host = document.getElementById('cfgMapHost');
+    if (!el || !host) return;
+    if (el.parentNode !== host) {
+      cfgMapOrig = { parent: el.parentNode, next: el.nextSibling };
+      host.appendChild(el);
+    }
+    setTimeout(function(){ if (windMapInstance) windMapInstance.invalidateSize(); }, 60);
+  }
+  window.onLeaveSettings = function(){
+    var el = document.getElementById('windMap');
+    if (cfgMapOrig && el && el.parentNode !== cfgMapOrig.parent) {
+      cfgMapOrig.parent.insertBefore(el, (cfgMapOrig.next && cfgMapOrig.next.parentNode === cfgMapOrig.parent) ? cfgMapOrig.next : null);
+    }
+    cfgMapOrig = null;
+    var p = document.getElementById('windDetailPanel');
+    if (p) p.classList.remove('open');
+  };
+  function applyMapViewToInstance(v){
+    if (!windMapInstance) return;
+    windMapInstance.setView([v.lat, v.lon], v.zoom, { animate: false });
+    setBaseLayer(v.layer);
+  }
+
+  function buildExport(){
+    var out = { app: 'tolwind.bz.it', version: 1, exportedAt: new Date().toISOString(),
+      foehnPairs: getPairKeys(), selectedStations: getStationCodes(), zoomLevel: getZoomLevel() };
+    var mv = getMapView();
+    if (mv) out.mapView = mv;
+    return out;
+  }
+  function sanitizeConfig(obj){
+    if (!obj || typeof obj !== 'object' || obj.app !== 'tolwind.bz.it') throw new Error('Das ist keine Konfigurationsdatei von dieser Seite.');
+    var out = {};
+    if (Array.isArray(obj.foehnPairs)) {
+      var p = [];
+      obj.foehnPairs.forEach(function(k){ if (typeof k === 'string' && hasOwn(PAIR_CATALOG, k) && p.indexOf(k) === -1) p.push(k); });
+      if (p.length) out.foehnPairs = p;
+    }
+    if (Array.isArray(obj.selectedStations)) {
+      var s = [];
+      obj.selectedStations.forEach(function(c){ if (validStationCode(c) && s.indexOf(c) === -1 && s.length < 80) s.push(c); });
+      out.selectedStations = s;
+    }
+    if (obj.mapView && typeof obj.mapView === 'object') {
+      var lat = Number(obj.mapView.lat), lon = Number(obj.mapView.lon), zoom = parseInt(obj.mapView.zoom, 10);
+      if (isFinite(lat) && isFinite(lon) && lat >= -85 && lat <= 85 && lon >= -180 && lon <= 180 && isFinite(zoom) && zoom >= 3 && zoom <= 18) {
+        out.mapView = { lat: Math.round(lat * 1e5) / 1e5, lon: Math.round(lon * 1e5) / 1e5, zoom: zoom,
+          layer: MAP_LAYER_KEYS.indexOf(obj.mapView.layer) !== -1 ? obj.mapView.layer : 'osm' };
+      }
+    }
+    var z = parseInt(obj.zoomLevel, 10);
+    if (z === 1 || z === 2 || z === 3) out.zoomLevel = z;
+    return out;
+  }
+  function refreshAfterConfigChange(){
+    if (lastData) render(lastData);
+    if (pairsPicker) pairsPicker.refresh();
+    if (stationsPicker) stationsPicker.refresh();
+    var v = getMapView() || defaultMapView();
+    applyMapViewToInstance(v);
+    renderZoomOptions();
+    var selPage = document.getElementById('page-selected');
+    if (selPage && selPage.style.display !== 'none' && window.renderSelectedStations) window.renderSelectedStations();
+  }
+  function importConfigText(text){
+    if (typeof text !== 'string' || text.length > 200000) throw new Error('Die Datei ist zu groß oder leer.');
+    var obj;
+    try { obj = JSON.parse(text); } catch (e) { throw new Error('Die Datei konnte nicht gelesen werden (kein gültiges Format).'); }
+    var clean = sanitizeConfig(obj);
+    var keepHint = Cfg.get('hintHidden', false);
+    Cfg.replace(clean);
+    if (keepHint) Cfg.set('hintHidden', true);
+    applyZoomLevel(getZoomLevel(), false);
+    refreshAfterConfigChange();
+  }
+
+  window.renderSettings = function(){
+    attachMapToSettings();
+    if (!pairsPicker) {
+      pairsPicker = createPicker(document.getElementById('cfgPairsPicker'), {
+        triggerLabel: 'Stationspaare wählen',
+        previewTitle: 'Vorschau – so erscheinen die Diagramme untereinander:',
+        emptyText: 'Kein Stationspaar gewählt.',
+        min: 1,
+        getOptions: function(){ return Object.keys(PAIR_CATALOG).map(function(k){ var d = PAIR_CATALOG[k]; return { id: k, label: d.left + ' – ' + d.right, sub: d.note }; }); },
+        getSelected: getPairKeys,
+        setSelected: function(ids){ var ok = Cfg.set('foehnPairs', ids); if (lastData) render(lastData); return ok; },
+        preview: function(x){ return '<div class="op-title">' + escHtml(x.label) + '</div><div class="op-meta">' + escHtml(x.sub) + '</div>'; }
+      });
+      stationsPicker = createPicker(document.getElementById('cfgStationsPicker'), {
+        triggerLabel: 'Stationen wählen',
+        previewTitle: 'Vorschau – so erscheinen die Stationen untereinander:',
+        emptyText: 'Keine Station gewählt.',
+        min: 0,
+        getOptions: function(){ return settingsCatalog.list.map(function(s){ return { id: s.code, label: s.name, sub: stationSourceLabel(s) + (s.elev ? ' · ' + fmtElev(s.elev) : '') }; }); },
+        getSelected: getStationCodes,
+        setSelected: function(ids){ return Cfg.set('selectedStations', ids); },
+        preview: function(x){
+          var s = settingsCatalog.byCode[x.id], e = settingsWind[x.id], rows = e && e.rows ? e.rows : [], last = rows.length ? rows[rows.length - 1] : null;
+          var vals = '';
+          if (last && last.avgKmh !== null && last.avgKmh !== undefined) vals = ' · Ø ' + Math.round(last.avgKmh) + ' / Böe ' + ((last.gustKmh !== null && last.gustKmh !== undefined) ? Math.round(last.gustKmh) : '–') + ' km/h';
+          return '<div class="op-title">' + escHtml(x.label) + '</div><div class="op-meta">' + escHtml(x.sub) + escHtml(vals) + '</div>';
+        }
+      });
+      initSettingsButtons();
+    } else {
+      pairsPicker.refresh();
+      stationsPicker.refresh();
+    }
+    loadWindPayload().then(function(payload){
+      settingsWind = payload.stations || {};
+      settingsCatalog = buildStationCatalog(settingsWind);
+      if (stationsPicker) stationsPicker.refresh();
+    });
+  };
+
+  function initSettingsButtons(){
+    document.getElementById('cfgMapSave').addEventListener('click', function(){
+      if (!windMapInstance) return;
+      var c = windMapInstance.getCenter();
+      var ok = Cfg.set('mapView', { lat: Math.round(c.lat * 1e5) / 1e5, lon: Math.round(c.lng * 1e5) / 1e5, zoom: windMapInstance.getZoom(), layer: mapBaseLayerKey });
+      cfgSay('cfgMapStatus', ok ? 'Gespeichert – diese Ansicht erscheint künftig beim Öffnen der Live-Windwerte.' : 'Konnte nicht gespeichert werden (Browser blockiert den Speicher).', !ok);
+    });
+    document.getElementById('cfgMapReset').addEventListener('click', function(){
+      Cfg.remove('mapView');
+      applyMapViewToInstance(defaultMapView());
+      cfgSay('cfgMapStatus', 'Startansicht auf den Standard zurückgesetzt.');
+    });
+    var ta = document.getElementById('cfgText');
+    document.getElementById('cfgDownload').addEventListener('click', function(){
+      var json = JSON.stringify(buildExport(), null, 2);
+      try {
+        var blob = new Blob([json], { type: 'application/json' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'tolwind-konfiguration.json';
+        document.body.appendChild(a); a.click();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); if (a.parentNode) a.parentNode.removeChild(a); }, 1500);
+        cfgSay('cfgDownloadStatus', 'Datei „tolwind-konfiguration.json“ wurde erstellt. Falls nichts passiert: unten „Als Text“ verwenden.');
+      } catch (e) {
+        cfgSay('cfgDownloadStatus', 'Der Download wird hier nicht unterstützt. Bitte „Als Text“ verwenden.', true);
+      }
+    });
+    document.getElementById('cfgUploadBtn').addEventListener('click', function(){ document.getElementById('cfgFile').click(); });
+    document.getElementById('cfgFile').addEventListener('change', function(e){
+      var f = e.target.files && e.target.files[0];
+      if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function(){
+        try { importConfigText(String(rd.result)); cfgSay('cfgUploadStatus', 'Konfiguration übernommen.'); }
+        catch (err) { cfgSay('cfgUploadStatus', err.message, true); }
+      };
+      rd.onerror = function(){ cfgSay('cfgUploadStatus', 'Die Datei konnte nicht gelesen werden.', true); };
+      rd.readAsText(f);
+      e.target.value = '';
+    });
+    document.getElementById('cfgAlt').addEventListener('toggle', function(){
+      if (this.open) ta.value = JSON.stringify(buildExport(), null, 2);
+    });
+    document.getElementById('cfgTextApply').addEventListener('click', function(){
+      try { importConfigText(ta.value); cfgSay('cfgTextStatus', 'Konfiguration übernommen.'); }
+      catch (err) { cfgSay('cfgTextStatus', err.message, true); }
+    });
+    document.getElementById('cfgTextCopy').addEventListener('click', function(){
+      ta.value = JSON.stringify(buildExport(), null, 2);
+      ta.select();
+      var done = false;
+      try { done = document.execCommand('copy'); } catch (e) { done = false; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(ta.value).then(function(){ cfgSay('cfgTextStatus', 'Text kopiert.'); }, function(){ cfgSay('cfgTextStatus', done ? 'Text kopiert.' : 'Bitte den markierten Text von Hand kopieren.', !done); });
+      } else cfgSay('cfgTextStatus', done ? 'Text kopiert.' : 'Bitte den markierten Text von Hand kopieren.', !done);
+    });
+    var resetBtn = document.getElementById('cfgResetAll'), armTimer = null;
+    resetBtn.addEventListener('click', function(){
+      if (!resetBtn.classList.contains('armed')) {
+        resetBtn.classList.add('armed');
+        resetBtn.textContent = 'Wirklich alles zurücksetzen? Nochmal tippen';
+        armTimer = setTimeout(function(){ resetBtn.classList.remove('armed'); resetBtn.textContent = 'Alle Einstellungen zurücksetzen'; }, 4000);
+        return;
+      }
+      if (armTimer) clearTimeout(armTimer);
+      resetBtn.classList.remove('armed');
+      resetBtn.textContent = 'Alle Einstellungen zurücksetzen';
+      Cfg.clear();
+      applyZoomLevel(1, false);
+      refreshAfterConfigChange();
+      cfgSay('cfgResetStatus', 'Alle gespeicherten Einstellungen wurden gelöscht. Es gilt wieder die Standardansicht.');
+    });
+  }
+
+  /* ----- Seite "Zoomstufe" ----- */
+  function renderZoomOptions(){
+    var host = document.getElementById('zsOptions');
+    if (!host) return;
+    var cur = getZoomLevel();
+    host.innerHTML = ZOOM_LEVELS.map(function(z){
+      return '<button type="button" class="zs-opt" role="radio" aria-checked="' + (z.n === cur) + '" data-level="' + z.n + '" style="--zf:' + z.f + ';">' +
+        '<span class="zs-radio"></span>' +
+        '<span><span class="zs-name">' + z.name + '</span><div class="zs-hint">' + z.hint + '</div></span>' +
+        '<span class="zs-sample">Ø 14 · Böe 27</span></button>';
+    }).join('');
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('.zs-opt');
+    if (!b) return;
+    var ok = applyZoomLevel(parseInt(b.getAttribute('data-level'), 10));
+    renderZoomOptions();
+    var st = document.getElementById('zsStatus');
+    if (st) { st.textContent = ok ? 'Gespeichert.' : 'Konnte nicht gespeichert werden (Browser blockiert den Speicher).'; st.className = 'cfg-status' + (ok ? '' : ' err'); }
+  });
+  window.renderZoomPage = renderZoomOptions;
+
+  /* ----- Hinweisfeld (Cookies / lokale Einstellungen) ----- */
+  (function initHintBanner(){
+    var el = document.getElementById('hintBanner');
+    if (!el || Cfg.get('hintHidden', false)) return;
+    setTimeout(function(){ el.hidden = false; el.classList.add('show'); }, 2600);
+    document.getElementById('hintOk').addEventListener('click', function(){
+      if (document.getElementById('hintHide').checked) Cfg.set('hintHidden', true);
+      el.hidden = true;
+    });
+  })();
+
   function initMenu(){
     var toggle = document.getElementById('menuToggle');
     var dropdown = document.getElementById('menuDropdown');
     var items = dropdown.querySelectorAll('.menu-item');
-    var pages = { foehndiagramm: document.getElementById('page-foehndiagramm'), livewerte: document.getElementById('page-livewerte'), selected: document.getElementById('page-selected'), foehnprognose: document.getElementById('page-foehnprognose'), livetracking: document.getElementById('page-livetracking') };
-    var titles = { foehndiagramm: 'Föhndiagramm', livewerte: 'Live-Windwerte', selected: 'Ausgewählte Stationen', foehnprognose: 'Föhnprognose', livetracking: 'Live-Tracking' };
+    var pages = { foehndiagramm: document.getElementById('page-foehndiagramm'), livewerte: document.getElementById('page-livewerte'), selected: document.getElementById('page-selected'), foehnprognose: document.getElementById('page-foehnprognose'), livetracking: document.getElementById('page-livetracking'), settings: document.getElementById('page-settings'), zoom: document.getElementById('page-zoom') };
+    var titles = { foehndiagramm: 'Föhndiagramm', livewerte: 'Live-Windwerte', selected: 'Ausgewählte Stationen', foehnprognose: 'Föhnprognose', livetracking: 'Live-Tracking', settings: 'Konfigurieren', zoom: 'Zoomstufe' };
     var titleEl = document.getElementById('pageTitle');
 
     function updateTitleWrapState(){
@@ -933,6 +1712,7 @@
 
     function activatePage(page){
       if (!pages[page]) page = 'foehndiagramm';
+      if (page !== 'settings' && window.onLeaveSettings) window.onLeaveSettings();
       items.forEach(function(i){ i.classList.toggle('active', i.getAttribute('data-page') === page); });
       Object.keys(pages).forEach(function(key){
         pages[key].style.display = (key === page) ? '' : 'none';
@@ -942,6 +1722,8 @@
       if (page === 'livewerte' && window.initWindMap) window.initWindMap();
       if (page === 'selected' && window.renderSelectedStations) window.renderSelectedStations();
       if (page === 'foehnprognose' && window.renderFoehnprognose) window.renderFoehnprognose();
+      if (page === 'settings' && window.renderSettings) window.renderSettings();
+      if (page === 'zoom' && window.renderZoomPage) window.renderZoomPage();
       try { sessionStorage.setItem('foehn-active-page', page); } catch (e) { /* z.B. privater Modus - dann einfach nicht merken */ }
     }
     window.addEventListener('resize', updateTitleWrapState);
@@ -1008,19 +1790,18 @@
     "Bei negativen Werten, d.h. die Südtiroler Station hat den tieferen Druck als die Tiroler Station, ist in Südtirol Nordföhn zu erwarten. Je größer die Druckdifferenz, desto stärker weht der Föhn und desto weiter greift er in die südlichen Täler durch.\n" +
     "Erfahrungsgemäß muss die Druckdifferenz mindestens 3 hPa betragen, damit der Föhn die Täler nahe am Alpenhauptkamm (Obervinschgau, Wipptal) erfasst. Bei einer Differenz von über 6 hPa schafft es der Föhnwind in den meisten Fällen bis ins Unterland.\n" +
     "Im umgekehrten Fall, also bei positiven Werten, ist mit Südföhn an der Alpennordseite zu rechnen. Gleichzeitig frischt des Öfteren starker Taleinwind/Südwind auf Südtiroler Seite auf.\n" +
-    "Für das untere Stationspaar (Eyrs – Landeck) sind noch keine Schwellenwerte festgelegt.";
+    "Für alle weiteren Stationspaare (Eyrs – Landeck, Bruneck – Jenbach, Bruneck – Lienz) sind noch keine Schwellenwerte festgelegt. Bei Bruneck – Lienz handelt es sich um ein West-Ost-Paar (Differenz = Bruneck minus Lienz). Welche Stationspaare angezeigt werden, lässt sich unter Einstellungen → Konfigurieren wählen.";
 
   document.getElementById('descFirst').textContent = DESC_FIRST;
   document.getElementById('descRest').textContent = DESC_REST;
 
-  var SHORT_CODES = { Bozen: 'BZ', Innsbruck: 'IBK', Meran: 'MER', Imst: 'IMST', Eyrs: 'EYRS', Landeck: 'LAND' };
+  var SHORT_CODES = { Bozen: 'BZ', Innsbruck: 'IBK', Meran: 'MER', Imst: 'IMST', Eyrs: 'EYRS', Landeck: 'LAND', Bruneck: 'BRK', Jenbach: 'JEN', Lienz: 'LIE' };
   function shortCode(name){ return SHORT_CODES[name] || name; }
 
   var charts = {};
   var resizeObservers = {}; // canvasId -> ResizeObserver - hält die Höhe live synchron mit der Breite
   var savedZoomRange = {};   // canvasId -> {min,max} - bleibt über Datenaktualisierungen erhalten, nicht über Seiten-Reload
   var syncingZoom = false;   // Schutz gegen Endlosschleife beim gegenseitigen Zoom-Abgleich
-  var CHART_PAIR = { 'chart-bi': 'chart-im', 'chart-im': 'chart-bi' };
 
   // Wie viele Stunden standardmäßig sichtbar sein sollen, abhängig von der
   // Chart-Breite: schmal (Handy) -> 6h, breit (Desktop) -> volle 16h.
@@ -1107,7 +1888,8 @@
 
   // Gewählte Druckangabe je Diagramm: 'qnh' (Standard) oder 'qff' (= bisherige Werte).
   // Liegt außerhalb von render(), damit die Auswahl die automatische Aktualisierung übersteht.
-  var pressureMode = { 'chart-bi': 'qnh', 'chart-im': 'qnh' };
+  var pressureMode = {};   // chartId -> 'qnh' | 'qff' (Standard: QNH)
+  function getMode(id){ return pressureMode[id] === 'qff' ? 'qff' : 'qnh'; }
   var infoOpen = {};     // chartId -> true, solange das Info-Fenster offen ist
   var lastData = null;   // zuletzt geladene history.json
   function rowDelta(r, mode){ return num(mode === 'qff' ? r.delta : r.deltaQnh); }
@@ -1303,14 +2085,14 @@
       var chart = ctx.chart;
       savedZoomRange[canvasId] = { min: chart.scales.x.min, max: chart.scales.x.max };
       if (syncingZoom) return;
-      var otherId = CHART_PAIR[canvasId];
-      var otherChart = charts[otherId];
-      if (otherChart) {
+      Object.keys(charts).forEach(function(otherId){
+        var otherChart = charts[otherId];
+        if (otherId === canvasId || !otherChart) return;
         syncingZoom = true;
         otherChart.zoomScale('x', { min: chart.scales.x.min, max: chart.scales.x.max }, 'none');
         savedZoomRange[otherId] = { min: chart.scales.x.min, max: chart.scales.x.max };
         syncingZoom = false;
-      }
+      });
     }
 
     var ctx = document.getElementById(canvasId).getContext('2d');
@@ -1401,14 +2183,14 @@
             },
             ticks: {
               maxRotation: 0,
-              font: { family: "'IBM Plex Mono', monospace", size: 10 }, color: '#5B6B72'
+              font: { family: "'IBM Plex Mono', monospace", size: Math.round(10 * zoomFactor() * 10) / 10 }, color: '#5B6B72'
             }
           },
           y: {
             min: CHART_Y_MIN, max: CHART_Y_MAX,
-            title: { display: true, text: yAxisTitle, font: { size: 11, family: "'IBM Plex Sans', sans-serif" }, color: '#5B6B72' },
+            title: { display: true, text: yAxisTitle, font: { size: Math.round(11 * zoomFactor() * 10) / 10, family: "'IBM Plex Sans', sans-serif" }, color: '#5B6B72' },
             grid: { color: '#EEF1F0', drawTicks: true, tickLength: 4 },
-            ticks: { stepSize: 2, font: { family: "'IBM Plex Mono', monospace", size: 10 }, color: '#5B6B72' }
+            ticks: { stepSize: 2, font: { family: "'IBM Plex Mono', monospace", size: Math.round(10 * zoomFactor() * 10) / 10 }, color: '#5B6B72' }
           }
         }
       }
@@ -1503,13 +2285,13 @@
     charts[chartInstId].zoomScale('x', full, 'default');
     charts[chartInstId].update();
     delete savedZoomRange[chartInstId];
-    var otherId = CHART_PAIR[chartInstId];
-    if (charts[otherId]) {
+    Object.keys(charts).forEach(function(otherId){
+      if (otherId === chartInstId || !charts[otherId]) return;
       var fullOther = { min: 0, max: charts[otherId].data.labels.length - 1 };
       charts[otherId].zoomScale('x', fullOther, 'default');
       charts[otherId].update();
       delete savedZoomRange[otherId];
-    }
+    });
   }
   window.resetZoom = resetZoom;
 
@@ -1530,7 +2312,7 @@
     '<p class="qq-note">Schwarze Linie: gewählte Angabe. Hellgraue Linie: dasselbe Stationspaar mit der anderen Angabe. Die Werte werden aus dem Druck, der Temperatur und der Luftfeuchte der Stationen berechnet.</p>';
 
   function controlsHtml(id){
-    var m = pressureMode[id];
+    var m = getMode(id);
     function btn(mode, text){
       return '<button type="button" class="qq-btn' + (m === mode ? ' on' : '') + '" data-chart="' + id + '" data-mode="' + mode + '" aria-pressed="' + (m === mode) + '">' + text + '</button>';
     }
@@ -1541,16 +2323,13 @@
     '<div class="qq-pop" id="pop-' + id + '"' + (infoOpen[id] ? '' : ' hidden') + '>' + INFO_HTML + '</div>';
   }
 
-  var SECTIONS = {
-    'chart-bi': { key: 'bozenInnsbruck', table: 'table-bi', thresholds: true,  left: 'Bozen', right: 'Innsbruck' },
-    'chart-im': { key: 'eyrsLandeck',    table: 'table-im', thresholds: false, left: 'Eyrs',  right: 'Landeck' }
-  };
-
+  function pairKeyOf(id){ return id.replace(/^chart-/, ''); }
   function renderOne(id){
-    var sec = SECTIONS[id];
-    var pair = (lastData && lastData[sec.key]) || { leftLabel: sec.left, rightLabel: sec.right, rows: [] };
-    renderSection(pair, pressureMode[id], sec.table, id, id,
-      'Druckdifferenz  ' + pair.leftLabel + ' - ' + pair.rightLabel + '  [hPa]', sec.thresholds);
+    var key = pairKeyOf(id), def = PAIR_CATALOG[key];
+    if (!def) return;
+    var pair = (lastData && lastData[key]) || { leftLabel: def.left, rightLabel: def.right, rows: [] };
+    renderSection(pair, getMode(id), 'table-' + key, id, id,
+      'Druckdifferenz  ' + pair.leftLabel + ' - ' + pair.rightLabel + '  [hPa]', def.thresholds);
   }
 
   function closeAllInfo(){
@@ -1571,7 +2350,7 @@
     if (modeBtn) {
       var id = modeBtn.getAttribute('data-chart');
       var mode = modeBtn.getAttribute('data-mode');
-      if (pressureMode[id] === mode) return;
+      if (getMode(id) === mode) return;
       pressureMode[id] = mode;
       var group = modeBtn.parentNode.querySelectorAll('.qq-btn');
       for (var i = 0; i < group.length; i++) {
@@ -1599,47 +2378,47 @@
   });
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeAllInfo(); });
 
+  function sectionHtml(key){
+    var def = PAIR_CATALOG[key], id = 'chart-' + key;
+    var p = (lastData && lastData[key]) || { leftLabel: def.left, rightLabel: def.right };
+    return '<div class="section">' +
+      '<h2>' + escHtml(p.leftLabel) + ' - ' + escHtml(p.rightLabel) + '</h2>' + controlsHtml(id) +
+      '<div class="section-grid">' +
+        '<div class="chart-wrap"><canvas class="foehn-chart" id="' + id + '"></canvas>' +
+          (def.thresholds ? '<svg class="arrow-svg" id="svg-' + id + '"></svg>' : '') +
+          '<div class="current-value-badge" id="badge-' + id + '"></div></div>' +
+        '<div class="zoom-hint"><button class="zoom-reset" onclick="resetZoom(\'' + id + '\')">Zoom zurücksetzen</button> · Mausrad/Pinch zum Zoomen, Ziehen zum Verschieben</div>' +
+        '<details class="table-collapse">' +
+          '<summary class="table-summary">' +
+            '<span class="table-summary-title">Details Luftdruckwerte</span>' +
+            '<span class="table-summary-sub"><span class="when-closed">Mehr anzeigen…</span><span class="when-open">Weniger anzeigen…</span></span>' +
+          '</summary>' +
+          '<div class="table-wrap" id="table-' + key + '"></div>' +
+          legendHtml(def.thresholds) +
+        '</details>' +
+      '</div>' +
+    '</div>';
+  }
+
   function render(data){
     var content = document.getElementById('content');
     content.className = '';
     lastData = data;
-    var bi = data.bozenInnsbruck || { leftLabel: 'Bozen', rightLabel: 'Innsbruck' };
-    var im = data.eyrsLandeck || { leftLabel: 'Eyrs', rightLabel: 'Landeck' };
+    var keys = getPairKeys();
+    var shown = {};
+    keys.forEach(function(k){ shown['chart-' + k] = true; });
+    // Diagramme, die nicht mehr angezeigt werden, sauber entfernen
+    Object.keys(charts).forEach(function(id){
+      if (shown[id]) return;
+      try { charts[id].destroy(); } catch (e) { /* ignorieren */ }
+      delete charts[id];
+      if (resizeObservers[id]) { resizeObservers[id].disconnect(); delete resizeObservers[id]; }
+      delete savedZoomRange[id];
+    });
+    latestInstants = {};
 
-    content.innerHTML =
-      '<div class="section">' +
-        '<h2>' + bi.leftLabel + ' - ' + bi.rightLabel + '</h2>' + controlsHtml('chart-bi') +
-        '<div class="section-grid">' +
-          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-bi"></canvas><svg class="arrow-svg" id="svg-chart-bi"></svg><div class="current-value-badge" id="badge-chart-bi"></div></div>' +
-          '<div class="zoom-hint"><button class="zoom-reset" onclick="resetZoom(\'chart-bi\')">Zoom zurücksetzen</button> · Mausrad/Pinch zum Zoomen, Ziehen zum Verschieben</div>' +
-          '<details class="table-collapse">' +
-            '<summary class="table-summary">' +
-              '<span class="table-summary-title">Details Luftdruckwerte</span>' +
-              '<span class="table-summary-sub"><span class="when-closed">Mehr anzeigen…</span><span class="when-open">Weniger anzeigen…</span></span>' +
-            '</summary>' +
-            '<div class="table-wrap" id="table-bi"></div>' +
-            legendHtml(true) +
-          '</details>' +
-        '</div>' +
-      '</div>' +
-      '<div class="section">' +
-        '<h2>' + im.leftLabel + ' - ' + im.rightLabel + '</h2>' + controlsHtml('chart-im') +
-        '<div class="section-grid">' +
-          '<div class="chart-wrap"><canvas class="foehn-chart" id="chart-im"></canvas><div class="current-value-badge" id="badge-chart-im"></div></div>' +
-          '<div class="zoom-hint"><button class="zoom-reset" onclick="resetZoom(\'chart-im\')">Zoom zurücksetzen</button> · Mausrad/Pinch zum Zoomen, Ziehen zum Verschieben</div>' +
-          '<details class="table-collapse">' +
-            '<summary class="table-summary">' +
-              '<span class="table-summary-title">Details Luftdruckwerte</span>' +
-              '<span class="table-summary-sub"><span class="when-closed">Mehr anzeigen…</span><span class="when-open">Weniger anzeigen…</span></span>' +
-            '</summary>' +
-            '<div class="table-wrap" id="table-im"></div>' +
-            legendHtml(false) +
-          '</details>' +
-        '</div>' +
-      '</div>';
-
-    renderOne('chart-bi');
-    renderOne('chart-im');
+    content.innerHTML = keys.map(sectionHtml).join('');
+    keys.forEach(function(k){ renderOne('chart-' + k); });
 
     document.getElementById('pageFoot').textContent = data.generatedAt
       ? ('Zuletzt aktualisiert: ' + data.generatedAt)
@@ -2258,7 +3037,7 @@
     var zoom = windMapInstance.getZoom();
     windMapInstance.getContainer().classList.toggle('wm-far', zoom <= WM_FAR_ZOOM);
     var t = Math.max(0, Math.min(1, (zoom - ICON_MIN_ZOOM) / (ICON_FULL_ZOOM - ICON_MIN_ZOOM)));
-    var scale = ICON_MIN_SCALE + t * (ICON_MAX_SCALE - ICON_MIN_SCALE);
+    var scale = (ICON_MIN_SCALE + t * (ICON_MAX_SCALE - ICON_MIN_SCALE)) * ({ 1: 1, 2: 1.12, 3: 1.25 })[getZoomLevel()];
     document.querySelectorAll('.windsock-icon').forEach(function(el){
       el.style.transform = 'scale(' + scale.toFixed(3) + ')';
     });
@@ -2288,12 +3067,11 @@
       doubleClickZoom: !isTouchDevice,
       tap: !isTouchDevice
     });
-    var isMobileView = window.innerWidth <= 600;
-    if (isMobileView) {
-      windMapInstance.setView([46.657391, 10.588955], 10); // Schluderns
-    } else {
-      windMapInstance.setView([46.670971, 11.210294], 10); // Meran 2000 Talstation
-    }
+    // Startansicht: gespeicherte Ansicht (Einstellungen), sonst Standard
+    // (Handy: Schluderns, Desktop: Meran 2000 Talstation, Zoom 10).
+    var startView = getMapView() || defaultMapView();
+    windMapInstance.setView([startView.lat, startView.lon], startView.zoom);
+    mapBaseLayerKey = startView.layer || 'osm';
     windMapInstance.on('zoomend', updateIconScale);
 
     // Einzeltipp auf eine leere Kartenfläche (kein Symbol) zoomt heraus,
@@ -2561,7 +3339,11 @@
         .then(function(){ satCalibrating = false; });
     }
     satImageLayer.on('add', function(){ setTimeout(satCalibrate, 1500); });
-    osmLayer.addTo(windMapInstance); // Standard-Ansicht
+    mapLayerObjs = { osm: osmLayer, topo: topoLayer, sat: satelliteLayer };
+    (mapLayerObjs[mapBaseLayerKey] || osmLayer).addTo(windMapInstance); // Startkarte (Standard: Straßenkarte)
+    windMapInstance.on('baselayerchange', function(e){
+      mapBaseLayerKey = (e.name === 'Topografisch') ? 'topo' : (e.name === 'Satellit' ? 'sat' : 'osm');
+    });
     L.control.layers(
       { 'Straßenkarte': osmLayer, 'Topografisch': topoLayer, 'Satellit': satelliteLayer },
       null,
@@ -2579,7 +3361,7 @@
       for (var i = 0; i < path.length; i++) {
         var n = path[i];
         if (n === panel) return;
-        if (n.classList && (n.classList.contains('windsock-icon') || n.classList.contains('leaflet-marker-icon') || n.classList.contains('leaflet-control') || n.classList.contains('leaflet-popup') || n.classList.contains('menu-dropdown') || n.classList.contains('menu-toggle'))) return;
+        if (n.classList && (n.classList.contains('windsock-icon') || n.classList.contains('leaflet-marker-icon') || n.classList.contains('leaflet-control') || n.classList.contains('leaflet-popup') || n.classList.contains('menu-dropdown') || n.classList.contains('menu-toggle') || n.classList.contains('src-more'))) return;
       }
       panel.classList.remove('open');
     });
@@ -2705,7 +3487,7 @@
   };
 
   /* ---------- Ausgewählte Stationen (kompakte Übersicht) ---------- */
-  var SELECTED_STATION_CODES = ['00700WS', '02200MS', '06040WS', '08200MS'];
+  var SELECTED_STATION_CODES = STATION_CODES_DEFAULT; // Standard, überschrieben durch die Einstellungen
 
   function buildCompassBackgroundSvg(cx, cy, r){
     return '<svg width="80" height="60" viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;">' +
@@ -2749,8 +3531,14 @@
       .then(function(r){ return r.ok ? r.json() : { stations: {} }; })
       .then(function(payload){
         var stations = payload.stations || {};
-        grid.innerHTML = SELECTED_STATION_CODES.map(function(code){
-          var station = ALL_STATIONS.filter(function(s){ return s.code === code; })[0];
+        var catalog = buildStationCatalog(stations);
+        var shownCodes = getStationCodes().filter(function(c){ return !!catalog.byCode[c]; });
+        if (!shownCodes.length) {
+          grid.innerHTML = '<p class="wind-note">Keine Station ausgewählt. Die Auswahl lässt sich unter Einstellungen → Konfigurieren ändern.</p>';
+          return;
+        }
+        grid.innerHTML = shownCodes.map(function(code){
+          var station = catalog.byCode[code];
           if (!station) return '';
           var entry = stations[code];
           var rows = (entry && entry.rows) ? entry.rows : [];
@@ -2792,7 +3580,7 @@
           return '<div class="selected-card ' + cardBlinkClass + '" data-code="' + code + '">' +
             '<div class="ssc-clickable">' +
               '<div class="ssc-header-col">' +
-                '<div class="ssc-header"><span class="ssc-name">' + station.name + '</span><span class="ssc-time">' + trafficDot + time + '</span></div>' +
+                '<div class="ssc-header"><span class="ssc-name">' + escHtml(station.name) + '</span><span class="ssc-time">' + trafficDot + time + '</span></div>' +
                 (isStale ? '<div class="stale-warning-text ssc-stale">Aktualisierung verzögert!</div>' : '') +
               '</div>' +
               '<div class="ssc-body">' +
@@ -2823,7 +3611,7 @@
               panel.classList.remove('open');
               return;
             }
-            var station = ALL_STATIONS.filter(function(s){ return s.code === code; })[0];
+            var station = catalog.byCode[code];
             var entry = stations[code];
             var rows = (entry && entry.rows) ? entry.rows : [];
             if (station) showWindDetail(station, rows, panelId);
