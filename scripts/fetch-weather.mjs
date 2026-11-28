@@ -237,8 +237,51 @@ const PAIRS = {
   eyrsLandeck: {
     left:  { src: "bz",  code: "08200MS", label: "Eyrs",      heightM: 874 },
     right: { src: "geo", id: "11112",     label: "Landeck",   heightM: 809 }
+  },
+  // Weitere Paare. Links = Südtirol (Bürgernetz), rechts = GeoSphere Austria. Die GeoSphere-
+  // Stations-ID wird beim ersten Bedarf über die Metadaten gesucht (Name + Höhe laut GeoSphere:
+  // geoName/geoAltitudeM); wer die ID kennt, kann sie als "id" eintragen. heightM ist die
+  // Reduktionshöhe, die hier verwendet wird (weicht bewusst von der GeoSphere-Höhe ab).
+  bruneckJenbach: {
+    left:  { src: "bz",  code: "59700MS", label: "Bruneck",   heightM: 831 },
+    right: { src: "geo", id: null, geoName: "JENBACH", geoAltitudeM: 529, label: "Jenbach", heightM: 532 }
+  },
+  bruneckLienz: {
+    left:  { src: "bz",  code: "59700MS", label: "Bruneck",   heightM: 831 },
+    right: { src: "geo", id: null, geoName: "LIENZ",   geoAltitudeM: 661, label: "Lienz",   heightM: 668 }
   }
 };
+
+// Sucht die GeoSphere-Stations-ID über die Metadaten (einmal pro Lauf zwischengespeichert).
+let geosphereMetaPromise = null;
+export async function resolveGeosphereId(side) {
+  if (side.id) return side.id;
+  geosphereMetaPromise ||= withRetry(
+    () => fetchJson("https://dataset.api.hub.geosphere.at/v1/station/historical/tawes-v1-10min/metadata", { headers: { "User-Agent": "foehndiagramm-web/1.0" } }),
+    "GeoSphere Metadaten", RETRY_COUNT
+  );
+  let meta;
+  try { meta = await geosphereMetaPromise; } catch (err) { geosphereMetaPromise = null; throw err; }
+  const want = String(side.geoName).toUpperCase();
+  const all = (meta.stations || []).filter((s) => s.is_active !== false);
+  let cands = all.filter((s) => String(s.name || "").trim().toUpperCase() === want);
+  if (!cands.length) cands = all.filter((s) => String(s.name || "").toUpperCase().startsWith(want));
+  const alt = (s) => Number(s.altitude);
+  const exact = cands.filter((s) => Math.abs(alt(s) - side.geoAltitudeM) <= 2);
+  let pick = null;
+  if (exact.length === 1) pick = exact[0];
+  else if (!exact.length && cands.length === 1) {
+    pick = cands[0];
+    console.warn(`GeoSphere ${side.label}: Höhe ${alt(pick)} m statt erwarteter ${side.geoAltitudeM} m - Station ${pick.id} trotzdem verwendet.`);
+  }
+  if (!pick) {
+    const list = cands.map((s) => `${s.id} ${s.name} ${s.altitude} m`).join("; ") || "keine Treffer";
+    console.warn(`GeoSphere ${side.label}: Station nicht eindeutig gefunden (${list}). Bitte ID in PAIRS eintragen.`);
+    return null;
+  }
+  console.log(`GeoSphere ${side.label}: Station ${pick.id} (${pick.name}, ${pick.altitude} m).`);
+  return String(pick.id);
+}
 
 const QNH_CHECK_LIMIT_HPA = 0.3; // GeoSphere: QNH aus PRED und aus Stationsdruck P dürfen so weit auseinanderliegen
 
@@ -468,9 +511,24 @@ export async function fillPair(history, pairKey, now) {
 
   const from = addMinutes(slots[0], -WINDOW_MINUTES);
   const to = addMinutes(slots[slots.length - 1], WINDOW_MINUTES);
+  // Stationen ohne feste ID (GeoSphere) zuerst auflösen; klappt das nicht, bleibt das Paar
+  // in diesem Lauf unverändert (kein Abbruch der übrigen Daten).
+  const sides = { left: spec.left, right: spec.right };
+  try {
+    for (const k of ["left", "right"]) {
+      if (sides[k].src === "geo" && !sides[k].id) {
+        const id = await resolveGeosphereId(sides[k]);
+        if (!id) return;
+        sides[k] = { ...sides[k], id };
+      }
+    }
+  } catch (err) {
+    console.warn(`${pairKey}: Stations-ID nicht ermittelbar (${err.message}) - nächster Lauf versucht es erneut.`);
+    return;
+  }
   let leftData, rightData;
   try {
-    [leftData, rightData] = await Promise.all([fetchSide(spec.left, from, to), fetchSide(spec.right, from, to)]);
+    [leftData, rightData] = await Promise.all([fetchSide(sides.left, from, to), fetchSide(sides.right, from, to)]);
   } catch (err) {
     console.warn(`${pairKey}: Abruf fehlgeschlagen (${err.message}) - nächster Lauf versucht es erneut.`);
     return;
@@ -485,6 +543,7 @@ export async function fillPair(history, pairKey, now) {
   console.log(`${pairKey}: jüngster Druckwert der Quelle - ${spec.left.label}: ${newestOf(leftData, spec.left)}, ${spec.right.label}: ${newestOf(rightData, spec.right)}.`);
 
   let latestCheck = null;
+  const missing = [];
   for (const slot of slots) {
     const left = sideValueAt(leftData, spec.left, slot);
     const right = sideValueAt(rightData, spec.right, slot);
@@ -493,12 +552,20 @@ export async function fillPair(history, pairKey, now) {
       // Bestehende Zeile ohne QNH: als "nicht berechenbar" markieren, damit nicht jeder Lauf es neu versucht.
       const existing = pair.rows.find((r) => r.instantUTC === iso);
       if (existing && existing.deltaQnh === undefined) { existing.qnhLeft = null; existing.qnhRight = null; existing.deltaQnh = null; }
-      else if (!existing) console.warn(`${pairKey}: keine Werte für ${iso}, übersprungen (fehlt: ${[!left && spec.left.label, !right && spec.right.label].filter(Boolean).join(" + ")}).`);
+      else if (!existing) missing.push({ iso, who: [!left && spec.left.label, !right && spec.right.label].filter(Boolean).join(" + ") });
       continue;
     }
     const row = buildPairRow(left, right);
     upsertRow(pair, row);
     if (right.check !== null) latestCheck = { instantUTC: row.instantUTC, diffHpa: right.check };
+  }
+
+  // Fehlende Zeitpunkte: wenige einzeln, viele (z. B. Station ohne Druckdaten) als eine Zeile.
+  if (missing.length && missing.length <= 6) {
+    for (const m of missing) console.warn(`${pairKey}: keine Werte für ${m.iso}, übersprungen (fehlt: ${m.who}).`);
+  } else if (missing.length) {
+    const whos = [...new Set(missing.map((m) => m.who))].join(" / ");
+    console.warn(`${pairKey}: für ${missing.length} Zeitpunkte keine Werte (${missing[0].iso} bis ${missing[missing.length - 1].iso}, fehlt: ${whos}).`);
   }
 
   // Kontrolle (nur GeoSphere-Seite): QNH aus P gegen QNH aus PRED.
@@ -1259,7 +1326,9 @@ async function main() {
   const [, windData] = await Promise.all([
     Promise.all([
       fillPair(history, "bozenInnsbruck", now),
-      fillPair(history, "eyrsLandeck", now)
+      fillPair(history, "eyrsLandeck", now),
+      fillPair(history, "bruneckJenbach", now),
+      fillPair(history, "bruneckLienz", now)
     ]),
     fetchWindStations(windHistory),
     // Zusatzstationen anderer Datenquellen (eigene Hosts, daher parallel
